@@ -1,0 +1,30 @@
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Code Editors
+/.idea
+/.vscode
+/*.csproj
+/*.sln
+*.swp
+/.vs
+
+# Unity
+/Library
+/Logs
+/Temp
+/obj
+
+# Visual Studio
+/Plugin/Windows/.vs
+/Plugin/Windows/x64
+/Plugin/Windows/Win32
+*.vcxproj.user
+
+# Xcode
+xcuserdata
+xcshareddata
