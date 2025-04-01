@@ -111,6 +111,46 @@ public class WebsocketManager : MonoBehaviour
         }
     }
 
+    public void ToggleStream()
+    {
+        if (!obsWebSocket.IsConnected)
+        {
+            actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke(defaultNotConnectedMessage));
+            Debug.LogError("Cant trigger Transition, not connected to OBS!");
+            return;
+        }
+
+        try
+        {
+            obsWebSocket.ToggleStream();
+        }
+        catch (Exception e)
+        {
+            actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke("Unable to trigger transition: " + e.Message));
+            Debug.LogError("Error triggering Studio Mode Transition: " + e.Message);
+        }
+    }
+
+    public void ToggleRecord()
+    {
+        if (!obsWebSocket.IsConnected)
+        {
+            actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke(defaultNotConnectedMessage));
+            Debug.LogError("Cant trigger Transition, not connected to OBS!");
+            return;
+        }
+
+        try
+        {
+            obsWebSocket.ToggleRecord();
+        }
+        catch (Exception e)
+        {
+            actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke("Unable to trigger transition: " + e.Message));
+            Debug.LogError("Error triggering Studio Mode Transition: " + e.Message);
+        }
+    }
+
     private void OnConnected(object sender, EventArgs e)
     {
         actionsToExecuteOnMainThread.Enqueue(() => WsConnected?.Invoke(true));
