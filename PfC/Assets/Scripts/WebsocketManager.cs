@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WebsocketManager : Singleton<WebsocketManager>
+public class WebsocketManager : MonoBehaviour
 {
 
     private OBSWebsocket obsWebSocket = new OBSWebsocket();
@@ -22,7 +22,7 @@ public class WebsocketManager : Singleton<WebsocketManager>
     public event Action<string> WsMessage;
     private string defaultNotConnectedMessage = "No WebSocket connection, please check your settings";
 
-    protected override void Awake()
+    void Awake()
     {
         actionsToExecuteOnMainThread = new Queue<Action>();
     }
