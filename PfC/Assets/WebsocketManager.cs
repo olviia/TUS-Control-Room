@@ -1,12 +1,12 @@
 using OBSWebsocketDotNet;
-using OBSWebsocketDotNet.Communication; // important for ObsDisconnectionInfo
+using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types;
 using OBSWebsocketDotNet.Types.Events;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WebsocketManager : MonoBehaviour
+public class WebsocketManager : Singleton<WebsocketManager>
 {
 
     private OBSWebsocket obsWebSocket = new OBSWebsocket();
@@ -22,7 +22,7 @@ public class WebsocketManager : MonoBehaviour
     public event Action<string> WsMessage;
     private string defaultNotConnectedMessage = "No WebSocket connection, please check your settings";
 
-    private void Awake()
+    protected override void Awake()
     {
         actionsToExecuteOnMainThread = new Queue<Action>();
     }
@@ -135,6 +135,16 @@ public class WebsocketManager : MonoBehaviour
             actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke("Unable to trigger transition: " + e.Message));
             Debug.LogError("Error triggering Studio Mode Transition: " + e.Message);
         }
+    }
+
+    public bool IsRecording()
+    {
+        return obsWebSocket.GetRecordStatus().IsRecording;
+    }
+
+    public bool IsStreaming()
+    {
+        return obsWebSocket.GetStreamStatus().IsActive;
     }
 
     public void ToggleRecord()
