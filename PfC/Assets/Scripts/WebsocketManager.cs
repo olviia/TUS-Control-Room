@@ -1,5 +1,5 @@
 using OBSWebsocketDotNet;
-using OBSWebsocketDotNet.Communication; // important for ObsDisconnectionInfo
+using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types;
 using OBSWebsocketDotNet.Types.Events;
 using System;
@@ -22,7 +22,7 @@ public class WebsocketManager : MonoBehaviour
     public event Action<string> WsMessage;
     private string defaultNotConnectedMessage = "No WebSocket connection, please check your settings";
 
-    private void Awake()
+    void Awake()
     {
         actionsToExecuteOnMainThread = new Queue<Action>();
     }
@@ -44,7 +44,7 @@ public class WebsocketManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"{nameof(actionsToExecuteOnMainThread)} tryed to do a Null Action");
+                Debug.LogWarning($"{nameof(actionsToExecuteOnMainThread)} tried to do a Null Action");
             }
         }
 
@@ -56,7 +56,7 @@ public class WebsocketManager : MonoBehaviour
     }
 
     #region Connection Handling
-    private void AutoConnectToServer() //called on Startup if PlayerPrefs contain Connection Data
+    private void AutoConnectToServer()
     {
         string serverAdress = defaultWsAdress;
         int serverPort = defaultWsPort;
@@ -67,7 +67,7 @@ public class WebsocketManager : MonoBehaviour
 
     public void ConnectToServer(string serverAdress, int serverPort, string serverPassword)
     {
-        obsWebSocket.Connected -= OnConnected;  // delete old event listeners before adding new ones
+        obsWebSocket.Connected -= OnConnected; 
         obsWebSocket.Disconnected -= OnDisconnected;
 
         obsWebSocket.Connected += OnConnected;
@@ -83,6 +83,10 @@ public class WebsocketManager : MonoBehaviour
             actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke($"WebSocket connection error: {e.Message}"));
         }
     }
+
+    #endregion
+
+    #region Methods
 
     public void Transition()
     {
@@ -103,6 +107,7 @@ public class WebsocketManager : MonoBehaviour
         try
         {
             obsWebSocket.TriggerStudioModeTransition();
+            Debug.Log("Studio mode transition");
         }
         catch (Exception e)
         {
@@ -123,12 +128,23 @@ public class WebsocketManager : MonoBehaviour
         try
         {
             obsWebSocket.ToggleStream();
+            Debug.Log("Streaming status: " + obsWebSocket.GetStreamStatus().IsActive);
         }
         catch (Exception e)
         {
             actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke("Unable to trigger transition: " + e.Message));
             Debug.LogError("Error triggering Studio Mode Transition: " + e.Message);
         }
+    }
+
+    public bool IsRecording()
+    {
+        return obsWebSocket.GetRecordStatus().IsRecording;
+    }
+
+    public bool IsStreaming()
+    {
+        return obsWebSocket.GetStreamStatus().IsActive;
     }
 
     public void ToggleRecord()
@@ -143,6 +159,7 @@ public class WebsocketManager : MonoBehaviour
         try
         {
             obsWebSocket.ToggleRecord();
+            Debug.Log("Recording status: " + obsWebSocket.GetRecordStatus().IsRecording);
         }
         catch (Exception e)
         {
