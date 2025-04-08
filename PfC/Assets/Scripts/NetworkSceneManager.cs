@@ -7,28 +7,35 @@ public class NetworkSceneManager : NetworkBehaviour
 {
     [SerializeField] private string hostScene;
     [SerializeField] private string clientScene;
+    [SerializeField] private GameObject networkObject;
+    private NetworkManager networkManager;
 
+   
     public override void OnNetworkSpawn()
     {
-        if (IsClient)
+        networkManager = networkObject.GetComponent<NetworkManager>();
+
+        if (networkManager.IsServer)
         {
-            var status = NetworkManager.SceneManager.LoadScene(clientScene, 
+            Debug.Log("Loading host Scene");
+            var status = NetworkManager.SceneManager.LoadScene(hostScene, 
                                                                UnityEngine.SceneManagement.LoadSceneMode.Single);
 
             if (status != SceneEventProgressStatus.Started)
             {
-                Debug.LogWarning($"Failed to load {clientScene} " +
+                Debug.LogWarning($"Failed to load {hostScene} " +
                       $"with a {nameof(SceneEventProgressStatus)}: {status}");
             }
         } 
         else
         {
-            var status = NetworkManager.SceneManager.LoadScene(hostScene,
+            Debug.Log("Loading client Scene");
+            var status = NetworkManager.SceneManager.LoadScene(clientScene,
                                                    UnityEngine.SceneManagement.LoadSceneMode.Single);
 
             if (status != SceneEventProgressStatus.Started)
             {
-                Debug.LogWarning($"Failed to load {hostScene} " +
+                Debug.LogWarning($"Failed to load {clientScene} " +
                       $"with a {nameof(SceneEventProgressStatus)}: {status}");
             }
         }

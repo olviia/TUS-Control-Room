@@ -1363,6 +1363,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hostScene: ControlRoom
   clientScene: Studio
+  networkObject: {fileID: 1090339787}
 --- !u!4 &1773606823
 Transform:
   m_ObjectHideFlags: 0
