@@ -30,6 +30,7 @@ namespace Klak.Ndi
 		private ReceiverPerformance _dropped;
 		private ReceiverQueue _queue;
 		private Task audioTask;
+		private Texture _texture;
 
 		void PrepareReceiverObjects()
 		{
@@ -293,6 +294,8 @@ namespace Klak.Ndi
 			_recv.FreeVideoFrame(videoFrame);
 
 			if (rt == null) return;
+
+			_texture = rt;
 
 			// Material property override
 			if (_targetRenderer != null)
@@ -1265,6 +1268,10 @@ namespace Klak.Ndi
 
 		#endregion
 
+		public Texture GetTexture()
+		{
+			return _texture;
+		}
 	}
 
 } // namespace Klak.Ndi

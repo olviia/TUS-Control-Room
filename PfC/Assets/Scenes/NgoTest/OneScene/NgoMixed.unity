@@ -611,6 +611,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5289182684458692541, guid: e5db301629853dd4a99835fa70099d79, type: 3}
   m_PrefabInstance: {fileID: 190527596}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &262762495 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6511933118459099774, guid: 3484a8da8d31aa14fb0e5432de5665b4, type: 3}
+  m_PrefabInstance: {fileID: 7615897601933565743}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a09ab5fc64402d49b12d170a7577986, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &354813815
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -679,6 +690,10 @@ PrefabInstance:
       propertyPath: streamId
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 8580230199788121781, guid: b8836e241c3310e4a8ad3d3b66b25d77, type: 3}
+      propertyPath: _receiver
+      value: 
+      objectReference: {fileID: 262762495}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -958,7 +973,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6473347640872140666, guid: 3484a8da8d31aa14fb0e5432de5665b4, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6511933118459099774, guid: 3484a8da8d31aa14fb0e5432de5665b4, type: 3}
       propertyPath: _ndiName
@@ -1838,7 +1853,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1847791695669142127, guid: ead42e0472b7547fbba6c229aeaf37d3, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 32
+      value: 32.000122
       objectReference: {fileID: 0}
     - target: {fileID: 2314423295413228411, guid: ead42e0472b7547fbba6c229aeaf37d3, type: 3}
       propertyPath: m_AnchorMax.y
@@ -3473,6 +3488,10 @@ PrefabInstance:
       propertyPath: streamId
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 8580230199788121781, guid: b8836e241c3310e4a8ad3d3b66b25d77, type: 3}
+      propertyPath: _receiver
+      value: 
+      objectReference: {fileID: 262762495}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
