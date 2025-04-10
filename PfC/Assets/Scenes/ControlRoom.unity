@@ -2748,7 +2748,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6511933118459099774, guid: 3484a8da8d31aa14fb0e5432de5665b4, type: 3}
       propertyPath: _ndiName
-      value: TIIMEX-8 (OBS)
+      value: BRIDGE (TIIMEX-8 (OBS))
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
