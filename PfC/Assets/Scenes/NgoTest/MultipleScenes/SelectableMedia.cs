@@ -13,7 +13,7 @@ public class SelectableMedia : XRSimpleInteractable
     // Reference to the texture sync component
     [SerializeField] private RuntimeTextureSync textureSync;
 
-    private void Awake()
+    private new void Awake()
     {
         // If no renderer is assigned, use this object's renderer
         if (mediaRenderer == null)
