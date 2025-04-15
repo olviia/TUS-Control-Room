@@ -53,7 +53,7 @@ public class CommunicationManager : MonoBehaviour
         await UnityServices.InitializeAsync(options);
         await VivoxService.Instance.InitializeAsync();
         await VivoxService.Instance.LoginAsync();
-        await VivoxService.Instance.JoinEchoChannelAsync("ChannelName", ChatCapability.AudioOnly);
+        await VivoxService.Instance.JoinGroupChannelAsync("ChannelName", ChatCapability.AudioOnly);
 
     }
 
