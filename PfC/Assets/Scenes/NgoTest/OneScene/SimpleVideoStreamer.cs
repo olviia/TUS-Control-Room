@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,14 +11,12 @@ public class SimpleVideoStreamer : NetworkBehaviour
 {
     public MeshRenderer displayRenderer;
     public float frameInterval = 0.1f; //10 fps
-    public NdiReceiver _receiver;
+    private Texture sourceTexture;
 
     //quality of compression
     [Range(1, 100)]
     public int quality = 75;
 
-    //ID of stream to be able to stream different videos
-    public int streamId = 0;
     // Added resolution control
     [Header("Resolution Settings")]
     [Tooltip("Width to downsample the video to before sending")]
@@ -26,7 +25,7 @@ public class SimpleVideoStreamer : NetworkBehaviour
     public int streamingHeight = 540; // Half of 1080
 
     // Max size for RPC messages in bytes (adjust based on my NetworkConfig)
-    private const int MAX_MESSAGE_SIZE = 1024 * 1024; // 1MB default
+    private const int MAX_MESSAGE_SIZE = 512 * 512; // 1MB default
 
     private Texture2D videoTexture;
     private Texture2D downsampledTexture;
@@ -36,51 +35,77 @@ public class SimpleVideoStreamer : NetworkBehaviour
     private float timer;
 
     private bool isStreaming = false;
+    private NetworkManager m_NetworkManager;
 
     // Dictionary to store chunks for reassembly
     private Dictionary<int, byte[][]> frameChunks = new Dictionary<int, byte[][]>();
     private int frameCounter = 0;
+    
+    public GameObject directorScreen;
+    public GameObject reporterScreen;
+    
     public void StartStreaming()
     {
         if(IsServer && !isStreaming)
         {
             isStreaming = true;
-            Debug.Log($"Streaming started ID {streamId}");
+            Debug.Log($"Streaming started");
         }
     }
-    public void StopStreaming()
+    public void StopStreaming( bool stopStreaming)
     {
-        if (IsServer)
-        {
             isStreaming = false;
-            Debug.Log($"Streaming stopped ID {streamId}");
-        }
+            if(displayRenderer.GetComponent<NdiFrameToMesh>()) GetComponent<NdiFrameToMesh>().Stop();
+            displayRenderer.material.mainTexture = null;
+            Debug.Log($"Streaming stopped");
     }
+
+    private void Awake()
+    {
+        m_NetworkManager = FindObjectOfType<NetworkManager>();
+        DeactivateScenes();
+    }
+
     // Initialize
     public override void OnNetworkSpawn()
     {
         if (IsServer)
         {
             // Initialize as server
+            directorScreen.SetActive(true);
+            reporterScreen.SetActive(true);
+            
             videoTexture = new Texture2D(1920, 1080);
             downsampledTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
             downsampleRT = new RenderTexture(streamingWidth, streamingHeight, 0, RenderTextureFormat.ARGB32);
             isStreaming = true;
+            if(displayRenderer.GetComponent<NdiFrameToMesh>()) displayRenderer.GetComponent<NdiFrameToMesh>().Run();
         }
         else
         {
             // Initialize as client
             // texture resolution is a placeholder
+            
+            reporterScreen.SetActive(true);
+            Debug.Log("reporter should have been turnd on");
             videoTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
             displayRenderer.material.mainTexture = videoTexture;
-
         }
     }
+
+    public override void OnNetworkDespawn()
+    {
+        base.OnNetworkDespawn();
+        DeactivateScenes();
+    }
+
 
     // Update is called once per frame
     //Maybe there should be fixed update?
     void Update()
     {
+        Debug.Log("is server: " + IsServer);
+        Debug.Log("is streaming: " + isStreaming);
         if (IsServer && isStreaming)
         {
             timer += Time.deltaTime;
@@ -90,20 +115,23 @@ public class SimpleVideoStreamer : NetworkBehaviour
             {
                 SendVideoFrame();
                 timer = 0;
+                Debug.Log("started streaming ngo");
             }
         }
+    }
+    
+    public void DeactivateScenes()
+    { 
+        directorScreen.SetActive(false);
+        reporterScreen.SetActive(false);
     }
 
     void SendVideoFrame()
     {
-        //1. Get pixels from texture
-        if(_receiver != null && _receiver.GetTexture() != null)
-        {
-            Texture sourceTexture = _receiver.GetTexture();
+            sourceTexture = displayRenderer.material.mainTexture;
 
-            if (sourceTexture == null)
+            if (!sourceTexture)
             {
-                Debug.LogWarning($"Could not find source texture on material: {displayRenderer.name}, {displayRenderer.material.name}");
                 return;
             }
             try
@@ -123,7 +151,7 @@ public class SimpleVideoStreamer : NetworkBehaviour
                 else
                 {
                     // 5. Send to clients if size is acceptable
-                    SendFrameClientRpc(frameData, streamId, 0, 1, frameCounter);
+                    SendFrameClientRpc(frameData, 0, 1, frameCounter);
                     frameCounter++;
                 }
             }
@@ -131,13 +159,6 @@ public class SimpleVideoStreamer : NetworkBehaviour
             {
                 Debug.LogError($"Error processing video frame: {e.Message}");
             }
-
-        }
-        else
-        {
-            Debug.LogWarning($"Could not find receiver or its texture: {_receiver.name}, {_receiver.GetTexture().name}");
-            return;
-        }
     }
     private void SendLargeFrame(byte[] frameData)
     {
@@ -157,7 +178,7 @@ public class SimpleVideoStreamer : NetworkBehaviour
             System.Array.Copy(frameData, startIndex, chunk, 0, length);
 
             // Send this chunk to clients
-            SendFrameClientRpc(chunk, streamId, i, totalChunks, frameCounter);
+            SendFrameClientRpc(chunk, i, totalChunks, frameCounter);
         }
 
         frameCounter++;
@@ -197,7 +218,7 @@ public class SimpleVideoStreamer : NetworkBehaviour
 
     // Client RPC to send frame data to clients
     [ClientRpc]
-    void SendFrameClientRpc(byte[] frameData, int streamId, int chunkIndex, int totalChunks, int frameId)
+    void SendFrameClientRpc(byte[] frameData, int chunkIndex, int totalChunks, int frameId)
     {
         if (!IsClient || IsServer) return; // Only process on clients
         try
