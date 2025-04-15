@@ -217,11 +217,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9032954039820430273, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
       propertyPath: m_RaycastMask.m_Bits
-      value: 2147483873
+      value: 2147483681
       objectReference: {fileID: 0}
     - target: {fileID: 9146015503685400394, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
       propertyPath: m_RaycastMask.m_Bits
-      value: 225
+      value: 33
       objectReference: {fileID: 0}
     - target: {fileID: 9146015503685400394, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
       propertyPath: m_InteractionLayers.m_Bits
@@ -265,7 +265,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1090339788
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -364,6 +364,11 @@ Transform:
 --- !u!4 &1119504042 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4134505312059479865, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+  m_PrefabInstance: {fileID: 596461311}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1250592421 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 122084618895949332, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
   m_PrefabInstance: {fileID: 596461311}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1307649162
@@ -1163,6 +1168,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ead42e0472b7547fbba6c229aeaf37d3, type: 3}
+--- !u!1 &1399555195 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 146340753648116383, guid: 895f6f3c2d334633b5800312285058d2, type: 3}
+  m_PrefabInstance: {fileID: 596461311}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1546206971
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1387,8 +1397,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hostScene: ControlRoom
-  clientScene: Studio
   networkObject: {fileID: 1090339787}
+  leftRayInteractor: {fileID: 1250592421}
+  rightRayInteractor: {fileID: 1399555195}
 --- !u!4 &1773606823
 Transform:
   m_ObjectHideFlags: 0

@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
+using Unity.XR.CoreUtils;
+using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Utilities;
+using UnityEngine.XR.Interaction.Toolkit.Utilities.Curves;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class NetworkSceneManager : NetworkBehaviour
 {
     [SerializeField] private string hostScene;
-    [SerializeField] private string clientScene;
+    //[SerializeField] private string clientScene;
     [SerializeField] private GameObject networkObject;
-    //[SerializeField] private GameObject leftRayInteractor;
-    //[SerializeField] private GameObject rightRayInteractor;
+    [SerializeField] private GameObject leftRayInteractor;
+    [SerializeField] private GameObject rightRayInteractor;
     private NetworkManager networkManager;
 
    
@@ -37,13 +41,16 @@ public class NetworkSceneManager : NetworkBehaviour
             Debug.Log("Loading host Scene");
             var layerMask = LayerMask.NameToLayer("Director");
             Camera.main.cullingMask |= (1 << layerMask);
-            //raycastMaskLeft.raycastMask |= (1 << layerMask);
+            leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
+            rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
         } 
         else
         {
             Debug.Log("Loading client Scene");
             var layerMask = LayerMask.NameToLayer("Studio");
             Camera.main.cullingMask |= (1 << layerMask);
+            leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
+            rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
         }
     }
 }
