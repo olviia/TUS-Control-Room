@@ -9,6 +9,7 @@ public class InstantiateScreen : MonoBehaviour
     public void SpawnScreen()
     {
         var position = this.transform.position;
-        Instantiate(screen, position, Quaternion.identity);
+        var newScreen = Instantiate(screen, position, Quaternion.identity);
+        newScreen.transform.SetParent(this.transform);
     }
 }

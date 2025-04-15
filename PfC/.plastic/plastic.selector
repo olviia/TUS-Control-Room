@@ -1,4 +1,0 @@
-repository "AudioTry@PhD118224278@cloud"
-  path "/"
-    br "/main"
-    co "/main"
