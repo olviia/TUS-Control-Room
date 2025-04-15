@@ -6,19 +6,26 @@ using UnityEngine.UI;
 
 public class SimpleConnectionManager : MonoBehaviour
 {
-    //[SerializeField] private TMP_InputField ipInput;
+    [SerializeField] private TMP_InputField ipInput;
     [SerializeField] private Button hostButton;
     [SerializeField] private Button clientButton;
 
     private void Start()
     {
-        hostButton.onClick.AddListener(StartHost);
+        hostButton.onClick.AddListener(StartServer);
+        //hostButton.onClick.AddListener(StartHost);
         clientButton.onClick.AddListener(StartClient);
     }
 
     private void StartHost()
     {
         NetworkManager.Singleton.StartHost();
+    }
+
+
+    private void StartServer()
+    {
+        NetworkManager.Singleton.StartServer();
     }
 
     private void StartClient()
