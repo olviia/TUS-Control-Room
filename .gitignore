@@ -110,4 +110,6 @@ sysinfo.txt
 /PfC/ProjectSettings/
 /PfC/.vsconfig
 /PfC/[Aa]ssets/[Tt]ext[Mm]esh [Pp]ro/
+/PfC/.idea
 
+PfC/builds.zip

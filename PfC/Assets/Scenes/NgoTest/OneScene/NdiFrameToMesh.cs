@@ -15,7 +15,7 @@ public class NdiFrameToMesh : MonoBehaviour
         isRunning = true;
     }
 
-    public void Stop()
+    public void UnRun()
     {
         isRunning = false;
     }

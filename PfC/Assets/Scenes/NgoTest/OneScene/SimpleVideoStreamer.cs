@@ -43,70 +43,99 @@ public class SimpleVideoStreamer : NetworkBehaviour
     
     public GameObject directorScreen;
     public GameObject reporterScreen;
-    
-    public void StartStreaming()
+
+
+    public void StartStreamingServer()
     {
-        if(IsServer && !isStreaming)
-        {
-            isStreaming = true;
-            Debug.Log($"Streaming started");
-        }
-    }
-    public void StopStreaming( bool stopStreaming)
-    {
-            isStreaming = false;
-            if(displayRenderer.GetComponent<NdiFrameToMesh>()) GetComponent<NdiFrameToMesh>().Stop();
-            displayRenderer.material.mainTexture = null;
-            Debug.Log($"Streaming stopped");
+        isStreaming = true;
+        Debug.Log("client started");
+
+        directorScreen.SetActive(true);
+        reporterScreen.SetActive(true);
+
+        videoTexture = new Texture2D(1920, 1080);
+        downsampledTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
+        downsampleRT = new RenderTexture(streamingWidth, streamingHeight, 0, RenderTextureFormat.ARGB32);
+        if (displayRenderer.GetComponent<NdiFrameToMesh>()) displayRenderer.GetComponent<NdiFrameToMesh>().Run();
     }
 
-    private void Awake()
+    public void StartStreamingClient()
     {
+            reporterScreen.SetActive(true);
+            Debug.Log("client started");
+            videoTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
+            displayRenderer.material.mainTexture = videoTexture;
+    }
+    public void StopStreamingServer(bool stop)
+    {
+        isStreaming = false;
+            if(displayRenderer.GetComponent<NdiFrameToMesh>()) displayRenderer.GetComponent<NdiFrameToMesh>().UnRun();
+            displayRenderer.material.mainTexture = null;
+            Debug.Log("Streaming stopped");
+            DeactivateScenes();
+        
+    }
+    public void StopStreamingClient(bool stop)
+    {
+            DeactivateScenes();
+            Debug.Log("shut down client");
+            displayRenderer.material.mainTexture = null;
+        
+    }
+
+
+    public override void OnNetworkSpawn()
+    {
+        m_NetworkManager.OnClientStarted += StartStreamingClient;
+        m_NetworkManager.OnServerStarted += StartStreamingServer;
+        m_NetworkManager.OnServerStopped += StopStreamingServer;
+        m_NetworkManager.OnClientStopped += StopStreamingClient;
+    }
+
+    public void Awake()
+    {
+        videoTexture = new Texture2D(1920, 1080);
         m_NetworkManager = FindObjectOfType<NetworkManager>();
         DeactivateScenes();
     }
 
     // Initialize
-    public override void OnNetworkSpawn()
-    {
-        if (IsServer)
-        {
-            // Initialize as server
-            directorScreen.SetActive(true);
-            reporterScreen.SetActive(true);
-            
-            videoTexture = new Texture2D(1920, 1080);
-            downsampledTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
-            downsampleRT = new RenderTexture(streamingWidth, streamingHeight, 0, RenderTextureFormat.ARGB32);
-            isStreaming = true;
-            if(displayRenderer.GetComponent<NdiFrameToMesh>()) displayRenderer.GetComponent<NdiFrameToMesh>().Run();
-        }
-        else
-        {
-            // Initialize as client
-            // texture resolution is a placeholder
-            
-            reporterScreen.SetActive(true);
-            Debug.Log("reporter should have been turnd on");
-            videoTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
-            displayRenderer.material.mainTexture = videoTexture;
-        }
-    }
+    // public override void OnNetworkSpawn()
+    // {
+    //     if (IsServer)
+    //     {
+    //         // Initialize as server
+    //         directorScreen.SetActive(true);
+    //         reporterScreen.SetActive(true);
+    //         
+    //         videoTexture = new Texture2D(1920, 1080);
+    //         downsampledTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
+    //         downsampleRT = new RenderTexture(streamingWidth, streamingHeight, 0, RenderTextureFormat.ARGB32);
+    //         isStreaming = true;
+    //         if(displayRenderer.GetComponent<NdiFrameToMesh>()) displayRenderer.GetComponent<NdiFrameToMesh>().Run();
+    //     }
+    //     if(IsClient)
+    //     {
+    //         // Initialize as client
+    //         // texture resolution is a placeholder
+    //         
+    //         reporterScreen.SetActive(true);
+    //         Debug.Log("reporter should have been turnd on");
+    //         videoTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
+    //         displayRenderer.material.mainTexture = videoTexture;
+    //     }
+    // }
 
-    public override void OnNetworkDespawn()
-    {
-        base.OnNetworkDespawn();
-        DeactivateScenes();
-    }
+  
 
 
     // Update is called once per frame
     //Maybe there should be fixed update?
     void Update()
     {
-        Debug.Log("is server: " + IsServer);
+        if(m_NetworkManager) Debug.Log("is server network manager: " + m_NetworkManager.IsServer);
         Debug.Log("is streaming: " + isStreaming);
-        if (IsServer && isStreaming)
+        if (m_NetworkManager.IsServer && isStreaming)
         {
             timer += Time.deltaTime;
 
@@ -220,9 +249,9 @@ public class SimpleVideoStreamer : NetworkBehaviour
     [ClientRpc]
     void SendFrameClientRpc(byte[] frameData, int chunkIndex, int totalChunks, int frameId)
     {
-        if (!IsClient || IsServer) return; // Only process on clients
-        try
-        {
+        if (!m_NetworkManager.IsClient || m_NetworkManager.IsServer) return; // Only process on clients
+        // try
+        // {
             // If this is a single-chunk frame
             if (totalChunks == 1)
             {
@@ -277,11 +306,11 @@ public class SimpleVideoStreamer : NetworkBehaviour
                 // Cleanup old frames to prevent memory leaks
                 CleanupOldFrames(frameId);
             }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Error processing frame chunk: {e.Message}");
-        }
+        // }
+        // catch (System.Exception e)
+        // {
+        //     Debug.LogError($"Error processing frame chunk: {e.Message}");
+        // }
     }
 
     // Cleanup old frame chunks to prevent memory buildup
