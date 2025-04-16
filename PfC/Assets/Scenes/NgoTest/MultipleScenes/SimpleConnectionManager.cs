@@ -3,29 +3,42 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
+using System;
 
 public class SimpleConnectionManager : MonoBehaviour
 {
     [SerializeField] private TMP_InputField ipInput;
-    [SerializeField] private Button hostButton;
-    [SerializeField] private Button clientButton;
+    [SerializeField] private Button directorButton;
+    [SerializeField] private Button journalistButton;
+    [SerializeField] private Button guestButton;
+    [SerializeField] private Button audienceButton;
+    [SerializeField] private NetworkSceneManager sceneManager;
+
+    //[Serializable]
+    //public class LoadBasedOnRole : UnityEvent<Role> { }
 
     private void Start()
     {
-        hostButton.onClick.AddListener(StartServer);
-        //hostButton.onClick.AddListener(StartHost);
-        clientButton.onClick.AddListener(StartClient);
+        directorButton.onClick.AddListener(() => LoadBasedOnRole(Role.Director));
+        journalistButton.onClick.AddListener(() => LoadBasedOnRole(Role.Journalist));
+        guestButton.onClick.AddListener(() => LoadBasedOnRole(Role.Guest));
+        audienceButton.onClick.AddListener(() => LoadBasedOnRole(Role.Audience));
     }
 
-    private void StartHost()
+    private void LoadBasedOnRole(Role role)
     {
-        NetworkManager.Singleton.StartHost();
-    }
+        if ( role == Role.Director)
+        {
+            NetworkManager.Singleton.StartHost();
+        }
+        else
+        {
+            NetworkManager.Singleton.StartClient();
+        }
 
+        CommunicationManager.Instance.SetRole(role);
 
-    private void StartServer()
-    {
-        NetworkManager.Singleton.StartServer();
     }
 
     private void StartClient()

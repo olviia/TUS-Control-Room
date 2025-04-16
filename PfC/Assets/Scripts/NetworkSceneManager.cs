@@ -4,7 +4,6 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
-using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Utilities;
 using UnityEngine.XR.Interaction.Toolkit.Utilities.Curves;
@@ -12,17 +11,17 @@ using UnityEngine.XR.Interaction.Toolkit;
 
 public class NetworkSceneManager : NetworkBehaviour
 {
-    [SerializeField] private string hostScene;
+    //[SerializeField] private string hostScene;
     //[SerializeField] private string clientScene;
     [SerializeField] private GameObject networkObject;
     [SerializeField] private GameObject leftRayInteractor;
     [SerializeField] private GameObject rightRayInteractor;
     private NetworkManager networkManager;
 
-   
     public override void OnNetworkSpawn()
     {
         networkManager = networkObject.GetComponent<NetworkManager>();
+        string hostScene = "ControlRoom";
 
         var status = NetworkManager.SceneManager.LoadScene(hostScene,
                                                    UnityEngine.SceneManagement.LoadSceneMode.Single);
@@ -52,5 +51,6 @@ public class NetworkSceneManager : NetworkBehaviour
             leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
             rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
         }
+
     }
 }
