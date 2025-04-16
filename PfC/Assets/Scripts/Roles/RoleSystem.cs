@@ -4,9 +4,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
-public class RoleSystem
+public class RoleDetails
 {
     public Role role;
+    public string[] layerMasks;
+    public string[] interactionMasks;
+    public string[] commChannels;
 }
 
 public enum Role
@@ -16,7 +19,3 @@ public enum Role
     Guest,
     Audience
 }
-
-//implement system to assign required channels per role
-//implement system to assign required layer masks per role
-//implement system to assign required interaction masks per role
