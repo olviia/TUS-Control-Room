@@ -42,7 +42,7 @@ This can be automatically done using Unity services. Follow the steps on the lin
 
 - Start NDI Tools (optional)
 - Set up private groups using access manager (optional)
-- Choose NDI Bridge
+- Start NDI Bridge
 - Choose Local Bridge
 - Customise the quality and encoding (optional)
 - Click Start
@@ -58,19 +58,20 @@ Run _preload, ControlRoom will be loaded by Role select/network connection UI.
 
 ## How to test locally
 
-- In the editor, choose the correct Websocket settings based on OBS websocket plugin.
-- Build using the previous instructions (network behaviour is different on editor windows so use the builds, can do a developer build if troubleshooting). 
-- Have at least two devices, one for the director and one for a journalist.
-- Both devices need to be on the same network.
-- Both devices must be connected to the internet (for voice communication).
-- Run OBS on the director device.
-- Run NDI Bridge on the director device.
-- On the director device, choose the director in the login screen.
-- Select screens, set up OBS outputs, add screens, and turn volume on/off as desired.
-- OBS can be controlled from a websocket using the controls UI. Options are transition, record, and stream.
-- Turn the NDI sender component on and set up a camera to record the output and send it to OBS.
-- On the journalist device, choose the journalist on the login screen.
-- You can view the program's output from the NDI Source Selector dropdown.
+1. In the editor, choose the correct Websocket settings based on the OBS websocket plugin.
+2. Build using the previous instructions (network behaviour is different on editor windows, so use the builds, or do a developer build if troubleshooting).
+3. Have at least two devices, one for the director and one for a journalist.
+4. Both devices need to be on the same network.
+5. Both devices must be connected to the internet (for voice communication).
+6. Run OBS on the director device.
+7. Make sure the director is logged in before connecting any other role
+8. Run NDI Bridge on the director device.
+9. Choose the director in the login screen on the director device.
+10. Select screens, set up OBS outputs, add screens, and turn volume on/off as desired.
+11. OBS can be controlled from a WebSocket using the controls UI. Options are transition, record, and stream.
+12. Turn the NDI sender component on and set up a camera to record the output and send it to OBS.
+13. On the journalist device, choose the journalist on the login screen.
+14. You can view the program's output from the NDI Source Selector dropdown.
 
 ## Troubleshooting
 
@@ -90,3 +91,7 @@ Run _preload, ControlRoom will be loaded by Role select/network connection UI.
 If you don't see the NDI streams in the source selector:
 - Check if you have OBS on/or you are on the same network as the Bridge, if you are a journalist
 - Check NDI Tools Studio Monitor to see if it is visible there. If not, this might be an NDI installation problem or a local network problem
+
+Vivox troubleshooting:
+
+Internet connection with required ports open. Check Vivox documentation for more information: [required ports](https://support.unity.com/hc/en-us/articles/4407491745940-Vivox-What-IPs-and-ports-are-required-for-Vivox-to-work), [Integration](https://docs.unity.com/ugs/manual/lobby/manual/vivox-integration)
