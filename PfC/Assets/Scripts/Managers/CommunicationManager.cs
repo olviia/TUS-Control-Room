@@ -1,3 +1,7 @@
+/* Filename: CommunicationManager.cs
+ * Creator: Deniz Mevlevioglu
+ * Date: 09/04/2025
+ */
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Vivox;

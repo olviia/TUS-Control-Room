@@ -1,3 +1,8 @@
+/* Filename: NetworkSceneManager.cs
+ * Creator: Deniz Mevlevioglu
+ * Date: 02/04/2025
+ */
+
 using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types;
@@ -6,6 +11,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// From OBS start websocket and use the port from OBS
+/// in the defaultWsPort here
+/// Can also be set from the editor
+/// </summary>
+
 public class WebsocketManager : MonoBehaviour
 {
 
@@ -13,9 +24,9 @@ public class WebsocketManager : MonoBehaviour
     private Queue<Action> actionsToExecuteOnMainThread = new Queue<Action>();
 
     //Development Server Settings
-    public string defaultWsAdress = "0.0.0.0";
-    public int defaultWsPort = 32419;
-    public string defaultWsPassword = "";
+    [SerializeField] private string defaultWsAdress = "0.0.0.0";
+    [SerializeField] private int defaultWsPort = 32419;
+    [SerializeField] private string defaultWsPassword = "";
 
     //Public Events
     public event Action<bool> WsConnected;
@@ -88,6 +99,9 @@ public class WebsocketManager : MonoBehaviour
 
     #region Methods
 
+    //Studio mode needs to be enabled on OBS for transition
+    //TODO: Also implement arguments for transition
+    //i.e. style, length
     public void Transition()
     {
         if (!obsWebSocket.IsConnected)
@@ -116,6 +130,8 @@ public class WebsocketManager : MonoBehaviour
         }
     }
 
+    //Start/end stream
+    //Known issue: Log calls before streaming status changes so it outputs the wrong bool
     public void ToggleStream()
     {
         if (!obsWebSocket.IsConnected)
@@ -137,16 +153,8 @@ public class WebsocketManager : MonoBehaviour
         }
     }
 
-    public bool IsRecording()
-    {
-        return obsWebSocket.GetRecordStatus().IsRecording;
-    }
-
-    public bool IsStreaming()
-    {
-        return obsWebSocket.GetStreamStatus().IsActive;
-    }
-
+    //Start/end recording
+    //Known issue: Log calls before recording status changes so it outputs the wrong bool
     public void ToggleRecord()
     {
         if (!obsWebSocket.IsConnected)
@@ -166,6 +174,17 @@ public class WebsocketManager : MonoBehaviour
             actionsToExecuteOnMainThread.Enqueue(() => WsMessage?.Invoke("Unable to trigger transition: " + e.Message));
             Debug.LogError("Error triggering Studio Mode Transition: " + e.Message);
         }
+    }
+    //needs to be called asynchronously
+    public bool IsRecording()
+    {
+        return obsWebSocket.GetRecordStatus().IsRecording;
+    }
+
+    //needs to be called asynchronously
+    public bool IsStreaming()
+    {
+        return obsWebSocket.GetStreamStatus().IsActive;
     }
 
     private void OnConnected(object sender, EventArgs e)

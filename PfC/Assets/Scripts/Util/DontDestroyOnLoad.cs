@@ -4,7 +4,10 @@ using UnityEngine;
 
 public class DontDestroyOnLoad : MonoBehaviour
 {
-    // Start is called before the first frame update
+    /// <summary>
+    /// Attach to object to make it persistent 
+    /// across scenes
+    /// </summary>
     void Awake()
     {
         DontDestroyOnLoad(this.gameObject);
