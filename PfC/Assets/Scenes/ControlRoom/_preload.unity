@@ -1661,7 +1661,7 @@ MonoBehaviour:
   m_MaxConnectAttempts: 60
   m_DisconnectTimeoutMS: 30000
   ConnectionData:
-    Address: 192.168.8.103
+    Address: 127.0.0.1
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
@@ -2887,12 +2887,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1547910445}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1981616138}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1547910447
 MonoBehaviour:
@@ -3160,7 +3160,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1981616138}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1773606824
 MonoBehaviour:
@@ -3214,7 +3214,7 @@ MonoBehaviour:
   journalistButton: {fileID: 605174946}
   guestButton: {fileID: 812248947}
   audienceButton: {fileID: 732903792}
-  sceneManager: {fileID: 0}
+  sceneManager: {fileID: 1773606822}
 --- !u!114 &1775426340
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3574,9 +3574,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1773606823}
-  - {fileID: 1547910446}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2055624580
@@ -3989,3 +3987,5 @@ SceneRoots:
   - {fileID: 1981616138}
   - {fileID: 1090339791}
   - {fileID: 1775426346}
+  - {fileID: 1773606823}
+  - {fileID: 1547910446}

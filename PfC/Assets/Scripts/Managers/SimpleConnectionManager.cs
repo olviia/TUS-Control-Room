@@ -30,7 +30,7 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         if ( role == Role.Director)
         {
-            NetworkManager.Singleton.StartHost();
+            NetworkManager.Singleton.StartServer();
         }
         else
         {
