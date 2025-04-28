@@ -1,29 +1,42 @@
+/* Filename: NetworkSceneManager.cs
+ * Creator: Deniz Mevlevioglu
+ * Date: 04/04/2025
+ */
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
-using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Utilities;
 using UnityEngine.XR.Interaction.Toolkit.Utilities.Curves;
 using UnityEngine.XR.Interaction.Toolkit;
 
+/// <summary>
+/// Temporary solution for calling items based on 
+/// whether server or client is loaded
+/// Should actually be done in Role Management 
+/// using prefabs
+/// </summary>
+/// 
 public class NetworkSceneManager : NetworkBehaviour
 {
-    [SerializeField] private string hostScene;
+    //[SerializeField] private string hostScene;
     //[SerializeField] private string clientScene;
     [SerializeField] private GameObject networkObject;
     [SerializeField] private GameObject leftRayInteractor;
     [SerializeField] private GameObject rightRayInteractor;
     private NetworkManager networkManager;
 
-   
+    //wait for the network to connect
     public override void OnNetworkSpawn()
     {
         networkManager = networkObject.GetComponent<NetworkManager>();
+        string hostScene = "ControlRoom";
 
+        //load the scene
         var status = NetworkManager.SceneManager.LoadScene(hostScene,
                                                    UnityEngine.SceneManagement.LoadSceneMode.Single);
 
@@ -33,14 +46,19 @@ public class NetworkSceneManager : NetworkBehaviour
                   $"with a {nameof(SceneEventProgressStatus)}: {status}");
         }
 
-        //var raycastMaskLeft = leftRayInteractor.GetComponent<XRRayInteractor>();
-        //var raycastMaskRight = rightRayInteractor.GetComponent<XRRayInteractor>();
-
+        //separation between server/director and
+        //client/journalist, audience,guest, etc
         if (networkManager.IsServer)
         {
             Debug.Log("Loading host Scene");
             var layerMask = LayerMask.NameToLayer("Director");
+
+            //View layer of the camera, should be done in prefab instantiation
             Camera.main.cullingMask |= (1 << layerMask);
+
+            //Selecting who can interact with what object
+            //Likely director only one that will need to interact (??)
+            //Keeping it here for reference if needed
             leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
             rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
         } 
@@ -52,5 +70,6 @@ public class NetworkSceneManager : NetworkBehaviour
             leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
             rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
         }
+
     }
 }

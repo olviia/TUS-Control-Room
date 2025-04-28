@@ -1,3 +1,8 @@
+/* Taken from Github
+ * Not used at the moment
+ * Useful for devtesting
+ */
+
 using System;
 using System.Runtime.CompilerServices;
 using Unity.Netcode;

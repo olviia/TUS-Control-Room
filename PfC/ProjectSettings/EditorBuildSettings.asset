@@ -5,24 +5,12 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/MultiplayerTest.unity
-    guid: 5a6092d2857792149810386cb2fbb6da
   - enabled: 1
-    path: Assets/Scenes/_preload.unity
+    path: Assets/Scenes/ControlRoom/_preload.unity
     guid: a48a3d7155099b143a8e964d879e8be6
-  - enabled: 0
-    path: Assets/Scenes/Studio.unity
-    guid: 304b58fa5438fd14cb9253df9851250e
   - enabled: 1
-    path: Assets/Scenes/ControlRoom.unity
+    path: Assets/Scenes/ControlRoom/ControlRoom.unity
     guid: 2cda990e2423bbf4892e6590ba056729
-  - enabled: 0
-    path: Assets/Scenes/NgoTest/MultipleScenes/NgoClient.unity
-    guid: 67fff79061a5fb848bcd1475500fd359
-  - enabled: 0
-    path: Assets/Scenes/NgoTest/MultipleScenes/NgoHost.unity
-    guid: 16481287b897b294e932ec2c64895f13
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 1923d53ba2b86564eb2953174e6ab258, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: ad5b72b113f50e64ebc193dced6a63b9, type: 2}
