@@ -3,6 +3,7 @@
  * Date: 04/04/2025
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,26 +26,15 @@ public class NetworkSceneManager : NetworkBehaviour
 {
     //[SerializeField] private string hostScene;
     //[SerializeField] private string clientScene;
-    [SerializeField] private GameObject networkObject;
+    [SerializeField] private NetworkManager networkManager;
     [SerializeField] private GameObject leftRayInteractor;
     [SerializeField] private GameObject rightRayInteractor;
-    private NetworkManager networkManager;
 
     //wait for the network to connect
+
     public override void OnNetworkSpawn()
     {
-        networkManager = networkObject.GetComponent<NetworkManager>();
         string hostScene = "ControlRoom";
-
-        //load the scene
-        var status = NetworkManager.SceneManager.LoadScene(hostScene,
-                                                   UnityEngine.SceneManagement.LoadSceneMode.Single);
-
-        if (status != SceneEventProgressStatus.Started)
-        {
-            Debug.LogWarning($"Failed to load {hostScene} " +
-                  $"with a {nameof(SceneEventProgressStatus)}: {status}");
-        }
 
         //separation between server/director and
         //client/journalist, audience,guest, etc
@@ -69,6 +59,16 @@ public class NetworkSceneManager : NetworkBehaviour
             Camera.main.cullingMask |= (1 << layerMask);
             leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
             rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
+        }
+        
+        //load the scene after assigning the layer masks
+        var status = NetworkManager.SceneManager.LoadScene(hostScene,
+            UnityEngine.SceneManagement.LoadSceneMode.Single);
+
+        if (status != SceneEventProgressStatus.Started)
+        {
+            Debug.LogWarning($"Failed to load {hostScene} " +
+                             $"with a {nameof(SceneEventProgressStatus)}: {status}");
         }
 
     }
