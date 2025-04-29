@@ -44,7 +44,9 @@ public class SimpleConnectionManager : MonoBehaviour
     private void StartClient()
     {   //ignore it and chose ip in unity transport
 
-        //string ip = string.IsNullOrEmpty(ipInput.text) ? "127.0.0.1" : ipInput.text;
+        string ip = String.IsNullOrEmpty(ipInput.text) ? "127.0.0.1" : ipInput.text;
+        UnityTransport transport = FindAnyObjectByType<UnityTransport>();
+        transport.SetConnectionData(ip,7777);
 
         //var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         //transport.ConnectionData.Address = ip;
