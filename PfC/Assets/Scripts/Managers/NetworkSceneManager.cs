@@ -14,6 +14,7 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Utilities;
 using UnityEngine.XR.Interaction.Toolkit.Utilities.Curves;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Temporary solution for calling items based on 
@@ -63,14 +64,9 @@ public class NetworkSceneManager : NetworkBehaviour
         }
         
         //load the scene after assigning the layer masks
-        var status = NetworkManager.SceneManager.LoadScene(hostScene,
+        SceneManager.LoadScene(hostScene,
             UnityEngine.SceneManagement.LoadSceneMode.Single);
 
-        if (status != SceneEventProgressStatus.Started)
-        {
-            Debug.LogWarning($"Failed to load {hostScene} " +
-                             $"with a {nameof(SceneEventProgressStatus)}: {status}");
-        }
 
     }
 }

@@ -31,12 +31,12 @@ public class SimpleConnectionManager : MonoBehaviour
         AssignIP();
         if ( role == Role.Director)
         {
-            
             NetworkManager.Singleton.StartServer();
         }
         else
         {
             NetworkManager.Singleton.StartClient();
+            sceneManager.OnNetworkSpawn();
         }
 
         CommunicationManager.Instance.SetRole(role);
