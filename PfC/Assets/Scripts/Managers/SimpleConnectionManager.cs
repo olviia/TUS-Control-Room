@@ -28,8 +28,10 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void LoadBasedOnRole(Role role)
     {
+        AssignIP();
         if ( role == Role.Director)
         {
+            
             NetworkManager.Singleton.StartServer();
         }
         else
@@ -41,7 +43,7 @@ public class SimpleConnectionManager : MonoBehaviour
 
     }
 
-    private void StartClient()
+    private void AssignIP()
     {   //ignore it and chose ip in unity transport
 
         string ip = String.IsNullOrEmpty(ipInput.text) ? "127.0.0.1" : ipInput.text;
@@ -51,6 +53,5 @@ public class SimpleConnectionManager : MonoBehaviour
         //var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         //transport.ConnectionData.Address = ip;
 
-        NetworkManager.Singleton.StartClient();
     }
 }

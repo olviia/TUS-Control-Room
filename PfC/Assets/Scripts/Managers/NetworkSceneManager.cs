@@ -35,6 +35,7 @@ public class NetworkSceneManager : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         string hostScene = "ControlRoom";
+        Debug.Log("server: " + networkManager.IsServer + ", client: " + networkManager.IsClient );
 
         //separation between server/director and
         //client/journalist, audience,guest, etc
