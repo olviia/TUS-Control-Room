@@ -33,10 +33,6 @@ public class NDISourceUI : MonoBehaviour
 
     private void ChangeSource(string sourceName)
     {
-        if (sourceName == "None")
-        {
-            return;
-        }
 
         Debug.Log("Changing source to " + sourceName);
         receiver.ndiName = sourceName;
@@ -50,6 +46,7 @@ public class NDISourceUI : MonoBehaviour
 
     private void RefreshSources()
     {
+        //destroy existing buttons
         List<Transform> allChildren = new List<Transform>();
         foreach (Transform child in sources.GetComponentsInChildren<Transform>(true))
         {
@@ -64,10 +61,7 @@ public class NDISourceUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        var newButton = Instantiate(buttonPrefab, sources.transform);
-        newButton.name = "None";
-        newButton.GetComponentInChildren<Text>().text = "None";
-
+        //create new buttons
         foreach (var source in NdiFinder.EnumerateSourceNames())
         {
             newButton = Instantiate(buttonPrefab, sources.transform);
