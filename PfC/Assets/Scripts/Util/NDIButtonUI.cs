@@ -12,6 +12,7 @@ public class NDISourceUI : MonoBehaviour
     public Button refresh;
     public GameObject sources;
     public Button buttonPrefab;
+    public Button show;
 
     public bool immediatelyChooseAvailableStream = true;
 
@@ -27,67 +28,57 @@ public class NDISourceUI : MonoBehaviour
     private void Start()
     {
         refresh.onClick.AddListener(RefreshSources);
-        //sources.onValueChanged.AddListener(SourceChanged);
+        show.onClick.AddListener(ShowSources);
     }
 
-    private void SourceChanged(int arg0)
+    private void ChangeSource(string sourceName)
     {
-        //if (arg0 == 0)
-        //{
-        //    return;
-        //}
-
-        //var option = sources.options[arg0] as NdiOptionData;
-        //if (option == null) return;
-
-        //var newSourceName = option.sourceName;
-
-        //Debug.Log("Changing source to " + newSourceName);
-        //receiver.ndiName = newSourceName;
-        //onNdiChanged?.Invoke(newSourceName);
-    }
-
-    private class NdiOptionData : TMP_Dropdown.OptionData
-    {
-        public string sourceName;
-
-        public NdiOptionData(string sourceName)
+        if (sourceName == "None")
         {
-            this.sourceName = sourceName;
-
-            if (this.sourceName.Contains("(") && this.sourceName.Contains(")"))
-            {
-                var parts = this.sourceName.Split(new[] { '(', ')' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length == 2)
-                {
-                    this.text = $"{parts[0]} {parts[1]}";
-                }
-                else
-                {
-                    this.text = this.sourceName;
-                }
-            }
-            else
-            {
-                this.text = this.sourceName;
-            }
+            return;
         }
+
+        Debug.Log("Changing source to " + sourceName);
+        receiver.ndiName = sourceName;
+        onNdiChanged?.Invoke(sourceName);
     }
 
-    private List<TMP_Dropdown.OptionData> options = new List<TMP_Dropdown.OptionData>();
+    private void ShowSources()
+    {
+        sources.SetActive(!sources.activeInHierarchy);
+    }
 
     private void RefreshSources()
     {
+        List<Transform> allChildren = new List<Transform>();
+        foreach (Transform child in sources.GetComponentsInChildren<Transform>(true))
+        {
+            if (child != sources.transform)
+            {
+                allChildren.Add(child);
+            }
+        }
+
+        foreach (var child in allChildren)
+        {
+            Destroy(child.gameObject);
+        }
+
+        var newButton = Instantiate(buttonPrefab, sources.transform);
+        newButton.name = "None";
+        newButton.GetComponentInChildren<Text>().text = "None";
 
         foreach (var source in NdiFinder.EnumerateSourceNames())
         {
-            //options.Add(new NdiOptionData(source));
-            //var position = sources.transform.position;
-            var newButton = Instantiate(buttonPrefab, sources.transform);
-            //newButton.transform.SetParent(sources.transform);
+            newButton = Instantiate(buttonPrefab, sources.transform);
             newButton.name = source;
+            newButton.GetComponentInChildren<Text>().text = source;
+            newButton.onClick.AddListener(delegate 
+            { 
+                ChangeSource(source); 
+            }
+            );
         }
-
-        //sources.options = options;
     }
+
 }
