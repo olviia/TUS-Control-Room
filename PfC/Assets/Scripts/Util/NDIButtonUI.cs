@@ -64,7 +64,7 @@ public class NDISourceUI : MonoBehaviour
         //create new buttons
         foreach (var source in NdiFinder.EnumerateSourceNames())
         {
-            newButton = Instantiate(buttonPrefab, sources.transform);
+            var newButton = Instantiate(buttonPrefab, sources.transform);
             newButton.name = source;
             newButton.GetComponentInChildren<Text>().text = source;
             newButton.onClick.AddListener(delegate 
