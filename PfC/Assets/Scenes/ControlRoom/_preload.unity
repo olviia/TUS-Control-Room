@@ -3154,6 +3154,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d9b6a15d3890445b7f65896d6a66dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hostScene: {fileID: 102900000, guid: 2cda990e2423bbf4892e6590ba056729, type: 3}
   networkManager: {fileID: 1090339790}
   leftRayInteractor: {fileID: 1250592421}
   rightRayInteractor: {fileID: 1399555195}

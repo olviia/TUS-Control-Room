@@ -1,13 +1,7 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
-using System.Text.RegularExpressions;
-using Unity.Services.Matchmaker.Models;
 using Klak.Ndi;
-using UnityEditor;
-using UnityEngine.Serialization;
 
 public class TextureNetworkSynchronizer : NetworkBehaviour
 {
@@ -39,29 +33,25 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
     private float timer;
 
     private bool isStreaming = false;
-    private NetworkManager m_NetworkManager;
+    private NetworkManager networkManager;
 
     // Dictionary to store chunks for reassembly
-    private Dictionary<int, byte[][]> frameChunks = new Dictionary<int, byte[][]>();
+    private Dictionary<int, byte[][]> frameChunks;
     private int frameCounter = 0;
     
 
-
-
-
     public void Awake()
     {
-        m_NetworkManager = NetworkManager.Singleton;
-            //m_NetworkManager = FindObjectOfType<NetworkManager>();
+        networkManager = NetworkManager.Singleton;
 
-        if (m_NetworkManager.IsServer)
+        if (networkManager.IsServer)
         {
                 Debug.Log("server textrure streaming started");
                 videoTexture = new Texture2D(1920, 1080);
                 downsampledTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
                 downsampleRT = new RenderTexture(streamingWidth, streamingHeight, 0, RenderTextureFormat.ARGB32);
         }
-        else if (m_NetworkManager.IsClient)
+        else if (networkManager.IsClient)
         {
             Debug.Log("client textrure streaming started");
             videoTexture = new Texture2D(streamingWidth, streamingHeight, TextureFormat.RGB24, false);
@@ -69,13 +59,9 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
         }
     }
 
-    
-
-
     void Update()
     {
-        
-        if (m_NetworkManager.IsServer)
+        if (networkManager.IsServer)
         {
             timer += Time.deltaTime;
 
@@ -97,8 +83,8 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
             {
                 return;
             }
-            //try
-            //{
+            try
+            {
                 //2. Capture and downsample texture
                 Texture2D frameTexture = CaptureAndDownsampleTexture(sourceTexture);
 
@@ -117,11 +103,11 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
                     SendFrameClientRpc(frameData, 0, 1, frameCounter);
                     frameCounter++;
                 }
-            //}
-            //catch (System.Exception e)
-            //{
-             //   Debug.LogError($"Error processing video frame: {e.Message}");
-            //}
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error processing video frame: {e.Message}");
+            }
     }
     private void SendLargeFrame(byte[] frameData)
     {
@@ -183,9 +169,8 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
     [Rpc(SendTo.NotServer)]
     void SendFrameClientRpc(byte[] frameData, int chunkIndex, int totalChunks, int frameId)
     {
-        if (!m_NetworkManager.IsClient || m_NetworkManager.IsServer) return; // Only process on clients
-        // try
-        // {
+        try
+        {
             // If this is a single-chunk frame
             if (totalChunks == 1)
             {
@@ -240,11 +225,11 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
                 // Cleanup old frames to prevent memory leaks
                 CleanupOldFrames(frameId);
             }
-        // }
-        // catch (System.Exception e)
-        // {
-        //     Debug.LogError($"Error processing frame chunk: {e.Message}");
-        // }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error sending frame chunk to client: {e.Message}");
+        }
     }
 
     // Cleanup old frame chunks to prevent memory buildup
@@ -265,11 +250,6 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
         foreach (var frameId in oldFrames)
         {
             frameChunks.Remove(frameId);
-        }
-
-        if (oldFrames.Count > 0)
-        {
-            Debug.Log($"Cleaned up {oldFrames.Count} incomplete old frames");
         }
     }
 }
