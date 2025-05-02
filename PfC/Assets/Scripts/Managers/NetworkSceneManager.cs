@@ -30,9 +30,17 @@ public class NetworkSceneManager : NetworkBehaviour
     [SerializeField] private NetworkManager networkManager;
     [SerializeField] private GameObject leftRayInteractor;
     [SerializeField] private GameObject rightRayInteractor;
+    
+    //force register prefab
+    public GameObject textureNetworkSynchronizerPrefab;
+
+    private void Awake()
+    {
+        //force adding prefab
+        networkManager.AddNetworkPrefab(textureNetworkSynchronizerPrefab);
+    }
 
     //wait for the network to connect
-
     public override void OnNetworkSpawn()
     {
         string hostScene = "ControlRoom";
@@ -64,9 +72,9 @@ public class NetworkSceneManager : NetworkBehaviour
         }
         
         //load the scene after assigning the layer masks
-        SceneManager.LoadScene(hostScene,
+        networkManager.SceneManager.LoadScene(hostScene,
             UnityEngine.SceneManagement.LoadSceneMode.Single);
-
+        
 
     }
 }

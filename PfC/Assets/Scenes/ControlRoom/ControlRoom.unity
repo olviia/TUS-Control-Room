@@ -4742,9 +4742,21 @@ PrefabInstance:
       propertyPath: displayRendererClient
       value: 
       objectReference: {fileID: 6338433035038309489}
+    - target: {fileID: 4576814251702860605, guid: 11c5a411311f0ad4a886cd5e049c572e, type: 3}
+      propertyPath: textureNetworkSynchronizerPrefab
+      value: 
+      objectReference: {fileID: 2548565830406741518}
     - target: {fileID: 5618640303477143875, guid: 11c5a411311f0ad4a886cd5e049c572e, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 1220299910
+      objectReference: {fileID: 0}
+    - target: {fileID: 5618640303477143875, guid: 11c5a411311f0ad4a886cd5e049c572e, type: 3}
+      propertyPath: SynchronizeTransform
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5618640303477143875, guid: 11c5a411311f0ad4a886cd5e049c572e, type: 3}
+      propertyPath: ActiveSceneSynchronization
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5618640303477143875, guid: 11c5a411311f0ad4a886cd5e049c572e, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -4803,6 +4815,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 11c5a411311f0ad4a886cd5e049c572e, type: 3}
+--- !u!1 &2548565830406741518 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6478641299655073853, guid: 11c5a411311f0ad4a886cd5e049c572e, type: 3}
+  m_PrefabInstance: {fileID: 2548565830406741517}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2927666736232860987
 MonoBehaviour:
   m_ObjectHideFlags: 0

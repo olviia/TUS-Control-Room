@@ -6,12 +6,14 @@ using Unity.Netcode;
 using System.Text.RegularExpressions;
 using Unity.Services.Matchmaker.Models;
 using Klak.Ndi;
+using UnityEditor;
 using UnityEngine.Serialization;
 
 public class TextureNetworkSynchronizer : NetworkBehaviour
 {
     public NdiReceiver ndiReceiverServer;
     public MeshRenderer displayRendererClient;
+    
     public float frameInterval = 0.1f; //10 fps
     private Texture sourceTexture;
 
@@ -49,8 +51,8 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
 
     public void Awake()
     {
-        videoTexture = new Texture2D(1920, 1080);
-        m_NetworkManager = FindObjectOfType<NetworkManager>();
+        m_NetworkManager = NetworkManager.Singleton;
+            //m_NetworkManager = FindObjectOfType<NetworkManager>();
 
         if (m_NetworkManager.IsServer)
         {
@@ -68,6 +70,8 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
     }
 
     
+
+
     void Update()
     {
         
@@ -93,8 +97,8 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
             {
                 return;
             }
-            try
-            {
+            //try
+            //{
                 //2. Capture and downsample texture
                 Texture2D frameTexture = CaptureAndDownsampleTexture(sourceTexture);
 
@@ -113,11 +117,11 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
                     SendFrameClientRpc(frameData, 0, 1, frameCounter);
                     frameCounter++;
                 }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Error processing video frame: {e.Message}");
-            }
+            //}
+            //catch (System.Exception e)
+            //{
+             //   Debug.LogError($"Error processing video frame: {e.Message}");
+            //}
     }
     private void SendLargeFrame(byte[] frameData)
     {
@@ -176,7 +180,7 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
     }
 
     // Client RPC to send frame data to clients
-    [ClientRpc]
+    [Rpc(SendTo.NotServer)]
     void SendFrameClientRpc(byte[] frameData, int chunkIndex, int totalChunks, int frameId)
     {
         if (!m_NetworkManager.IsClient || m_NetworkManager.IsServer) return; // Only process on clients
