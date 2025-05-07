@@ -28,7 +28,6 @@ public class NetworkSceneManager : NetworkBehaviour
 {
     //[SerializeField] private string hostScene;
     //[SerializeField] private string clientScene;
-    [SerializeField] private SceneAsset hostScene;
     [SerializeField] private NetworkManager networkManager;
     [SerializeField] private GameObject leftRayInteractor;
     [SerializeField] private GameObject rightRayInteractor;
@@ -46,6 +45,7 @@ public class NetworkSceneManager : NetworkBehaviour
     //wait for the network to connect
     public override void OnNetworkSpawn()
     {
+        string hostScene = "ControlRoom";
         //separation between server/director and
         //client/journalist, audience,guest, etc
         if (networkManager.IsServer)
@@ -72,7 +72,7 @@ public class NetworkSceneManager : NetworkBehaviour
         }
         
         //load the scene after assigning the layer masks
-        networkManager.SceneManager.LoadScene(hostScene.name,
+        networkManager.SceneManager.LoadScene(hostScene,
             UnityEngine.SceneManagement.LoadSceneMode.Single);
         
     }
