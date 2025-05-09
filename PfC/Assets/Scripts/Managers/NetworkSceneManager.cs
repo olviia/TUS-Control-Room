@@ -10,6 +10,7 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
 using Unity.XR.CoreUtils;
+using UnityEditor;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Utilities;
 using UnityEngine.XR.Interaction.Toolkit.Utilities.Curves;
@@ -30,14 +31,21 @@ public class NetworkSceneManager : NetworkBehaviour
     [SerializeField] private NetworkManager networkManager;
     [SerializeField] private GameObject leftRayInteractor;
     [SerializeField] private GameObject rightRayInteractor;
+    
+    //force register prefab
+    public GameObject textureNetworkSynchronizerPrefab;
+
+    private void Awake()
+    {
+        //force adding prefab
+        networkManager.AddNetworkPrefab(textureNetworkSynchronizerPrefab);
+    }
+    //add events for client so the scene is loaded in all possible scenarios
 
     //wait for the network to connect
-
     public override void OnNetworkSpawn()
     {
         string hostScene = "ControlRoom";
-        Debug.Log("server: " + networkManager.IsServer + ", client: " + networkManager.IsClient );
-
         //separation between server/director and
         //client/journalist, audience,guest, etc
         if (networkManager.IsServer)
@@ -64,9 +72,8 @@ public class NetworkSceneManager : NetworkBehaviour
         }
         
         //load the scene after assigning the layer masks
-        SceneManager.LoadScene(hostScene,
+        networkManager.SceneManager.LoadScene(hostScene,
             UnityEngine.SceneManagement.LoadSceneMode.Single);
-
-
+        
     }
 }

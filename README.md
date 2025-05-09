@@ -4,12 +4,12 @@ A Unity environment integrating control over a Media Stream using NDI and websoc
 
 #### Requirements
 
-- KlakNDI (modified PfC fork)
+- KlakNDI (modified PrefrontalCortex fork, is included in packages in this project)
 - NDI 6 installed
 - OBS (or VMix?)
 - DistroAV installed for OBS
-- NDI tools for NDI Bridges
-- 1Gb ethernet cable and router for local streaming of NDI output
+- NDI tools for NDI Bridges (this may be ignored if you don't need NDI bridge)
+- 1Gb ethernet cable and router for local streaming of NDI output (may be less if you are ik with more lags XD)
 - Vivox key for voice communication (free with limits)
 - XR Interaction Toolkit
 - OSC Jack for positional NDI audio
