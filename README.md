@@ -4,7 +4,7 @@ A Unity environment integrating control over a Media Stream using NDI and websoc
 
 #### Requirements
 
-- KlakNDI (modified PfC fork)
+- KlakNDI (modified PrefrontalCortex fork, is included in packages in this project)
 - NDI 6 installed
 - OBS (or VMix?)
 - DistroAV installed for OBS
