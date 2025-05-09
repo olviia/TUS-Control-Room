@@ -36,22 +36,16 @@ public class SimpleConnectionManager : MonoBehaviour
         else
         {
             NetworkManager.Singleton.StartClient();
+            //it is a workaround to force load the scene for client
             sceneManager.OnNetworkSpawn();
         }
-
         CommunicationManager.Instance.SetRole(role);
-
     }
 
     private void AssignIP()
-    {   //ignore it and chose ip in unity transport
-
+    { 
         string ip = String.IsNullOrEmpty(ipInput.text) ? "127.0.0.1" : ipInput.text;
-        UnityTransport transport = FindAnyObjectByType<UnityTransport>();
+        UnityTransport transport = NetworkManager.Singleton.transform.GetComponent<UnityTransport>();
         transport.SetConnectionData(ip,7777);
-
-        //var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-        //transport.ConnectionData.Address = ip;
-
     }
 }
