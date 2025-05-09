@@ -13,12 +13,13 @@ public class AudioSwitcher : MonoBehaviour
     // Enum to represent the different audio modes
     public enum AudioMode
     {
-        Automatic = 0,
-        VirtualSpeakers = 1,
-        None = 2
+        //commented automatic. it is possible to return it back
+        //Automatic = 0,
+        VirtualSpeakers = 0,
+        None = 1
     }
 
-    private AudioMode currentMode = AudioMode.Automatic;
+    private AudioMode currentMode = AudioMode.None;
 
     private void Start()
     {
@@ -34,7 +35,7 @@ public class AudioSwitcher : MonoBehaviour
     public void ToggleAudioMode()
     {
         // Cycle through modes: Automatic -> Virtual Speakers -> None -> Automatic
-        currentMode = (AudioMode)(((int)currentMode + 1) % 3);
+        currentMode = (AudioMode)(((int)currentMode + 1) % 2);
 
         ApplyAudioMode();
     }
@@ -54,11 +55,11 @@ public class AudioSwitcher : MonoBehaviour
 
         switch (currentMode)
         {
-            case AudioMode.Automatic:
+            //case AudioMode.Automatic:
                 // Automatic mode
-                SetReceiveAudioField(true);
-                SetCreateVirtualSpeakersField(false);
-                break;
+                // SetReceiveAudioField(true);
+                // SetCreateVirtualSpeakersField(false);
+                // break;
 
             case AudioMode.VirtualSpeakers:
                 // Always create Virtual Speakers

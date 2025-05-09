@@ -23,7 +23,7 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
     public int streamingHeight = 540; // Half of 1080
 
     // Max size for RPC messages in bytes (adjust based on my NetworkConfig)
-    private const int MAX_MESSAGE_SIZE = 512 * 512; // 1MB default
+    private const int MAX_MESSAGE_SIZE = 128 * 128; // 1MB default
 
     private Texture2D videoTexture;
     private Texture2D downsampledTexture;
@@ -36,7 +36,7 @@ public class TextureNetworkSynchronizer : NetworkBehaviour
     private NetworkManager networkManager;
 
     // Dictionary to store chunks for reassembly
-    private Dictionary<int, byte[][]> frameChunks;
+    private Dictionary<int, byte[][]> frameChunks = new Dictionary<int, byte[][]>();
     private int frameCounter = 0;
     
 
