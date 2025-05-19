@@ -1,0 +1,1 @@
+To create scenes in OBS from Unity, attach this script to NDI Sender, make sure you have WebsocketManager on the scene to connect to OBS, make sure your OBS is open and that each scene and source name in OBS have unique names. Set the output NDI stream name
