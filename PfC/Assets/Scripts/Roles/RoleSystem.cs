@@ -15,7 +15,6 @@ public class RoleDetails
 public enum Role
 {
     Director,
-    Journalist,
-    Guest,
+    Presenter,
     Audience
 }

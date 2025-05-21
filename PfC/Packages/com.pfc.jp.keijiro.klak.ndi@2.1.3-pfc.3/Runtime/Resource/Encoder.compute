@@ -7,7 +7,12 @@
 #pragma kernel EncodeUYVA_sRGB
 #pragma kernel EncodeUYVA_Linear
 
+
+#if UNITY_ANDROID && UNITY_XR
+Texture2DArray<float4> Source;
+#else
 Texture2D<float4> Source;
+#endif
 RWStructuredBuffer<uint> Destination;
 float VFlip;
 

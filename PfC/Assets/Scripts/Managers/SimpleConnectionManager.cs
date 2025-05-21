@@ -5,15 +5,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
 using System;
+using UnityEngine.Serialization;
 
 public class SimpleConnectionManager : MonoBehaviour
 {
     [SerializeField] private TMP_InputField ipInput;
     [SerializeField] private Button directorButton;
     [SerializeField] private Button journalistButton;
-    [SerializeField] private Button guestButton;
     [SerializeField] private Button audienceButton;
-    [SerializeField] private NetworkSceneManager sceneManager;
+    [SerializeField] private SpawnManager spawnManager;
 
     //[Serializable]
     //public class LoadBasedOnRole : UnityEvent<Role> { }
@@ -21,8 +21,7 @@ public class SimpleConnectionManager : MonoBehaviour
     private void Start()
     {
         directorButton.onClick.AddListener(() => LoadBasedOnRole(Role.Director));
-        journalistButton.onClick.AddListener(() => LoadBasedOnRole(Role.Journalist));
-        guestButton.onClick.AddListener(() => LoadBasedOnRole(Role.Guest));
+        journalistButton.onClick.AddListener(() => LoadBasedOnRole(Role.Presenter));
         audienceButton.onClick.AddListener(() => LoadBasedOnRole(Role.Audience));
     }
 
@@ -31,14 +30,15 @@ public class SimpleConnectionManager : MonoBehaviour
         AssignIP();
         if ( role == Role.Director)
         {
-            NetworkManager.Singleton.StartServer();
+           NetworkManager.Singleton.StartHost();
+            
         }
         else
         {
             NetworkManager.Singleton.StartClient();
-            //it is a workaround to force load the scene for client
-            sceneManager.OnNetworkSpawn();
         }
+        
+        SetLocation(role);
         CommunicationManager.Instance.SetRole(role);
     }
 
@@ -47,5 +47,11 @@ public class SimpleConnectionManager : MonoBehaviour
         string ip = String.IsNullOrEmpty(ipInput.text) ? "127.0.0.1" : ipInput.text;
         UnityTransport transport = NetworkManager.Singleton.transform.GetComponent<UnityTransport>();
         transport.SetConnectionData(ip,7777);
+    }
+
+    private void SetLocation(Role role)
+    {
+        GameObject xrGameObject = GameObject.FindGameObjectWithTag("XR");
+        spawnManager.PlacePlayer(xrGameObject, role);
     }
 }
