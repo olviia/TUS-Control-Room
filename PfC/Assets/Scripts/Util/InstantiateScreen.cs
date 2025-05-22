@@ -10,11 +10,18 @@ public class InstantiateScreen : MonoBehaviour
     /// And set extra screens item as parent
     /// </summary>
     public GameObject screen;
+    [SerializeField] private float sizeMultiplier = 0.5f;
 
     public void SpawnScreen()
     {
         var position = this.transform.position;
-        var newScreen = Instantiate(screen, position, Quaternion.identity);
+        var rotation = this.transform.rotation;
+        var scale = this.transform.localScale;
+        scale.x *= sizeMultiplier;
+        scale.y *= sizeMultiplier;
+        scale.z *= sizeMultiplier;
+        var newScreen = Instantiate(screen, position, rotation);
+        newScreen.transform.localScale = scale;
         newScreen.transform.SetParent(this.transform);
     }
 }
