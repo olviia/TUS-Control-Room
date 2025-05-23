@@ -8,14 +8,17 @@ using UnityEngine;
 public class ObsGetSceneByName : MonoBehaviour
 {
     private NdiReceiver receiver;
+    private LiveScreenSettings liveScreenSettings;
     private bool isFound;
+    [SerializeField] private bool isStudioScreen;
 
-    [SerializeField] private string sourceName; // Changed in 1 asset
+    [SerializeField] private string sourceName = ""; // Changed in 1 asset
 
     // Start is called before the first frame update
     void Start()
     {
         receiver = GetComponent<NdiReceiver>();
+        liveScreenSettings = FindAnyObjectByType<LiveScreenSettings>();
         StartCoroutine(FindAndConnectToSource());
     }
 
@@ -60,5 +63,13 @@ public class ObsGetSceneByName : MonoBehaviour
     {
         // Clean up when the object is destroyed
         StopAllCoroutines();
+    }
+
+    private void Update()
+    {
+        if (isStudioScreen)
+        {
+            receiver.ndiName = liveScreenSettings.studioScreenNdiName;
+        }
     }
 }

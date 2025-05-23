@@ -4,18 +4,16 @@ using OBSWebsocketDotNet.Types;
 using UnityEngine;
 using Klak.Ndi;
 using Newtonsoft.Json.Linq;
+using Unity.Netcode;
 
 /// <summary>
 /// Creates a scene in OBS and adds an NDI source that receives the stream from Unity
 /// </summary> 
-public class ObsCreateScene : MonoBehaviour
+public class ObsCreateScene : NetworkBehaviour
 {
     [Header("Scene Settings")]
     [SerializeField] private string sceneName;
     [SerializeField] private string sourceName = "";
-    
-    // Optional override for computer name - leave blank to auto-detect
-    private string computerNameOverride = "";
     
     [Header("Filter Settings")]
     [Tooltip("Add this filter allows to create a new NDI output from OBS")]
@@ -28,36 +26,51 @@ public class ObsCreateScene : MonoBehaviour
     private OBSWebsocket obsWebSocket;
     private NdiSender ndiSender;
     private WebsocketManager webSocketManager;
+    private bool isServer;
     private string filterName = "Dedicated NDI® output";
     private string filterType = "ndi_filter";
     private string ndiPropertyName = "ndi_filter_ndiname";
     
-    private void Awake()
+    
+    // Static property to share server computer name across instances
+    public static string ServerComputerName { get; private set; } = "";
+    
+    
+    public override void OnNetworkSpawn()
     {
+        isServer = NetworkManager.Singleton.IsServer;
+        if (isServer)
+        {
+            if (logDetailedInfo)
+                Debug.Log("ObsCreateScene: Running as client - OBS scene creation disabled");
+            return;
+        }
+        
         // Get the WebsocketManager and NdiSender from the same GameObject
         webSocketManager = FindFirstObjectByType<WebsocketManager>();
         ndiSender = GetComponent<NdiSender>();
+
+        ServerComputerName = Environment.MachineName;
         
         if (webSocketManager == null)
         {
             Debug.LogError("WebsocketManager was not found on the scene");
+        }
+        else
+        {
+            webSocketManager.WsConnected += OnWebSocketConnected;
         }
         
         if (ndiSender == null)
         {
             Debug.LogError("NdiSender component not found on the same GameObject");
         }
-    }
-
-    private void Start()
-    {
-            // Subscribe to connection events
-            webSocketManager.WsConnected += OnWebSocketConnected;
+        
     }
 
     private void OnWebSocketConnected(bool connected)
     {
-        if (connected)
+        if (connected && isServer)
         {
             // If connected to OBS, try to check and create the scene
             CheckAndCreateScene();
@@ -70,9 +83,7 @@ public class ObsCreateScene : MonoBehaviour
     private string GetFullNdiSourceName()
     {
         // Get computer name - either from override or from system
-        string computerName = string.IsNullOrEmpty(computerNameOverride) 
-            ? Environment.MachineName 
-            : computerNameOverride;
+        string computerName = ServerComputerName;
         
         // Format: ComputerName (NdiName)
         return $"{computerName} ({ndiSender.ndiName})";
@@ -236,6 +247,9 @@ public class ObsCreateScene : MonoBehaviour
             
             // Set the NDI source name
             inputSettings["ndi_source_name"] = fullNdiName;
+            
+            //set source settings so it plays always
+            //inputSettings[]
             
             // Create an NDI source
             obsWebSocket.CreateInput(
