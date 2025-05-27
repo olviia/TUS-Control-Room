@@ -17,6 +17,10 @@ PrefabInstance:
       value: ScreenWithPresenter1
       objectReference: {fileID: 0}
     - target: {fileID: 277671391340832479, guid: db1d9cd3c2194814e99221c0895dc498, type: 3}
+      propertyPath: _ndiName
+      value: Presenter2SenderFromUnity
+      objectReference: {fileID: 0}
+    - target: {fileID: 277671391340832479, guid: db1d9cd3c2194814e99221c0895dc498, type: 3}
       propertyPath: _sourceTexture
       value: 
       objectReference: {fileID: 8400000, guid: f6c91842295b7ab4b9184ed22db3e234, type: 2}
@@ -150,7 +154,7 @@ PrefabInstance:
       objectReference: {fileID: 8400000, guid: f6c91842295b7ab4b9184ed22db3e234, type: 2}
     - target: {fileID: 5506305505367780114, guid: db1d9cd3c2194814e99221c0895dc498, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1949626989
+      value: 2437859052
       objectReference: {fileID: 0}
     - target: {fileID: 5548264547119275942, guid: db1d9cd3c2194814e99221c0895dc498, type: 3}
       propertyPath: m_Name
