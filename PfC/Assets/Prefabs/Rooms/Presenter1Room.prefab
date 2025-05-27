@@ -550,6 +550,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3138122336838169739, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2248523273
+      objectReference: {fileID: 0}
     - target: {fileID: 3338596097310210775, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: m_TargetEye
       value: 3
@@ -558,6 +562,10 @@ PrefabInstance:
       propertyPath: field of view
       value: 27
       objectReference: {fileID: 0}
+    - target: {fileID: 3338596097310210775, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
+      propertyPath: m_TargetTexture
+      value: 
+      objectReference: {fileID: 8400000, guid: 8623cfc80162aca47a47a434690c2bae, type: 2}
     - target: {fileID: 7222919093910042950, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: _ndiName
       value: Presenter1SenderFromUnity
