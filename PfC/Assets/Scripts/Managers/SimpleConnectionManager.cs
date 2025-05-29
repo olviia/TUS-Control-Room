@@ -73,16 +73,16 @@ public class SimpleConnectionManager : MonoBehaviour
         string hostIP = GetHostIP(); // Use actual network IP for hosting
         
         // Set up transport for hosting with actual network IP
-        SetTransportConnection(hostIP, port);
+        SetTransportConnection(targetIP, port);
         
         if (NetworkManager.Singleton.StartHost())
         {
-            Debug.Log($"Director: Successfully started as HOST on {hostIP}:{port}");
-            Debug.Log($"📢 Other machines should connect to: {hostIP}:{port}");
+            Debug.Log($"Director: Successfully started as HOST on {targetIP}:{port}");
+            Debug.Log($"📢 Other machines should connect to: {targetIP}:{port}");
         }
         else
         {
-            Debug.Log($"Director: Failed to start as host on {hostIP}. Trying to connect to {targetIP} as client...");
+            Debug.Log($"Director: Failed to start as host on {targetIP}. Trying to connect to {targetIP} as client...");
             yield return new WaitForSeconds(1f);
             // Connect to the target IP (could be another Director's host)
             yield return StartCoroutine(ClientConnectionProcess(targetIP));
