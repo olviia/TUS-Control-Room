@@ -39,16 +39,21 @@ public class ObsCreateScene : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         isServer = NetworkManager.Singleton.IsServer;
-        if (isServer)
-        {
-            if (logDetailedInfo)
-                Debug.Log("ObsCreateScene: Running as client - OBS scene creation disabled");
-            return;
-        }
+        ///connect in any case
+        
+        // if (IsClient)
+        // {
+        //     if (logDetailedInfo)
+        //         Debug.Log("ObsCreateScene: Running as client - OBS scene creation disabled");
+        //     return;
+        // }
         
         // Get the WebsocketManager and NdiSender from the same GameObject
         webSocketManager = FindFirstObjectByType<WebsocketManager>();
         ndiSender = GetComponent<NdiSender>();
+        
+        if (webSocketManager != null) Debug.Log($"websocket: {webSocketManager}");
+        if (ndiSender != null) Debug.Log($"ndiSender: {ndiSender}");
 
         ServerComputerName = Environment.MachineName;
         
@@ -58,7 +63,17 @@ public class ObsCreateScene : NetworkBehaviour
         }
         else
         {
+            obsWebSocket = (OBSWebsocket)typeof(WebsocketManager)
+                .GetField("obsWebSocket", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .GetValue(webSocketManager);
+
             webSocketManager.WsConnected += OnWebSocketConnected;
+            
+            if (obsWebSocket.IsConnected)
+            {
+                Debug.Log("WebSocket was already connected, triggering scene creation immediately");
+                OnWebSocketConnected(true);
+            }
         }
         
         if (ndiSender == null)
@@ -70,7 +85,9 @@ public class ObsCreateScene : NetworkBehaviour
 
     private void OnWebSocketConnected(bool connected)
     {
-        if (connected && isServer)
+        Debug.LogError($"connected: {connected}");
+        //Add the role maybe
+        if (connected)
         {
             // If connected to OBS, try to check and create the scene
             CheckAndCreateScene();
@@ -99,11 +116,6 @@ public class ObsCreateScene : NetworkBehaviour
             Debug.LogError("Scene name not set");
             return;
         }
-
-        // Get access to the OBSWebsocket instance from WebsocketManager
-        obsWebSocket = (OBSWebsocket)typeof(WebsocketManager)
-            .GetField("obsWebSocket", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            .GetValue(webSocketManager);
         
         if (obsWebSocket == null || !obsWebSocket.IsConnected)
         {
@@ -247,9 +259,8 @@ public class ObsCreateScene : NetworkBehaviour
             
             // Set the NDI source name
             inputSettings["ndi_source_name"] = fullNdiName;
-            
             //set source settings so it plays always
-            //inputSettings[]
+            inputSettings["ndi_behavior"] = 0;
             
             // Create an NDI source
             obsWebSocket.CreateInput(

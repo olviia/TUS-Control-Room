@@ -260,4 +260,4 @@ MonoBehaviour:
   sourceName: VirtualCameraSource
   addFilterToSource: 1
   ndiOutputName: VirtualCamera
-  logDetailedInfo: 0
+  logDetailedInfo: 1

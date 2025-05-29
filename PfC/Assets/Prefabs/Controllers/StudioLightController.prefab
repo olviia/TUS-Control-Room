@@ -2078,9 +2078,8 @@ GameObject:
   - component: {fileID: 3760520876388317907}
   - component: {fileID: 525407841525224583}
   - component: {fileID: 6357422755975276006}
-  - component: {fileID: 5170191717787908320}
-  - component: {fileID: 5095984884536080479}
   - component: {fileID: 8188103408220796742}
+  - component: {fileID: 1036599983471416984}
   m_Layer: 5
   m_Name: StudioLightController
   m_TagString: Untagged
@@ -2095,7 +2094,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3937601209892562483}
-  m_LocalRotation: {x: -0, y: -0.38268343, z: -0, w: 0.92387956}
+  m_LocalRotation: {x: 0, y: -0.38268343, z: 0, w: 0.92387956}
   m_LocalPosition: {x: 0, y: 0, z: -0.24321185}
   m_LocalScale: {x: 0.00080000004, y: 0.00080000004, z: 0.00080000004}
   m_ConstrainProportionsScale: 0
@@ -2217,39 +2216,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!114 &5170191717787908320
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3937601209892562483}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e44ec1cee3681024c892dc4cab656c6e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rSlider: {fileID: 1671380306042523749}
-  gSlider: {fileID: 3595856518861054287}
-  bSlider: {fileID: 1950455122995947530}
-  lightManager: {fileID: 5095984884536080479}
---- !u!114 &5095984884536080479
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3937601209892562483}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7312befb200032145b0fda6d03daddee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  directionalLights:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
 --- !u!114 &8188103408220796742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2271,6 +2237,23 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!114 &1036599983471416984
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3937601209892562483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83b068b80d0ea0049a1bb70b52808731, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  intensitySlider: {fileID: 6585557651937447039}
+  hueSlider: {fileID: 5751549751807816220}
+  rSlider: {fileID: 1671380306042523749}
+  gSlider: {fileID: 3595856518861054287}
+  bSlider: {fileID: 1950455122995947530}
 --- !u!1 &4114543681111914939
 GameObject:
   m_ObjectHideFlags: 0
@@ -2436,7 +2419,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5095984884536080479}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: LightManager, Assembly-CSharp
         m_MethodName: SetLightHue
         m_Mode: 0
@@ -2538,7 +2521,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5095984884536080479}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: LightManager, Assembly-CSharp
         m_MethodName: SetLightIntensity
         m_Mode: 0
@@ -3547,7 +3530,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 7531195448695007132}
   m_Direction: 0
   m_Value: 1
-  m_Size: 0.9999994
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
