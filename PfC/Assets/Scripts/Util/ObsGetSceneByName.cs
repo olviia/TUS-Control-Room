@@ -39,7 +39,7 @@ public class ObsGetSceneByName : MonoBehaviour
                 foreach (var source in availableSources)
                 {
                     // Check if the source name contains our target sourceName
-                    if (source.Contains(sourceName))
+                    if (source.Contains(sourceName) && source.Contains(Environment.MachineName))
                     {
                         // Found a matching source, assign it to the receiver
                         receiver.ndiName = source;

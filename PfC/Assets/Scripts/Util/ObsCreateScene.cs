@@ -100,7 +100,7 @@ public class ObsCreateScene : NetworkBehaviour
     private string GetFullNdiSourceName()
     {
         // Get computer name - either from override or from system
-        string computerName = ServerComputerName;
+        string computerName = Environment.MachineName;
         
         // Format: ComputerName (NdiName)
         return $"{computerName} ({ndiSender.ndiName})";
@@ -315,6 +315,8 @@ public class ObsCreateScene : NetworkBehaviour
             
             // Set the NDI source name
             inputSettings["ndi_source_name"] = fullNdiName;
+            
+            inputSettings["ndi_behavior"] = 0;
             
             // Update the existing NDI source
             obsWebSocket.SetInputSettings(
