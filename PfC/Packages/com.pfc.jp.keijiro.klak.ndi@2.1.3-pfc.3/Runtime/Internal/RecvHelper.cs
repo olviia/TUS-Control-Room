@@ -20,7 +20,7 @@ namespace Klak.Ndi
             // Early out if sourceName is null or empty
             if (string.IsNullOrEmpty(sourceName))
             {
-                Debug.LogWarning("[NDI Receiver] Attempted to find source with empty name");
+                //Debug.LogWarning("[NDI Receiver] Attempted to find source with empty name");
                 return null;
             }
 

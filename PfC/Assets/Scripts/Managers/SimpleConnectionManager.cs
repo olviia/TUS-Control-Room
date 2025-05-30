@@ -68,10 +68,6 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         Debug.Log("Director: Attempting to start as host...");
         
-        // For multi-machine setup, Directors should use their actual network IP when hosting
-        // But can still connect to another host if one already exists
-        string hostIP = GetHostIP(); // Use actual network IP for hosting
-        
         // Set up transport for hosting with actual network IP
         SetTransportConnection(targetIP, port);
         
@@ -82,40 +78,11 @@ public class SimpleConnectionManager : MonoBehaviour
         }
         else
         {
-            Debug.Log($"Director: Failed to start as host on {targetIP}. Trying to connect to {targetIP} as client...");
+            Debug.Log($"Director: Failed to start as host on {targetIP}. Trying to connect to as client...");
             yield return new WaitForSeconds(1f);
             // Connect to the target IP (could be another Director's host)
             yield return StartCoroutine(ClientConnectionProcess(targetIP));
         }
-    }
-    
-    /// <summary>
-    /// Gets the actual network IP of this machine (not localhost)
-    /// For hosting purposes
-    /// </summary>
-    private string GetHostIP()
-    {
-        // Try to get actual network IP instead of localhost
-        string hostIP = "127.0.0.1"; // fallback
-        
-        try
-        {
-            var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                {
-                    hostIP = ip.ToString();
-                    break;
-                }
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"Could not determine network IP: {ex.Message}. Using localhost.");
-        }
-        
-        return hostIP;
     }
 
     private IEnumerator ClientConnectionProcess(string targetIP)
@@ -168,8 +135,6 @@ public class SimpleConnectionManager : MonoBehaviour
     }
 
     #endregion
-
-    #region Public Methods (for debugging/testing)
 
     #region Connection Callbacks
 
@@ -255,6 +220,20 @@ public class SimpleConnectionManager : MonoBehaviour
         StopHostBroadcasting();
         udpListener?.Close();
     }
+    
+    public void ForceDisconnect()
+    {
+        if (NetworkManager.Singleton.IsHost)
+        {
+            Debug.Log("Host shutdown");
+        }
+        else if (NetworkManager.Singleton.IsClient)
+        {
+            Debug.Log("Client disconnected");
+        }
+        
+        NetworkManager.Singleton.Shutdown();
+    }
 
     #endregion
 
@@ -262,7 +241,7 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void AutoDetectIP()
     {
-        string detectedIP = GetHostIP();
+        string detectedIP = GetTargetIP();
         ipInput.text = detectedIP;
         Debug.Log($"🔍 Auto-detected IP: {detectedIP}");
     }
@@ -405,7 +384,6 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private IEnumerator HostBroadcastCoroutine()
     {
-        string hostIP = GetHostIP();
         
         // Setup UDP broadcaster
         try
@@ -438,7 +416,7 @@ public class SimpleConnectionManager : MonoBehaviour
                         Debug.Log($"📡 Received host discovery request from {remoteEndpoint.Address}");
                         
                         // Send our IP back
-                        SendHostResponse(hostIP, remoteEndpoint.Address);
+                        SendHostResponse(GetTargetIP(), remoteEndpoint.Address);
                     }
                 }
                 catch (System.Exception ex)
@@ -493,38 +471,6 @@ public class SimpleConnectionManager : MonoBehaviour
         isHostBroadcasting = false;
         udpBroadcaster?.Close();
         udpBroadcaster = null;
-    }
-
-    #endregion
-
-    [ContextMenu("Force Disconnect")]
-    public void ForceDisconnect()
-    {
-        if (NetworkManager.Singleton.IsHost)
-        {
-            NetworkManager.Singleton.Shutdown();
-            Debug.Log("Host shutdown");
-        }
-        else if (NetworkManager.Singleton.IsClient)
-        {
-            NetworkManager.Singleton.Shutdown();
-            Debug.Log("Client disconnected");
-        }
-    }
-
-    [ContextMenu("Show Network Status")]
-    public void ShowNetworkStatus()
-    {
-        Debug.Log($"IsHost: {NetworkManager.Singleton.IsHost}");
-        Debug.Log($"IsClient: {NetworkManager.Singleton.IsClient}");
-        Debug.Log($"IsConnectedClient: {NetworkManager.Singleton.IsConnectedClient}");
-        Debug.Log($"IsServer: {NetworkManager.Singleton.IsServer}");
-        
-        if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsClient)
-        {
-            var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-            Debug.Log($"Transport: {transport.ConnectionData.Address}:{transport.ConnectionData.Port}");
-        }
     }
 
     #endregion

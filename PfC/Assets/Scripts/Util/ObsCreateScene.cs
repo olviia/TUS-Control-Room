@@ -85,7 +85,6 @@ public class ObsCreateScene : NetworkBehaviour
 
     private void OnWebSocketConnected(bool connected)
     {
-        Debug.LogError($"connected: {connected}");
         //Add the role maybe
         if (connected)
         {

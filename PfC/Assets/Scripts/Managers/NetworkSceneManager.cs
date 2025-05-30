@@ -38,7 +38,7 @@ public class NetworkSceneManager : NetworkBehaviour
     private void Awake()
     {
         //force adding prefab
-        networkManager.AddNetworkPrefab(textureNetworkSynchronizerPrefab);
+        //networkManager.AddNetworkPrefab(textureNetworkSynchronizerPrefab);
     }
     //add events for client so the scene is loaded in all possible scenarios
 
