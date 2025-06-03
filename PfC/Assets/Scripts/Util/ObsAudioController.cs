@@ -143,12 +143,7 @@ public class OBSAudioMixerController : MonoBehaviour
             
             // Filter for audio sources
             var audioSources = inputList.Where(input => 
-                input.InputKind.Contains("audio") || 
-                input.InputKind.Contains("wasapi") ||
-                input.InputKind.Contains("pulse") ||
-                input.InputKind.Contains("alsa") ||
-                input.InputKind.Contains("coreaudio") ||
-                input.InputKind == "browser_source" // Browser sources can have audio
+                input.InputKind.Contains("wasapi") 
             ).ToList();
             
             // Clear existing UI
