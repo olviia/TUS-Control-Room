@@ -8,18 +8,30 @@ using UnityEngine;
 public class ObsGetSceneByName : MonoBehaviour
 {
     private NdiReceiver receiver;
-    private LiveScreenSettings liveScreenSettings;
     private bool isFound;
-    [SerializeField] private bool isStudioScreen;
 
+    [Header("Source Name is ignored when any of those checkboxes ticked")]
+    [SerializeField] private bool isStudioScreen;
+    [SerializeField] private bool isPreviewSreen;
+    [SerializeField] private bool isProgrammScreen;
+    
+    
     [SerializeField] private string sourceName = ""; // Changed in 1 asset
 
     // Start is called before the first frame update
     void Start()
     {
         receiver = GetComponent<NdiReceiver>();
-        liveScreenSettings = FindAnyObjectByType<LiveScreenSettings>();
         StartCoroutine(FindAndConnectToSource());
+        if (isStudioScreen)
+        {
+            IScreensCommunication.OnSendToStudio += ChangeLiveSend;
+        }
+
+        if (isPreviewSreen)
+        {
+            IScreensCommunication.OnSendToStudioPreview += ChangeLiveSend;
+        }
     }
 
     // Coroutine to continuously search for the NDI source
@@ -65,11 +77,9 @@ public class ObsGetSceneByName : MonoBehaviour
         StopAllCoroutines();
     }
 
-    private void Update()
+    private void ChangeLiveSend(string _name)
     {
-        if (isStudioScreen)
-        {
-            receiver.ndiName = liveScreenSettings.studioScreenNdiName;
-        }
+        Debug.LogError("this what i get on prefab " + _name);
+        receiver.ndiName = _name;
     }
 }
