@@ -25,12 +25,12 @@ public class ObsGetSceneByName : MonoBehaviour
         StartCoroutine(FindAndConnectToSource());
         if (isStudioScreen)
         {
-            IScreensCommunication.OnSendToStudio += ChangeLiveSend;
+            //IScreensCommunication.OnSendToStudio += ChangeLiveSend;
         }
 
         if (isPreviewSreen)
         {
-            IScreensCommunication.OnSendToStudioPreview += ChangeLiveSend;
+            //IScreensCommunication.OnSendToStudioPreview += ChangeLiveSend;
         }
     }
 
