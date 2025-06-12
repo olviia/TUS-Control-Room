@@ -1769,7 +1769,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8188103408220796742, guid: 74549ce66e51a4b46b410c5caa24f220, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2015265562
+      value: 261020078
       objectReference: {fileID: 0}
     - target: {fileID: 8214084248321428182, guid: 74549ce66e51a4b46b410c5caa24f220, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2899,6 +2899,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1292929633760694241}
     m_Modifications:
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.b
+      value: 0.9980272
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.g
+      value: 0.36163503
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 918466649982134614, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.25
@@ -3088,6 +3100,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1292929633760694241}
     m_Modifications:
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.b
+      value: 0.26100624
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.g
+      value: 0.6571813
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 918466649982134614, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.25
@@ -3203,6 +3227,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1292929633760694241}
     m_Modifications:
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.g
+      value: 0.63242465
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.r
+      value: 0.17295581
+      objectReference: {fileID: 0}
     - target: {fileID: 918466649982134614, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.25
@@ -3929,6 +3969,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1292929633760694241}
     m_Modifications:
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.b
+      value: 0.41829818
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.g
+      value: 0.9433962
+      objectReference: {fileID: 0}
+    - target: {fileID: 190018243951838557, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
+      propertyPath: m_Color.r
+      value: 0.42937627
+      objectReference: {fileID: 0}
     - target: {fileID: 918466649982134614, guid: 8b8f4f850c4597a4cbb0e8faa5ff91bb, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.25
