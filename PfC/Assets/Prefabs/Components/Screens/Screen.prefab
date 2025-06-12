@@ -2031,7 +2031,7 @@ MonoBehaviour:
   _bandwidth: 100
   _targetTexture: {fileID: 0}
   _targetRenderer: {fileID: 573326358071411493}
-  _targetMaterialProperty: _MainTex
+  _targetMaterialProperty: _BaseMap
   _receiveAudio: 0
   _audioSource: {fileID: 0}
   _createVirtualSpeakers: 0
