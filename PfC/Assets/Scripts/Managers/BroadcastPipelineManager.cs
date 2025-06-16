@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using DefaultNamespace;
 using UnityEngine;
 
@@ -19,8 +20,8 @@ public class BroadcastPipelineManager : MonoBehaviour
     private Dictionary<PipelineType, SourceObject> activeAssignments 
                 = new Dictionary<PipelineType, SourceObject>();
     
-    private Dictionary<PipelineType, PipelineDestination> registeredDestinations 
-                = new Dictionary<PipelineType, PipelineDestination>();
+    private Dictionary<PipelineType, List<PipelineDestination>> registeredDestinations 
+        = new Dictionary<PipelineType, List<PipelineDestination>>();
 
     private void Awake()
     {
@@ -72,12 +73,25 @@ public class BroadcastPipelineManager : MonoBehaviour
 
     public void RegisterDestination(PipelineDestination destination)
     {
-        registeredDestinations[destination.pipelineType] = destination;
+        if (!registeredDestinations.ContainsKey(destination.pipelineType))
+        {
+            registeredDestinations[destination.pipelineType] = new List<PipelineDestination>();
+        }
+        registeredDestinations[destination.pipelineType].Add(destination);
     }
 
     public void UnregisterDestination(PipelineDestination destination)
     {
-        registeredDestinations.Remove(destination.pipelineType);
+        if (registeredDestinations.ContainsKey(destination.pipelineType))
+        {
+            registeredDestinations[destination.pipelineType].Remove(destination);
+            
+            // Clean up empty lists
+            if (registeredDestinations[destination.pipelineType].Count == 0)
+            {
+                registeredDestinations.Remove(destination.pipelineType);
+            }
+        }
     }
     
     private void ForwardContentToNextStage(PipelineType fromStage, PipelineType toStage)
@@ -222,27 +236,20 @@ public class BroadcastPipelineManager : MonoBehaviour
             return;
         }
     
-        PipelineDestination destination = registeredDestinations[pipelineType];
-    
-        if (activeAssignments.ContainsKey(pipelineType))
+        List<PipelineDestination> destinations = registeredDestinations[pipelineType];
+        foreach(var dest in destinations)
         {
-            // Assign NDI source name to destination
-            SourceObject source = activeAssignments[pipelineType];
-            if (source.receiver != null && destination.receiver != null)
+            if (activeAssignments.ContainsKey(pipelineType))
             {
-                destination.receiver.ndiName = source.receiver.ndiName;
-                Debug.Log($"Assigned NDI source '{source.receiver.ndiName}' to {pipelineType}");
+                SourceObject source = activeAssignments[pipelineType];
+                dest.receiver.ndiName = source.receiver.ndiName;
+            }
+            else
+            {
+                dest.receiver.ndiName = "";
             }
         }
-        else
-        {
-            // Clear NDI source name  
-            if (destination.receiver != null)
-            {
-                destination.receiver.ndiName = "";
-                Debug.Log($"Cleared NDI source from {pipelineType}");
-            }
-        }
+       
     }
 }
 
