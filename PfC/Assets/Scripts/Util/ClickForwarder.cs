@@ -1,7 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using DefaultNamespace;
+using BroadcastPipeline;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class ClickForwarder : MonoBehaviour
 {
@@ -9,13 +13,24 @@ public class ClickForwarder : MonoBehaviour
     {
         if(Input.GetMouseButtonDown(0)) // Left click
         {
-            GetComponentInParent<SourceObject>()?.OnSourceLeftClicked();
-            GetComponentInParent<PipelineDestination>()?.OnDestinationLeftClicked();
+            HandleLeftClick();
         }
         else if(Input.GetMouseButtonDown(1)) // Right click  
         {
-            GetComponentInParent<SourceObject>()?.OnSourceRightClicked();
-            GetComponentInParent<PipelineDestination>()?.OnDestinationRightClicked();
+            HandleRightClick();
         }
     }
+    private void HandleRightClick()
+    {
+        GetComponentInParent<SourceObject>()?.OnSourceRightClicked();
+        GetComponentInParent<PipelineDestination>()?.OnDestinationRightClicked();
+    }
+
+    private void HandleLeftClick()
+    {
+        GetComponentInParent<SourceObject>()?.OnSourceLeftClicked();
+        GetComponentInParent<PipelineDestination>()?.OnDestinationLeftClicked();
+    }
+
+
 }

@@ -2,7 +2,7 @@ using Klak.Ndi;
 using Unity.VisualScripting;
 using UnityEngine;
 
-namespace DefaultNamespace
+namespace BroadcastPipeline
 {
     public class PipelineDestination: MonoBehaviour
     {
