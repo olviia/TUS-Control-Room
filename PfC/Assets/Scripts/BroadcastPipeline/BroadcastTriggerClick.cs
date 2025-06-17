@@ -62,6 +62,17 @@ public class BroadcastTriggerClick : MonoBehaviour
         rightTriggerAction.performed -= OnRightTriggerPressed;
         xriActions.Disable();
     }
+    void OnMouseOver()
+    {
+        if(Input.GetMouseButtonDown(0)) // Left click
+        {
+            HandleLeftClick();
+        }
+        else if(Input.GetMouseButtonDown(1)) // Right click  
+        {
+            HandleRightClick();
+        }
+    }
         
     private void OnLeftTriggerPressed(InputAction.CallbackContext context)
     {

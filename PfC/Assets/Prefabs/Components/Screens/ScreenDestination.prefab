@@ -150,6 +150,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ScreenDestination
       objectReference: {fileID: 0}
+    - target: {fileID: 1140813498256885500, guid: 7daab61b95f06fc48815184265ef5629, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1142606632841145541, guid: 7daab61b95f06fc48815184265ef5629, type: 3}
       propertyPath: m_IsActive
       value: 1
