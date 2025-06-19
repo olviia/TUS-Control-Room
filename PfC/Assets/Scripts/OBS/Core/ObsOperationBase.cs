@@ -155,10 +155,6 @@ public abstract class ObsOperationBase : NetworkBehaviour
     /// </summary>
     public virtual bool IsReadyToExecute()
     {
-        
-        Debug.LogWarning("is initialized: " + isInitialized);
-        Debug.LogWarning("obsWebSocket: " + obsWebSocket);
-        Debug.LogWarning("is connected: " + obsWebSocket.IsConnected);
         return isInitialized && obsWebSocket != null && obsWebSocket.IsConnected;
     }
     

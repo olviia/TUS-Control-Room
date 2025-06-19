@@ -12,6 +12,9 @@ using UnityEngine;
 /// </summary>
 public static class ObsUtilities
 {
+
+    public static int liveSceneItemID;
+
     #region Scene Operations
     
     /// <summary>
@@ -132,7 +135,7 @@ public static class ObsUtilities
             {
             };
             
-            obsWebSocket.CreateSceneItem(
+            liveSceneItemID = obsWebSocket.CreateSceneItem(
                 targetSceneName,
                 sourceName,
                 true
@@ -147,10 +150,19 @@ public static class ObsUtilities
         //     return false;
         // }
     }
+/// <summary>
+/// remove previously added scene source 
+/// </summary>
+/// <param name="sceneName"></param>
+    public static void RemoveLastAddedSceneSource(OBSWebsocket obsWebsocket, string sceneName)
+    {
+        obsWebsocket.RemoveSceneItem(sceneName, liveSceneItemID);
+    }
     
     /// <summary>
     /// Update NDI source settings
     /// </summary>
+    
     public static bool UpdateNdiSource(OBSWebsocket obsWebSocket, string sourceName, string ndiSourceName)
     {
         if (obsWebSocket == null || !obsWebSocket.IsConnected)

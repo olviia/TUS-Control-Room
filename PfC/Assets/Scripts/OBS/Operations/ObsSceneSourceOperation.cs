@@ -119,21 +119,18 @@ public class ObsSceneSourceOperation : ObsOperationBase
         
         // Check if source already exists
         bool sourceExists = ObsUtilities.SourceExistsInScene(obsWebSocket, targetSceneName, sourceName);
-        // bool sourceExists = ExecuteWithErrorHandling(
-        //     () => ObsUtilities.SourceExistsInScene(obsWebSocket, targetSceneName, sourceName),
-        //     $"Checking if source '{sourceName}' exists in scene '{targetSceneName}'");
-        //
         if (sourceExists)
         {
             LogDetailed($"Source '{sourceName}' already exists in scene '{targetSceneName}'");
             return true;
         }
 
+        if (ObsUtilities.liveSceneItemID != 0)
+        {
+            ObsUtilities.RemoveLastAddedSceneSource(obsWebSocket, targetSceneName);
+        }
+
         return ObsUtilities.CreateSceneSource(obsWebSocket, targetSceneName, sourceSceneName, sourceName);
-        // Create the scene source
-        // return ExecuteWithErrorHandling(
-        //     () => ObsUtilities.CreateSceneSource(obsWebSocket, targetSceneName, sourceSceneName, sourceName),
-        //     $"Adding scene '{sourceSceneName}' as source '{sourceName}' to scene '{targetSceneName}'");
     }
     
     /// <summary>
@@ -145,17 +142,12 @@ public class ObsSceneSourceOperation : ObsOperationBase
         
         if (customLayerIndex >= 0)
         {
-            // Use custom layer index
-            ExecuteWithErrorHandling(
-                () => ObsUtilities.MoveSceneItemToIndex(obsWebSocket, targetSceneName, sourceName, customLayerIndex),
-                $"Moving source '{sourceName}' to layer index {customLayerIndex}");
+            ObsUtilities.MoveSceneItemToIndex(obsWebSocket, targetSceneName, sourceName, customLayerIndex);
         }
         else if (moveToBottom)
         {
             // Move to bottom
-            ExecuteWithErrorHandling(
-                () => ObsUtilities.MoveSceneItemToBottom(obsWebSocket, targetSceneName, sourceName),
-                $"Moving source '{sourceName}' to bottom layer");
+            ObsUtilities.MoveSceneItemToBottom(obsWebSocket, targetSceneName, sourceName);
         }
         // If neither option is selected, leave the source where OBS places it by default
     }
@@ -222,6 +214,8 @@ public class ObsSceneSourceOperation : ObsOperationBase
             LogDetailed("Configuration saved, will execute when OBS connection is ready");
         }
     }
+
+    
     
     #endregion
 }
