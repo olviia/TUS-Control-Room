@@ -239,7 +239,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaultWsAdress: 192.168.20.125
   defaultWsPort: 32419
-  defaultWsPassword: 
+  defaultWsPassword: 169.254.184.70
 --- !u!4 &195961566 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
@@ -422,6 +422,8 @@ GameObject:
   m_Component:
   - component: {fileID: 427570640}
   - component: {fileID: 427570641}
+  - component: {fileID: 427570643}
+  - component: {fileID: 427570642}
   m_Layer: 0
   m_Name: BroadcastPipelineManager
   m_TagString: Untagged
@@ -461,6 +463,41 @@ MonoBehaviour:
   tvPreviewOutline: {fileID: 2100000, guid: 5f7a781c695ad8641a68e1e2d5eee0b0, type: 2}
   tvLiveOutline: {fileID: 2100000, guid: 495f77160c971014abd588f56183c6e0, type: 2}
   conflictOutline: {fileID: 2100000, guid: 5c299f7820e3f884bb0321db5146c6ea, type: 2}
+--- !u!114 &427570642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 427570639}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 3435044014
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+--- !u!114 &427570643
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 427570639}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14aec720f65ca964287163157da7aa82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  logDetailedInfo: 1
+  executeOnlyOnServer: 0
 --- !u!1001 &469267701
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1888,6 +1925,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: DirectorRoom
       objectReference: {fileID: 0}
+    - target: {fileID: 7059018413859745993, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7059018413859745993, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7059018413859745993, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7059018413859745993, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7136379907530369334, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -2017,6 +2070,22 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8902079076360573364, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8966798931552586731, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8966798931552586731, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8966798931552586731, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8966798931552586731, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}

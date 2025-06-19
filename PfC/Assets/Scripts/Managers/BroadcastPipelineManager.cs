@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BroadcastPipeline;
+using OBSWebsocketDotNet;
 using UnityEngine;
 
 public class BroadcastPipelineManager : MonoBehaviour 
@@ -210,7 +211,6 @@ public class BroadcastPipelineManager : MonoBehaviour
                 Debug.Log($"CONFLICT: {source.gameObject.name} assigned to conflicting pipelines");
                 RemoveOutline(source);
                 SetOutline(source, conflictOutline);
-                // TODO: Make outline twice as thick for conflicts
             }
         }
     }
@@ -222,7 +222,7 @@ public class BroadcastPipelineManager : MonoBehaviour
         bool hasTVPreview = assignments.Contains(PipelineType.TVPreview);
         bool hasTVLive = assignments.Contains(PipelineType.TVLive);
     
-        // Conflict scenarios we discussed
+        // Conflict scenarios 
         return (hasStudioPreview && hasTVPreview) ||    // Same source in both previews
                (hasStudioLive && hasTVLive) ||          // Same source in both live
                (hasStudioPreview && hasTVLive) ||       // Studio preview + TV live
@@ -243,6 +243,21 @@ public class BroadcastPipelineManager : MonoBehaviour
             {
                 SourceObject source = activeAssignments[pipelineType];
                 dest.receiver.ndiName = source.receiver.ndiName;
+
+                if (pipelineType == PipelineType.TVLive)
+                {
+                    WebsocketManager webSocketManager = FindFirstObjectByType<WebsocketManager>();
+                    OBSWebsocket obsWebSocket = (OBSWebsocket)typeof(WebsocketManager)
+                        .GetField("obsWebSocket",
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                        .GetValue(webSocketManager);
+                    string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, "Dedicated NDI® output",
+                        "ndi_filter_ndiname",
+                        source.receiver.ndiName);
+                    
+                    ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
+                    obsScene.ConfigureAndExecute("StreamLive", name, true, name);
+                }
             }
             else
             {

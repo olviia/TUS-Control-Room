@@ -298,7 +298,61 @@ public class ObsCreateScene : NetworkBehaviour
             }
         }
     }
-
+    /// <summary>
+    /// Add an NDI source to the scene that receives our Unity NDI output
+    /// </summary>
+    private void AddSceneToScene()
+    {
+        try
+        {
+            // Create settings specific for NDI source
+            var inputSettings = new JObject();
+            
+            // Get the full NDI source name including computer name
+            string fullNdiName = GetFullNdiSourceName();
+            
+            // Set the NDI source name
+            inputSettings["ndi_source_name"] = fullNdiName;
+            //set source settings so it plays always
+            inputSettings["ndi_behavior"] = 0;
+            
+            // Create an NDI source
+            obsWebSocket.CreateInput(
+                sceneName,      // Scene name
+                sourceName,     // Input name 
+                "ndi_source",   // Input kind - NDI source
+                inputSettings,  // Input settings with the full NDI source name
+                true            // Scene item enabled
+            );
+            
+            Log($"Created NDI source '{sourceName}' in scene '{sceneName}' connected to '{fullNdiName}'");
+            
+            // Add filter to the newly created source if enabled
+            if (addFilterToSource)
+            {
+                // Wait a short time to ensure the source is fully created
+                // before adding the filter
+                Log("Waiting to add filter to newly created source...");
+                System.Threading.Thread.Sleep(500);
+                AddFilterToSource();
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error adding NDI source to scene: {e.Message} - {e.StackTrace}");
+            
+            // Try to get a list of available input kinds for debugging
+            try
+            {
+                var inputKinds = obsWebSocket.GetInputKindList();
+                Log("Available input kinds: " + string.Join(", ", inputKinds));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error getting input kinds: {ex.Message}");
+            }
+        }
+    }
     /// <summary>
     /// Update the NDI source to ensure it's connected to our Unity NDI output
     /// </summary>
