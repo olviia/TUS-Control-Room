@@ -246,11 +246,12 @@ public class BroadcastPipelineManager : MonoBehaviour
 
                 if (pipelineType == PipelineType.TVLive)
                 {
-                    WebsocketManager webSocketManager = FindFirstObjectByType<WebsocketManager>();
-                    OBSWebsocket obsWebSocket = (OBSWebsocket)typeof(WebsocketManager)
-                        .GetField("obsWebSocket",
-                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                        .GetValue(webSocketManager);
+                    
+                    //move it to ObsSceneSourceOperation
+                    //add code to remove the item
+                    //to do it, use RemoveSceneItem()
+                    OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
+                    
                     string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, "Dedicated NDI® output",
                         "ndi_filter_ndiname",
                         source.receiver.ndiName);
