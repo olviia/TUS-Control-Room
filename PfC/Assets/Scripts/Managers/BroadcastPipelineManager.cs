@@ -23,16 +23,62 @@ public class BroadcastPipelineManager : MonoBehaviour
     
     private Dictionary<PipelineType, List<PipelineDestination>> registeredDestinations 
         = new Dictionary<PipelineType, List<PipelineDestination>>();
+    
+    // Track which live pipelines are controlled by network (other directors)
+    private Dictionary<PipelineType, bool> networkControlledPipelines = new Dictionary<PipelineType, bool>();
+    
+    private NetworkStreamCoordinator networkStreamCoordinator;
 
     private void Awake()
     {
         Instance = this;
+        // Initialize network control tracking
+        networkControlledPipelines[PipelineType.StudioLive] = false;
+        networkControlledPipelines[PipelineType.TVLive] = false;
     }
-    
+
+    private void Start()
+    {
+        // Don't immediately try to find the network coordinator
+        StartCoroutine(WaitForNetworkStabilization());
+    }
+
+    private IEnumerator WaitForNetworkStabilization()
+    {
+        // Wait for network to be ready
+        while (Unity.Netcode.NetworkManager.Singleton == null || 
+               (!Unity.Netcode.NetworkManager.Singleton.IsHost && !Unity.Netcode.NetworkManager.Singleton.IsConnectedClient))
+        {
+            Debug.Log("xx_🔧 Waiting for network connection...");
+            yield return new WaitForSeconds(0.2f);
+        }
+        
+        // Give extra time for NetworkBehaviours to spawn
+        yield return new WaitForSeconds(1f);
+        
+        // Now safely find and connect to NetworkStreamCoordinator
+        networkStreamCoordinator = FindObjectOfType<NetworkStreamCoordinator>();
+        if (networkStreamCoordinator != null)
+        {
+            Debug.Log("xx_🔧 ✅ Successfully found NetworkStreamCoordinator");
+            NetworkStreamCoordinator.OnStreamControlChanged += OnNetworkStreamChanged;
+        }
+        else
+        {
+            Debug.LogWarning("xx_🔧 ⚠️ NetworkStreamCoordinator not found - operating in local mode");
+        }
+    }
+
+    private void OnDestroy()
+    {
+        NetworkStreamCoordinator.OnStreamControlChanged -= OnNetworkStreamChanged;
+    }
+
     public void RegisterSource(SourceObject source) 
     {
         registeredSources.Add(source);
     }
+    
     public void UnregisterSource(SourceObject source) 
     {
         registeredSources.Remove(source);
@@ -40,21 +86,21 @@ public class BroadcastPipelineManager : MonoBehaviour
 
     public void OnSourceLeftClicked(SourceObject source)
     {
-        Debug.Log($"Pipeline Manager: Left click on {source.gameObject.name}");
+        Debug.Log($"xx_Pipeline Manager: Left click on {source.gameObject.name}");
         // Always assign to TV Preview (overwrite if already there)
         AssignSourceToPipeline(source, PipelineType.TVPreview);
     }
 
     public void OnSourceRightClicked(SourceObject source)
     {
-        Debug.Log($"Pipeline Manager: Right click on {source.gameObject.name}");
+        Debug.Log($"xx_Pipeline Manager: Right click on {source.gameObject.name}");
         // Always assign to Studio Preview (overwrite if already there)
         AssignSourceToPipeline(source, PipelineType.StudioPreview);
     }
     
     public void OnDestinationLeftClicked(PipelineDestination destination)
     {
-        Debug.Log($"Pipeline Manager: Left click on {destination.pipelineType}");
+        Debug.Log($"xx_Pipeline Manager: Left click on {destination.pipelineType}");
         // Left clicks only work on TV pipeline
         if(destination.pipelineType == PipelineType.TVPreview)
         {
@@ -64,7 +110,7 @@ public class BroadcastPipelineManager : MonoBehaviour
 
     public void OnDestinationRightClicked(PipelineDestination destination)
     {
-        Debug.Log($"Pipeline Manager: Right click on {destination.pipelineType}");
+        Debug.Log($"xx_Pipeline Manager: Right click on {destination.pipelineType}");
         // Right clicks only work on Studio pipeline  
         if(destination.pipelineType == PipelineType.StudioPreview)
         {
@@ -100,20 +146,37 @@ public class BroadcastPipelineManager : MonoBehaviour
         if (activeAssignments.ContainsKey(fromStage))
         {
             SourceObject sourceToForward = activeAssignments[fromStage];
+            
+            // ALWAYS assign locally first for immediate visual feedback
             AssignSourceToPipeline(sourceToForward, toStage);
-            Debug.Log($"Forwarded content from {fromStage} to {toStage}");
+            Debug.Log($"xx_📺 Local assignment: Forwarded content from {fromStage} to {toStage}");
+            
+            // Additionally, if going to a Live stage, coordinate with network
+            if (toStage == PipelineType.StudioLive || toStage == PipelineType.TVLive)
+            {
+                Debug.Log($"xx_🌐 Additionally requesting network control for {toStage}");
+                
+                if (networkStreamCoordinator != null)
+                {
+                    networkStreamCoordinator.RequestStreamControl(toStage, sourceToForward.receiver);
+                }
+                else
+                {
+                    Debug.LogWarning("xx_NetworkStreamCoordinator not found! Operating in local-only mode");
+                }
+            }
         }
         else
         {
-            Debug.Log($"No content in {fromStage} to forward");
+            Debug.Log($"xx_❌ No content in {fromStage} to forward");
         }
     }
 
     private void AssignSourceToPipeline(SourceObject source, PipelineType targetType)
     {
         activeAssignments[targetType] = source;
-        Debug.Log($"Assigned {source.gameObject.name} to {targetType}");
-        UpdateActiveSourceHighlight ();
+        Debug.Log($"xx_Assigned {source.gameObject.name} to {targetType}");
+        UpdateActiveSourceHighlight();
         UpdateDestinationNDI(targetType);
     }
 
@@ -124,16 +187,34 @@ public class BroadcastPipelineManager : MonoBehaviour
         {
             RemoveOutline(source);
         }
-        // Apply outlines based on assignments
+        
+        // Apply outlines based on assignments, but skip network-controlled live pipelines
         foreach(var assignment in activeAssignments)
         {
-            Material outlineMaterial = GetOutlineMaterialForPipelineType(assignment.Key);
-            SetOutline(source: assignment.Value, outlineMaterial: outlineMaterial);
+            PipelineType pipelineType = assignment.Key;
+            SourceObject source = assignment.Value;
+            
+            // Skip outline for live pipelines that are controlled by other directors
+            bool isLivePipeline = (pipelineType == PipelineType.StudioLive || pipelineType == PipelineType.TVLive);
+            bool isNetworkControlled = networkControlledPipelines.ContainsKey(pipelineType) && networkControlledPipelines[pipelineType];
+            
+            if (isLivePipeline && isNetworkControlled)
+            {
+                Debug.Log($"xx_Skipping outline for {pipelineType} - controlled by another director");
+                continue;
+            }
+            
+            Material outlineMaterial = GetOutlineMaterialForPipelineType(pipelineType);
+            if (outlineMaterial != null)
+            {
+                SetOutline(source, outlineMaterial);
+            }
         }
     
         // Check for conflicts and apply warning outlines
         CheckAndApplyConflictHighlights();
     }
+    
     private Material GetOutlineMaterialForPipelineType(PipelineType pipelineType)
     {
         switch(pipelineType)
@@ -145,6 +226,7 @@ public class BroadcastPipelineManager : MonoBehaviour
             default: return null;
         }
     }
+    
     private void SetOutline(SourceObject source, Material outlineMaterial)
     {
         MeshRenderer renderer = source.screenGameObject;
@@ -166,6 +248,7 @@ public class BroadcastPipelineManager : MonoBehaviour
         newMaterials[materials.Length] = outlineMaterial;
         renderer.materials = newMaterials;
     }
+    
     private void RemoveOutline(SourceObject source)
     {
         MeshRenderer renderer = source.screenGameObject;
@@ -193,6 +276,15 @@ public class BroadcastPipelineManager : MonoBehaviour
         {
             SourceObject source = assignment.Value;
             PipelineType pipelineType = assignment.Key;
+            
+            // Skip network-controlled live pipelines for conflict detection
+            bool isLivePipeline = (pipelineType == PipelineType.StudioLive || pipelineType == PipelineType.TVLive);
+            bool isNetworkControlled = networkControlledPipelines.ContainsKey(pipelineType) && networkControlledPipelines[pipelineType];
+            
+            if (isLivePipeline && isNetworkControlled)
+            {
+                continue; // Don't count network-controlled pipelines in conflicts
+            }
         
             if(!sourceAssignments.ContainsKey(source))
                 sourceAssignments[source] = new List<PipelineType>();
@@ -208,7 +300,7 @@ public class BroadcastPipelineManager : MonoBehaviour
         
             if(HasConflict(assignments))
             {
-                Debug.Log($"CONFLICT: {source.gameObject.name} assigned to conflicting pipelines");
+                Debug.Log($"xx_CONFLICT: {source.gameObject.name} assigned to conflicting pipelines");
                 RemoveOutline(source);
                 SetOutline(source, conflictOutline);
             }
@@ -228,11 +320,12 @@ public class BroadcastPipelineManager : MonoBehaviour
                (hasStudioPreview && hasTVLive) ||       // Studio preview + TV live
                (hasStudioLive && hasTVPreview);         // Studio live + TV preview
     }
+    
     private void UpdateDestinationNDI(PipelineType pipelineType)
     {
         if (!registeredDestinations.ContainsKey(pipelineType))
         {
-            Debug.LogWarning($"No destination registered for {pipelineType}");
+            Debug.Log($"xx_No destination registered for {pipelineType}");
             return;
         }
     
@@ -246,7 +339,6 @@ public class BroadcastPipelineManager : MonoBehaviour
 
                 if (pipelineType == PipelineType.TVLive)
                 {
-                    
                     //move it to ObsSceneSourceOperation
                     //add code to remove the item
                     //to do it, use RemoveSceneItem()
@@ -265,8 +357,49 @@ public class BroadcastPipelineManager : MonoBehaviour
                 dest.receiver.ndiName = "";
             }
         }
-       
+    }
+    
+    private void OnNetworkStreamChanged(StreamAssignment assignment, string description)
+    {
+        Debug.Log($"xx_🔄 Network Stream Update: {description}");
+        
+        var pipelineType = assignment.pipelineType;
+        bool isMyStream = false;
+        
+        // Check if this is my stream or someone else's
+        if (Unity.Netcode.NetworkManager.Singleton != null)
+        {
+            var localClientId = Unity.Netcode.NetworkManager.Singleton.LocalClientId;
+            isMyStream = assignment.isActive && assignment.directorClientId == localClientId;
+        }
+        
+        // Update network control tracking
+        if (assignment.isActive && !isMyStream)
+        {
+            // Another director is controlling this pipeline
+            networkControlledPipelines[pipelineType] = true;
+            Debug.Log($"xx_📡 {pipelineType} now controlled by Director {assignment.directorClientId}");
+        }
+        else if (assignment.isActive && isMyStream)
+        {
+            // I am controlling this pipeline
+            networkControlledPipelines[pipelineType] = false;
+            Debug.Log($"xx_📡 I am now controlling {pipelineType}");
+        }
+        else if (!assignment.isActive)
+        {
+            // No one is controlling this pipeline
+            networkControlledPipelines[pipelineType] = false;
+            Debug.Log($"xx_📺 {pipelineType} returned to local control");
+        }
+        
+        // Update the visual highlighting based on new network state
+        UpdateActiveSourceHighlight();
+        
+        // Log the details
+        if (assignment.isActive)
+        {
+            Debug.Log($"xx_📡 Source: {assignment.streamSourceName}");
+        }
     }
 }
-
-

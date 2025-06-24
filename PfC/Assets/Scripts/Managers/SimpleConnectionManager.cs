@@ -35,10 +35,13 @@ public class SimpleConnectionManager : MonoBehaviour
         autoDetectIPButton.onClick.AddListener(AutoDetectIP);
         scanForHostsButton.onClick.AddListener(ScanForHosts);
         
-        // Add connection callbacks
+        // Add connection callbacks with enhanced debugging
         NetworkManager.Singleton.OnServerStarted += OnHostStarted;
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+        
+        // Add extra debug callbacks
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectDebug;
     }
 
     private void LoadBasedOnRole(Role role)
@@ -66,19 +69,19 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private IEnumerator DirectorConnectionProcess(string targetIP)
     {
-        Debug.Log("Director: Attempting to start as host...");
+        Debug.Log("xx_🔧 Director: Attempting to start as host...");
         
         // Set up transport for hosting with actual network IP
         SetTransportConnection(targetIP, port);
         
         if (NetworkManager.Singleton.StartHost())
         {
-            Debug.Log($"Director: Successfully started as HOST on {targetIP}:{port}");
-            Debug.Log($"📢 Other machines should connect to: {targetIP}:{port}");
+            Debug.Log($"xx_🔧 Director: Successfully started as HOST on {targetIP}:{port}");
+            Debug.Log($"xx_🔧 📢 Other machines should connect to: {targetIP}:{port}");
         }
         else
         {
-            Debug.Log($"Director: Failed to start as host on {targetIP}. Trying to connect to as client...");
+            Debug.Log($"xx_🔧 Director: Failed to start as host on {targetIP}. Trying to connect as client...");
             yield return new WaitForSeconds(1f);
             // Connect to the target IP (could be another Director's host)
             yield return StartCoroutine(ClientConnectionProcess(targetIP));
@@ -87,14 +90,14 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private IEnumerator ClientConnectionProcess(string targetIP)
     {
-        Debug.Log($"Attempting to connect as client to {targetIP}:{port}");
+        Debug.Log($"xx_🔧 Attempting to connect as client to {targetIP}:{port}");
         
         // Set up transport for client connection
         SetTransportConnection(targetIP, port);
         
         if (NetworkManager.Singleton.StartClient())
         {
-            Debug.Log("Client connection initiated, waiting for result...");
+            Debug.Log("xx_🔧 Client connection initiated, waiting for result...");
             
             // Wait for connection result
             float timeWaited = 0f;
@@ -106,17 +109,17 @@ public class SimpleConnectionManager : MonoBehaviour
             
             if (NetworkManager.Singleton.IsConnectedClient)
             {
-                Debug.Log("Successfully connected as client!");
+                Debug.Log("xx_🔧 ✅ Successfully connected as client!");
             }
             else
             {
-                Debug.LogError($"Failed to connect to host at {targetIP}:{port} within {connectionTimeout} seconds");
+                Debug.LogError($"xx_🔧 ❌ Failed to connect to host at {targetIP}:{port} within {connectionTimeout} seconds");
                 HandleConnectionFailure();
             }
         }
         else
         {
-            Debug.LogError("Failed to start client");
+            Debug.LogError("xx_🔧 ❌ Failed to start client");
             HandleConnectionFailure();
         }
     }
@@ -125,25 +128,43 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         transport.SetConnectionData(ip, port);
-        Debug.Log($"Transport configured for {ip}:{port}");
+        Debug.Log($"xx_🔧 Transport configured for {ip}:{port}");
     }
 
     private void HandleConnectionFailure()
     {
-        Debug.Log("Connection failed - returning to role selection");
+        Debug.Log("xx_🔧 Connection failed - returning to role selection");
         ShowInitialSetup();
     }
 
     #endregion
 
-    #region Connection Callbacks
+    #region Connection Callbacks with Enhanced Debugging
 
     private void OnHostStarted()
     {
-        Debug.Log("Host started successfully!");
+        Debug.Log("xx_🔧 ✅ Host started successfully!");
         var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-        Debug.Log($"🔊 HOST: Running on {transport.ConnectionData.Address}:{transport.ConnectionData.Port}");
-        Debug.Log($"🔊 HOST: Server ID = {NetworkManager.Singleton.LocalClientId}");
+        Debug.Log($"xx_🔧 HOST: Running on {transport.ConnectionData.Address}:{transport.ConnectionData.Port}");
+        Debug.Log($"xx_🔧 HOST: LocalClientId = {NetworkManager.Singleton.LocalClientId}");
+        Debug.Log($"xx_🔧 HOST: Connected clients count = {NetworkManager.Singleton.ConnectedClients.Count}");
+        Debug.Log($"xx_🔧 HOST: IsServer = {NetworkManager.Singleton.IsServer}");
+        Debug.Log($"xx_🔧 HOST: IsClient = {NetworkManager.Singleton.IsClient}");
+        Debug.Log($"xx_🔧 HOST: IsHost = {NetworkManager.Singleton.IsHost}");
+        
+        // List all connected clients
+        foreach(var client in NetworkManager.Singleton.ConnectedClients)
+        {
+            Debug.Log($"xx_🔧   Connected Client: {client.Key}");
+        }
+        
+        // Check for NetworkBehaviours in scene
+        var allNetworkBehaviours = FindObjectsOfType<NetworkBehaviour>();
+        Debug.Log($"xx_🔧 NetworkBehaviours in scene: {allNetworkBehaviours.Length}");
+        foreach(var nb in allNetworkBehaviours)
+        {
+            Debug.Log($"xx_🔧   - {nb.GetType().Name} on {nb.gameObject.name}");
+        }
         
         // Start broadcasting our presence
         StartHostBroadcasting();
@@ -151,14 +172,39 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
+        Debug.Log($"xx_🔧 ⭐ Client connected: {clientId}");
+        Debug.Log($"xx_🔧   My Local ClientId: {NetworkManager.Singleton.LocalClientId}");
+        Debug.Log($"xx_🔧   Total connected clients: {NetworkManager.Singleton.ConnectedClients.Count}");
+        Debug.Log($"xx_🔧   Am I the host? {NetworkManager.Singleton.IsHost}");
+        Debug.Log($"xx_🔧   Am I a client? {NetworkManager.Singleton.IsClient}");
+        Debug.Log($"xx_🔧   Am I connected? {NetworkManager.Singleton.IsConnectedClient}");
+        
         if (clientId == NetworkManager.Singleton.LocalClientId)
         {
-            Debug.Log("Successfully connected to host as client");
-            Debug.Log($"🔗 CLIENT: Connected with ID = {clientId}");
+            Debug.Log("xx_🔧 ✅ This is MY connection event");
+            
+            // Additional checks for local client
+            Debug.Log($"xx_🔧   My connection state - IsConnectedClient: {NetworkManager.Singleton.IsConnectedClient}");
+            Debug.Log($"xx_🔧   Network time: {NetworkManager.Singleton.ServerTime}");
+            
+            // Check NetworkBehaviours after connection
+            StartCoroutine(CheckNetworkBehavioursAfterConnection());
         }
         else
         {
-            Debug.Log($"Another client connected: {clientId}");
+            Debug.Log($"xx_🔧 ✅ Another client connected: {clientId}");
+        }
+    }
+
+    private IEnumerator CheckNetworkBehavioursAfterConnection()
+    {
+        yield return new WaitForSeconds(1f); // Wait a moment
+        
+        var allNetworkBehaviours = FindObjectsOfType<NetworkBehaviour>();
+        Debug.Log($"xx_🔧 NetworkBehaviours after connection: {allNetworkBehaviours.Length}");
+        foreach(var nb in allNetworkBehaviours)
+        {
+            Debug.Log($"xx_🔧   - {nb.GetType().Name} (Spawned: {nb.IsSpawned}, IsClient: {nb.IsClient}, IsServer: {nb.IsServer})");
         }
     }
 
@@ -166,18 +212,36 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         if (clientId == NetworkManager.Singleton.LocalClientId)
         {
-            Debug.Log("Local client disconnected from host");
+            Debug.Log("xx_🔧 Local client disconnected from host");
             HandleLocalClientDisconnect();
         }
         else if (NetworkManager.Singleton.IsHost)
         {
-            Debug.Log($"Client {clientId} disconnected from our host");
+            Debug.Log($"xx_🔧 Client {clientId} disconnected from our host");
+        }
+    }
+
+    private void OnClientDisconnectDebug(ulong clientId)
+    {
+        Debug.LogError($"xx_🔧 🚨 CLIENT DISCONNECT DETECTED! ClientId: {clientId}");
+        Debug.LogError($"xx_🔧   Local ClientId: {NetworkManager.Singleton?.LocalClientId}");
+        Debug.LogError($"xx_🔧   Is this local client? {clientId == NetworkManager.Singleton?.LocalClientId}");
+        Debug.LogError($"xx_🔧   Network state - IsHost: {NetworkManager.Singleton?.IsHost}");
+        Debug.LogError($"xx_🔧   Network state - IsClient: {NetworkManager.Singleton?.IsClient}");
+        Debug.LogError($"xx_🔧   Network state - IsConnectedClient: {NetworkManager.Singleton?.IsConnectedClient}");
+        
+        // Check if any NetworkBehaviours are causing issues
+        var allNetworkBehaviours = FindObjectsOfType<NetworkBehaviour>();
+        Debug.LogError($"xx_🔧   Active NetworkBehaviours: {allNetworkBehaviours.Length}");
+        foreach(var nb in allNetworkBehaviours)
+        {
+            Debug.LogError($"xx_🔧     - {nb.GetType().Name} (Spawned: {nb.IsSpawned}, Enabled: {nb.enabled})");
         }
     }
 
     private void HandleLocalClientDisconnect()
     {
-        Debug.Log("Handling local client disconnect...");
+        Debug.Log("xx_🔧 Handling local client disconnect...");
         ShowInitialSetup();
     }
 
@@ -192,7 +256,7 @@ public class SimpleConnectionManager : MonoBehaviour
         journalistButton.interactable = true;
         audienceButton.interactable = true;
         
-        Debug.Log("Returned to initial setup - role selection available");
+        Debug.Log("xx_🔧 Returned to initial setup - role selection available");
     }
 
     #endregion
@@ -225,11 +289,11 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         if (NetworkManager.Singleton.IsHost)
         {
-            Debug.Log("Host shutdown");
+            Debug.Log("xx_🔧 Host shutdown");
         }
         else if (NetworkManager.Singleton.IsClient)
         {
-            Debug.Log("Client disconnected");
+            Debug.Log("xx_🔧 Client disconnected");
         }
         
         NetworkManager.Singleton.Shutdown();
@@ -243,12 +307,12 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         string detectedIP = GetTargetIP();
         ipInput.text = detectedIP;
-        Debug.Log($"🔍 Auto-detected IP: {detectedIP}");
+        Debug.Log($"xx_🔧 🔍 Auto-detected IP: {detectedIP}");
     }
 
     private void ScanForHosts()
     {
-        Debug.Log("🔍 Scanning for hosts on local network...");
+        Debug.Log("xx_🔧 🔍 Scanning for hosts on local network...");
         StartCoroutine(ScanForHostsCoroutine());
     }
 
@@ -270,7 +334,7 @@ public class SimpleConnectionManager : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError("❌ Failed to create UDP listener: " + ex.Message);
+            Debug.LogError("xx_🔧 ❌ Failed to create UDP listener: " + ex.Message);
         }
 
         if (!setupSuccessful)
@@ -291,14 +355,14 @@ public class SimpleConnectionManager : MonoBehaviour
             var broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, broadcastPort);
             
             broadcastClient.Send(data, data.Length, broadcastEndpoint);
-            Debug.Log($"📡 Broadcast sent on port {broadcastPort}");
+            Debug.Log($"xx_🔧 📡 Broadcast sent on port {broadcastPort}");
             
             broadcastClient.Close();
             broadcastSent = true;
         }
         catch (System.Exception ex)
         {
-            Debug.LogError("❌ Failed to send broadcast: " + ex.Message);
+            Debug.LogError("xx_🔧 ❌ Failed to send broadcast: " + ex.Message);
         }
 
         if (!broadcastSent)
@@ -329,20 +393,20 @@ public class SimpleConnectionManager : MonoBehaviour
                     {
                         foundHostIP = response.Substring(8); // Remove "HOST_IP:" prefix
                         scanSuccessful = true;
-                        Debug.Log($"✅ Found host at: {foundHostIP}");
+                        Debug.Log($"xx_🔧 ✅ Found host at: {foundHostIP}");
                         break;
                     }
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogWarning("⚠️ Error receiving UDP data: " + ex.Message);
+                    Debug.LogWarning("xx_🔧 ⚠️ Error receiving UDP data: " + ex.Message);
                 }
             }
         }
 
         if (!scanSuccessful)
         {
-            Debug.Log("⚠️ No hosts found on network");
+            Debug.Log("xx_🔧 ⚠️ No hosts found on network");
         }
 
         yield return FinalizeScan(scanSuccessful, foundHostIP);
@@ -358,7 +422,7 @@ public class SimpleConnectionManager : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning("Warning during UDP cleanup: " + ex.Message);
+            Debug.LogWarning("xx_🔧 Warning during UDP cleanup: " + ex.Message);
         }
 
         // Update UI
@@ -390,11 +454,11 @@ public class SimpleConnectionManager : MonoBehaviour
         {
             udpBroadcaster = new System.Net.Sockets.UdpClient(broadcastPort);
             udpBroadcaster.Client.ReceiveTimeout = 100; // Short timeout for non-blocking
-            Debug.Log($"📡 Host broadcasting on port {broadcastPort}");
+            Debug.Log($"xx_🔧 📡 Host broadcasting on port {broadcastPort}");
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"❌ Failed to start host broadcasting: {ex.Message}");
+            Debug.LogError($"xx_🔧 ❌ Failed to start host broadcasting: {ex.Message}");
             isHostBroadcasting = false;
             yield break;
         }
@@ -413,7 +477,7 @@ public class SimpleConnectionManager : MonoBehaviour
 
                     if (request == "FIND_HOST")
                     {
-                        Debug.Log($"📡 Received host discovery request from {remoteEndpoint.Address}");
+                        Debug.Log($"xx_🔧 📡 Received host discovery request from {remoteEndpoint.Address}");
                         
                         // Send our IP back
                         SendHostResponse(GetTargetIP(), remoteEndpoint.Address);
@@ -423,7 +487,7 @@ public class SimpleConnectionManager : MonoBehaviour
                 {
                     if (isHostBroadcasting)
                     {
-                        Debug.LogWarning($"⚠️ Broadcast receive error: {ex.Message}");
+                        Debug.LogWarning($"xx_🔧 ⚠️ Broadcast receive error: {ex.Message}");
                     }
                 }
             }
@@ -439,11 +503,11 @@ public class SimpleConnectionManager : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"Warning during broadcast cleanup: {ex.Message}");
+            Debug.LogWarning($"xx_🔧 Warning during broadcast cleanup: {ex.Message}");
         }
         
         isHostBroadcasting = false;
-        Debug.Log("📡 Host broadcasting stopped");
+        Debug.Log("xx_🔧 📡 Host broadcasting stopped");
     }
 
     private void SendHostResponse(string hostIP, IPAddress clientAddress)
@@ -458,11 +522,11 @@ public class SimpleConnectionManager : MonoBehaviour
             responseClient.Send(responseData, responseData.Length, responseEndpoint);
             responseClient.Close();
             
-            Debug.Log($"📡 Sent host IP ({hostIP}) to {clientAddress}");
+            Debug.Log($"xx_🔧 📡 Sent host IP ({hostIP}) to {clientAddress}");
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"⚠️ Failed to send host response: {ex.Message}");
+            Debug.LogWarning($"xx_🔧 ⚠️ Failed to send host response: {ex.Message}");
         }
     }
 
