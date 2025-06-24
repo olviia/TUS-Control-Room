@@ -56,23 +56,8 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        Debug.Log($"xx_🔧 NetworkStreamCoordinator.OnNetworkSpawn()");
-        Debug.Log($"xx_🔧   My ClientId: {NetworkManager.Singleton?.LocalClientId}");
-        Debug.Log($"xx_🔧   IsServer: {IsServer}");
-        Debug.Log($"xx_🔧   IsClient: {IsClient}");
-        Debug.Log($"xx_🔧   IsHost: {IsHost}");
-        Debug.Log($"xx_🔧   IsSpawned: {IsSpawned}");
         
-        // Verify client ID is valid before doing anything
-        if (NetworkManager.Singleton?.LocalClientId == null)
-        {
-            Debug.LogError("xx_🔧 ❌ LocalClientId is null during spawn!");
-            return;
-        }
-        
-        // Subscribe to network variable changes only after spawn
-        studioLiveStream.OnValueChanged += OnStudioLiveStreamChanged;
-        tvLiveStream.OnValueChanged += OnTvLiveStreamChanged;
+  
         
         // Wait a moment for network to stabilize before being ready
         StartCoroutine(DelayedNetworkReady());
@@ -80,10 +65,13 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     private IEnumerator DelayedNetworkReady()
     {
-        yield return new WaitForSeconds(0.5f); // Wait for network to stabilize
+        yield return new WaitForSeconds(10f); // Wait for network to stabilize
         
         isNetworkReady = true;
-        Debug.Log("xx_🔧 ✅ NetworkStreamCoordinator ready for RPCs");
+        
+        // Subscribe to network variable changes only after spawn
+        studioLiveStream.OnValueChanged += OnStudioLiveStreamChanged;
+        tvLiveStream.OnValueChanged += OnTvLiveStreamChanged;
         
         if (localPipelineManager != null)
         {
