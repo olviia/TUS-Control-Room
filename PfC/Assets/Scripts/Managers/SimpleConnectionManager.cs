@@ -1,10 +1,13 @@
+using System;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 public class SimpleConnectionManager : MonoBehaviour
@@ -42,6 +45,11 @@ public class SimpleConnectionManager : MonoBehaviour
         
         // Add extra debug callbacks
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectDebug;
+        
+        //testing
+        LogAllNetworkInterfaces();
+        LogCurrentNetworkSelection();
+        LogBroadcastDiagnostics();
     }
 
     private void LoadBasedOnRole(Role role)
@@ -537,5 +545,376 @@ public class SimpleConnectionManager : MonoBehaviour
         udpBroadcaster = null;
     }
 
+    #endregion
+    
+    #region Log different network settings
+    //some tests
+    // Add these diagnostic methods to identify network adapter issues
+
+
+
+private void LogAllNetworkInterfaces()
+{
+    Debug.Log("yy_ === ALL NETWORK INTERFACES ===");
+    
+    foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+    {
+        Debug.Log($"yy_ Interface: {ni.Name}");
+        Debug.Log($"yy_   Type: {ni.NetworkInterfaceType}");
+        Debug.Log($"yy_   Status: {ni.OperationalStatus}");
+        Debug.Log($"yy_   Description: {ni.Description}");
+        
+        if (ni.OperationalStatus == OperationalStatus.Up)
+        {
+            var properties = ni.GetIPProperties();
+            foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+            {
+                if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    Debug.Log($"yy_   IPv4: {ip.Address}");
+                    Debug.Log($"yy_   Subnet: {ip.IPv4Mask}");
+                }
+            }
+            
+            // Log gateway info
+            foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses)
+            {
+                Debug.Log($"yy_   Gateway: {gateway.Address}");
+            }
+        }
+        Debug.Log("yy_   ---");
+    }
+    Debug.Log("yy_ =============================");
+}
+
+private void LogCurrentNetworkSelection()
+{
+    Debug.Log("yy_ === CURRENT NETWORK SELECTION ===");
+    
+    // Show which IP we're currently using
+    string currentIP = GetTargetIP();
+    Debug.Log($"yy_ Current Target IP: {currentIP}");
+    
+    // Show all available local IPs
+    string[] localIPs = GetAllLocalIPs();
+    Debug.Log($"yy_ Available Local IPs: {string.Join(", ", localIPs)}");
+    
+    // Try to determine which interface we should be using
+    var activeInterface = GetActiveNetworkInterface();
+    if (activeInterface != null)
+    {
+        Debug.Log($"yy_ Recommended Interface: {activeInterface.Name}");
+        Debug.Log($"yy_ Recommended Type: {activeInterface.NetworkInterfaceType}");
+        
+        var properties = activeInterface.GetIPProperties();
+        foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+        {
+            if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                Debug.Log($"yy_ Recommended IP: {ip.Address}");
+            }
+        }
+    }
+    
+    Debug.Log("yy_ ===============================");
+}
+
+private NetworkInterface GetActiveNetworkInterface()
+{
+    return NetworkInterface.GetAllNetworkInterfaces()
+        .Where(ni => ni.OperationalStatus == OperationalStatus.Up)
+        .Where(ni => ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || 
+                    ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+        .Where(ni => ni.GetIPProperties().UnicastAddresses
+            .Any(ip => ip.Address.AddressFamily == AddressFamily.InterNetwork && 
+                      !IPAddress.IsLoopback(ip.Address)))
+        .FirstOrDefault();
+}
+
+private string[] GetAllLocalIPs()
+{
+    return Dns.GetHostEntry(Dns.GetHostName())
+        .AddressList
+        .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork)
+        .Select(ip => ip.ToString())
+        .ToArray();
+}
+
+// Enhanced broadcast diagnostic
+private void LogBroadcastDiagnostics()
+{
+    Debug.Log("yy_ === BROADCAST DIAGNOSTICS ===");
+    Debug.Log($"yy_ Broadcast Port: {broadcastPort}");
+    Debug.Log($"yy_ Response Port: {broadcastPort + 1}");
+    
+    // Check if ports are available
+    CheckPortAvailability(broadcastPort, "Broadcast");
+    CheckPortAvailability(broadcastPort + 1, "Response");
+    
+    Debug.Log("yy_ ============================");
+}
+
+private void CheckPortAvailability(int port, string portType)
+{
+    try
+    {
+        var listener = new TcpListener(IPAddress.Any, port);
+        listener.Start();
+        listener.Stop();
+        Debug.Log($"yy_ {portType} Port {port}: AVAILABLE");
+    }
+    catch (Exception ex)
+    {
+        Debug.LogWarning($"yy_ {portType} Port {port}: IN USE or BLOCKED - {ex.Message}");
+    }
+}// Enhanced broadcast testing methods
+
+private IEnumerator TestDirectUDPCommunication(string targetIP)
+{
+    Debug.Log($"yy_ === TESTING DIRECT UDP TO {targetIP} ===");
+    
+    bool testSuccessful = false;
+    
+    try
+    {
+        // Send direct UDP message (not broadcast)
+        var testClient = new UdpClient();
+        string testMessage = $"DIRECT_TEST_FROM_{GetLocalIPAddress()}";
+        byte[] data = System.Text.Encoding.UTF8.GetBytes(testMessage);
+        var targetEndpoint = new IPEndPoint(IPAddress.Parse(targetIP), broadcastPort);
+        
+        testClient.Send(data, data.Length, targetEndpoint);
+        Debug.Log($"yy_ Direct UDP sent to {targetIP}:{broadcastPort}");
+        
+        testClient.Close();
+        testSuccessful = true;
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError($"yy_ Direct UDP test failed: {ex.Message}");
+    }
+    
+    Debug.Log($"yy_ Direct UDP test result: {(testSuccessful ? "SUCCESS" : "FAILED")}");
+    yield return null;
+}
+
+private IEnumerator EnhancedScanForHostsCoroutine()
+{
+    Debug.Log("yy_ === ENHANCED HOST SCAN ===");
+    
+    // First, log network diagnostics
+    LogAllNetworkInterfaces();
+    LogCurrentNetworkSelection();
+    LogBroadcastDiagnostics();
+    
+    scanForHostsButton.interactable = false;
+    
+    bool scanSuccessful = false;
+    string foundHostIP = "";
+    
+    // Test 1: Check if we can bind to the response port
+    try
+    {
+        udpListener = new UdpClient(broadcastPort + 1);
+        udpListener.Client.ReceiveTimeout = 100;
+        Debug.Log($"yy_ ✅ Successfully bound to response port {broadcastPort + 1}");
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError($"yy_ ❌ Failed to bind to response port: {ex.Message}");
+        FinalizeScan(false, "");
+        yield break;
+    }
+    
+    // Test 2: Try different broadcast methods
+    yield return StartCoroutine(TryMultipleBroadcastMethods());
+    
+    // Test 3: Wait for responses
+    float scanTime = 0f;
+    const float maxScanTime = 5f; // Increased timeout
+    
+    while (scanTime < maxScanTime && !scanSuccessful)
+    {
+        yield return new WaitForSeconds(0.1f);
+        scanTime += 0.1f;
+        
+        if (udpListener.Available > 0)
+        {
+            try
+            {
+                var remoteEndpoint = new IPEndPoint(IPAddress.Any, broadcastPort + 1);
+                byte[] receivedData = udpListener.Receive(ref remoteEndpoint);
+                string response = System.Text.Encoding.UTF8.GetString(receivedData);
+                
+                Debug.Log($"yy_ Received: '{response}' from {remoteEndpoint.Address}");
+                
+                if (response.StartsWith("HOST_IP:"))
+                {
+                    foundHostIP = response.Substring(8);
+                    scanSuccessful = true;
+                    Debug.Log($"yy_ ✅ Found host at: {foundHostIP}");
+                    break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"yy_ ⚠️ Error receiving UDP data: {ex.Message}");
+            }
+        }
+        
+        // Log progress every second
+        if (scanTime % 1f < 0.1f)
+        {
+            Debug.Log($"yy_ Scanning... {scanTime:F1}s");
+        }
+    }
+    
+    if (!scanSuccessful)
+    {
+        Debug.LogWarning("yy_ ⚠️ No hosts found on network");
+        
+        // Additional diagnostic: try direct communication to known IPs
+        string[] possibleIPs = GetNetworkRangeIPs();
+        Debug.Log($"yy_ Trying direct communication to possible IPs: {string.Join(", ", possibleIPs)}");
+        
+        foreach (string ip in possibleIPs.Take(5)) // Test first 5 IPs
+        {
+            yield return StartCoroutine(TestDirectUDPCommunication(ip));
+        }
+    }
+    
+    yield return FinalizeScan(scanSuccessful, foundHostIP);
+}
+
+private IEnumerator TryMultipleBroadcastMethods()
+{
+    Debug.Log("yy_ === TRYING MULTIPLE BROADCAST METHODS ===");
+    
+    string request = "FIND_HOST";
+    byte[] data = System.Text.Encoding.UTF8.GetBytes(request);
+    
+    // Method 1: Standard broadcast
+    try
+    {
+        var broadcastClient = new UdpClient();
+        broadcastClient.EnableBroadcast = true;
+        var broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, broadcastPort);
+        broadcastClient.Send(data, data.Length, broadcastEndpoint);
+        broadcastClient.Close();
+        Debug.Log($"yy_ ✅ Standard broadcast sent to 255.255.255.255:{broadcastPort}");
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError($"yy_ ❌ Standard broadcast failed: {ex.Message}");
+    }
+    
+    yield return new WaitForSeconds(0.1f);
+    
+    // Method 2: Subnet-specific broadcast
+    try
+    {
+        string subnetBroadcast = GetSubnetBroadcastAddress();
+        if (!string.IsNullOrEmpty(subnetBroadcast))
+        {
+            var subnetClient = new UdpClient();
+            subnetClient.EnableBroadcast = true;
+            var subnetEndpoint = new IPEndPoint(IPAddress.Parse(subnetBroadcast), broadcastPort);
+            subnetClient.Send(data, data.Length, subnetEndpoint);
+            subnetClient.Close();
+            Debug.Log($"yy_ ✅ Subnet broadcast sent to {subnetBroadcast}:{broadcastPort}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError($"yy_ ❌ Subnet broadcast failed: {ex.Message}");
+    }
+    
+    yield return new WaitForSeconds(0.1f);
+    
+    // Method 3: Direct IP range scan
+    string[] networkIPs = GetNetworkRangeIPs();
+    foreach (string ip in networkIPs.Take(10)) // Test first 10 IPs in range
+    {
+        try
+        {
+            var directClient = new UdpClient();
+            var directEndpoint = new IPEndPoint(IPAddress.Parse(ip), broadcastPort);
+            directClient.Send(data, data.Length, directEndpoint);
+            directClient.Close();
+            Debug.Log($"yy_ ✅ Direct scan sent to {ip}:{broadcastPort}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"yy_ ⚠️ Direct scan to {ip} failed: {ex.Message}");
+        }
+        
+        yield return new WaitForSeconds(0.01f); // Small delay between sends
+    }
+}
+
+private string GetSubnetBroadcastAddress()
+{
+    var activeInterface = GetActiveNetworkInterface();
+    if (activeInterface == null) return null;
+    
+    var properties = activeInterface.GetIPProperties();
+    foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+    {
+        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+        {
+            // Calculate broadcast address
+            var ipBytes = ip.Address.GetAddressBytes();
+            var maskBytes = ip.IPv4Mask.GetAddressBytes();
+            var broadcastBytes = new byte[4];
+            
+            for (int i = 0; i < 4; i++)
+            {
+                broadcastBytes[i] = (byte)(ipBytes[i] | (~maskBytes[i]));
+            }
+            
+            return new IPAddress(broadcastBytes).ToString();
+        }
+    }
+    return null;
+}
+
+private string[] GetNetworkRangeIPs()
+{
+    var activeInterface = GetActiveNetworkInterface();
+    if (activeInterface == null) return new string[0];
+    
+    var properties = activeInterface.GetIPProperties();
+    foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+    {
+        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+        {
+            // Generate IP range for same subnet
+            var ipBytes = ip.Address.GetAddressBytes();
+            var baseIP = $"{ipBytes[0]}.{ipBytes[1]}.{ipBytes[2]}";
+            
+            return Enumerable.Range(1, 254)
+                .Select(i => $"{baseIP}.{i}")
+                .Where(testIP => testIP != ip.Address.ToString()) // Exclude our own IP
+                .ToArray();
+        }
+    }
+    return new string[0];
+}
+
+private string GetLocalIPAddress()
+{
+    var activeInterface = GetActiveNetworkInterface();
+    if (activeInterface == null) return "127.0.0.1";
+    
+    var properties = activeInterface.GetIPProperties();
+    foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+    {
+        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+        {
+            return ip.Address.ToString();
+        }
+    }
+    return "127.0.0.1";
+}
     #endregion
 }
