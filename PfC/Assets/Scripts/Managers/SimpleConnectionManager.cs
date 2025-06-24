@@ -47,9 +47,13 @@ public class SimpleConnectionManager : MonoBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectDebug;
         
         //testing
-        LogAllNetworkInterfaces();
-        LogCurrentNetworkSelection();
-        LogBroadcastDiagnostics();
+        EnsureNoConnectionApproval();
+        LogDeepConnectionDiagnostics();
+        LogNetcodePackageInfo();
+    
+        // Add transport failure callback
+        NetworkManager.Singleton.OnTransportFailure += OnTransportFailure;
+
     }
 
     private void LoadBasedOnRole(Role role)
@@ -915,6 +919,196 @@ private string GetLocalIPAddress()
         }
     }
     return "127.0.0.1";
+}
+
+// Deep diagnostics for connection approval timeout when approval is disabled
+
+private void LogDeepConnectionDiagnostics()
+{
+    Debug.Log("yy_ ======= DEEP CONNECTION DIAGNOSTICS =======");
+    
+    var nm = NetworkManager.Singleton;
+    var config = nm.NetworkConfig;
+    
+    // Basic settings
+    Debug.Log($"yy_ ConnectionApproval: {config.ConnectionApproval}");
+    Debug.Log($"yy_ ClientConnectionBufferTimeout: {config.ClientConnectionBufferTimeout}");
+    Debug.Log($"yy_ LoadSceneTimeOut: {config.LoadSceneTimeOut}");
+    Debug.Log($"yy_ SpawnTimeout: {config.SpawnTimeout}");
+    
+    // Transport layer diagnostics
+    var transport = nm.GetComponent<UnityTransport>();
+    if (transport != null)
+    {
+        Debug.Log($"yy_ TRANSPORT SETTINGS:");
+        Debug.Log($"yy_   ConnectTimeoutMS: {transport.ConnectTimeoutMS}");
+        Debug.Log($"yy_   MaxConnectAttempts: {transport.MaxConnectAttempts}");
+        Debug.Log($"yy_   HeartbeatTimeoutMS: {transport.HeartbeatTimeoutMS}");
+        Debug.Log($"yy_   MaxPayloadSize: {transport.MaxPayloadSize}");
+        
+        // Debug simulator settings (can cause issues)
+        Debug.Log($"yy_   DEBUG SIMULATOR:");
+        Debug.Log($"yy_     PacketDelayMS: {transport.DebugSimulator.PacketDelayMS}");
+        Debug.Log($"yy_     PacketJitterMS: {transport.DebugSimulator.PacketJitterMS}");
+        Debug.Log($"yy_     PacketDropRate: {transport.DebugSimulator.PacketDropRate}");
+    }
+    
+    // NetworkManager internal state
+    Debug.Log($"yy_ NETWORKMANAGER STATE:");
+    Debug.Log($"yy_   IsHost: {nm.IsHost}");
+    Debug.Log($"yy_   IsServer: {nm.IsServer}");
+    Debug.Log($"yy_   IsClient: {nm.IsClient}");
+    Debug.Log($"yy_   IsListening: {nm.IsListening}");
+    Debug.Log($"yy_   LocalClientId: {nm.LocalClientId}");
+    Debug.Log($"yy_   ConnectedClients.Count: {nm.ConnectedClients.Count}");
+    
+    // Unity and Netcode versions - VERSION MISMATCH CAN CAUSE THIS
+    Debug.Log($"yy_ VERSION INFO:");
+    Debug.Log($"yy_   Unity Version: {Application.unityVersion}");
+    Debug.Log($"yy_   Platform: {Application.platform}");
+    Debug.Log($"yy_   Is Editor: {Application.isEditor}");
+    
+    // Check if ConnectionApprovalCallback is somehow still set
+    Debug.Log($"yy_ ConnectionApprovalCallback is null: {nm.ConnectionApprovalCallback == null}");
+    
+    Debug.Log("yy_ ===========================================");
+}
+
+// Check for Unity Netcode package version issues
+private void LogNetcodePackageInfo()
+{
+    Debug.Log("yy_ === NETCODE PACKAGE DIAGNOSTICS ===");
+    
+    // Try to get package version info
+    try
+    {
+        // Check if we can access NetworkManager assembly info
+        var assembly = typeof(NetworkManager).Assembly;
+        Debug.Log($"yy_ NetworkManager Assembly: {assembly.FullName}");
+        Debug.Log($"yy_ Assembly Location: {assembly.Location}");
+        
+        // Check assembly version
+        var version = assembly.GetName().Version;
+        Debug.Log($"yy_ Assembly Version: {version}");
+        
+    }
+    catch (System.Exception ex)
+    {
+        Debug.LogWarning($"yy_ Could not get assembly info: {ex.Message}");
+    }
+    
+    Debug.Log("yy_ ====================================");
+}
+
+// Enhanced connection process with detailed logging
+private IEnumerator DetailedClientConnectionProcess(string targetIP, Role role)
+{
+    Debug.Log($"yy_ 🔧 === DETAILED CLIENT CONNECTION PROCESS ===");
+    Debug.Log($"yy_ Target: {targetIP}:{port}");
+    
+    // Log diagnostics BEFORE connection
+    LogDeepConnectionDiagnostics();
+    LogNetcodePackageInfo();
+    
+    SetTransportConnection(targetIP, port);
+    
+    // Log transport state after setup
+    var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+    Debug.Log($"yy_ Transport configured - Address: {transport.ConnectionData.Address}, Port: {transport.ConnectionData.Port}");
+    
+    if (NetworkManager.Singleton.StartClient())
+    {
+        Debug.Log("yy_ 🔧 StartClient() returned true, monitoring connection...");
+        
+        // Monitor connection with detailed state logging
+        float timeWaited = 0f;
+        bool connectionSuccessful = false;
+        
+        while (timeWaited < connectionTimeout)
+        {
+            var nm = NetworkManager.Singleton;
+            
+            // Check connection state
+            if (nm.IsConnectedClient)
+            {
+                connectionSuccessful = true;
+                Debug.Log($"yy_ 🔧 ✅ Connection successful after {timeWaited:F1}s!");
+                break;
+            }
+            
+            // Log detailed state every 2 seconds
+            if (timeWaited % 2f < 0.1f)
+            {
+                Debug.Log($"yy_ 🔧 Connection status at {timeWaited:F1}s:");
+                Debug.Log($"yy_   IsConnectedClient: {nm.IsConnectedClient}");
+                Debug.Log($"yy_   IsClient: {nm.IsClient}");
+                Debug.Log($"yy_   IsListening: {nm.IsListening}");
+                Debug.Log($"yy_   LocalClientId: {nm.LocalClientId}");
+                Debug.Log($"yy_   ConnectedClients.Count: {nm.ConnectedClients.Count}");
+            }
+            
+            yield return new WaitForSeconds(0.1f);
+            timeWaited += 0.1f;
+        }
+        
+        // Final state analysis
+        if (connectionSuccessful)
+        {
+            Debug.Log("yy_ 🔧 ✅ CLIENT CONNECTION SUCCESSFUL!");
+            LogDeepConnectionDiagnostics();
+            
+            yield return new WaitForSeconds(1f); // Stabilization
+            SetLocation(role);
+        }
+        else
+        {
+            Debug.LogError("yy_ 🔧 ❌ CLIENT CONNECTION FAILED!");
+            Debug.LogError($"yy_ Final timeout after {connectionTimeout}s");
+            LogDeepConnectionDiagnostics();
+            HandleConnectionFailure();
+        }
+    }
+    else
+    {
+        Debug.LogError("yy_ 🔧 ❌ StartClient() returned false!");
+        LogDeepConnectionDiagnostics();
+        HandleConnectionFailure();
+    }
+}
+
+// Add this to catch transport-level errors
+private void OnTransportFailure()
+{
+    Debug.LogError("yy_ 🚨 TRANSPORT FAILURE DETECTED!");
+    LogDeepConnectionDiagnostics();
+    
+    // Additional transport diagnostics
+    var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+    if (transport != null)
+    {
+        Debug.LogError($"yy_ Transport state during failure:");
+        Debug.LogError($"yy_   Connection Address: {transport.ConnectionData.Address}");
+        Debug.LogError($"yy_   Connection Port: {transport.ConnectionData.Port}");
+    }
+}
+
+// Method to force clear any connection approval callback
+private void EnsureNoConnectionApproval()
+{
+    var nm = NetworkManager.Singleton;
+    var config = nm.NetworkConfig;
+    
+    Debug.Log("yy_ === ENSURING NO CONNECTION APPROVAL ===");
+    Debug.Log($"yy_ BEFORE - ConnectionApproval: {config.ConnectionApproval}");
+    Debug.Log($"yy_ BEFORE - Callback is null: {nm.ConnectionApprovalCallback == null}");
+    
+    // Force disable approval
+    config.ConnectionApproval = false;
+    nm.ConnectionApprovalCallback = null;
+    
+    Debug.Log($"yy_ AFTER - ConnectionApproval: {config.ConnectionApproval}");
+    Debug.Log($"yy_ AFTER - Callback is null: {nm.ConnectionApprovalCallback == null}");
+    Debug.Log("yy_ ========================================");
 }
     #endregion
 }
