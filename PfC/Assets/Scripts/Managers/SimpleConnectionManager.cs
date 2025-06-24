@@ -59,6 +59,7 @@ public class SimpleConnectionManager : MonoBehaviour
         // Your approval logic determines the following values
         response.Approved = true;
         Debug.Log("client approved");
+        response.Pending = false;
     }
 
     private void LoadBasedOnRole(Role role)
