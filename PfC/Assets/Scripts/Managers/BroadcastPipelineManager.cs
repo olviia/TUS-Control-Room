@@ -49,7 +49,7 @@ public class BroadcastPipelineManager : MonoBehaviour
         while (Unity.Netcode.NetworkManager.Singleton == null || 
                (!Unity.Netcode.NetworkManager.Singleton.IsHost && !Unity.Netcode.NetworkManager.Singleton.IsConnectedClient))
         {
-            Debug.Log("xx_🔧 Waiting for network connection...");
+            //Debug.Log("xx_🔧 Waiting for network connection...");
             yield return new WaitForSeconds(0.2f);
         }
         
