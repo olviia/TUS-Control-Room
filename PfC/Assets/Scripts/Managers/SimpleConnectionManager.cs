@@ -110,7 +110,10 @@ public class SimpleConnectionManager : MonoBehaviour
         if (NetworkManager.Singleton.StartClient())
         {
             Debug.Log("xx_🔧 Client connection initiated, waiting for result...");
-            
+            //testing
+            EnsureNoConnectionApproval();
+            LogDeepConnectionDiagnostics();
+            LogNetcodePackageInfo();
             // Wait for connection result
             float timeWaited = 0f;
             while (timeWaited < connectionTimeout && !NetworkManager.Singleton.IsConnectedClient)
