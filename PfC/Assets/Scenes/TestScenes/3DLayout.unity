@@ -2841,7 +2841,11 @@ MonoBehaviour:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: cdf3a2a2263f80d4391f72a538e54f29, type: 2}
     TickRate: 30
+<<<<<<< HEAD
     ClientConnectionBufferTimeout: 100
+=======
+    ClientConnectionBufferTimeout: 10
+>>>>>>> parent of fba3aa3 (cleared network prefabs)
     ConnectionApproval: 0
     ConnectionData: 
     EnableTimeResync: 0
