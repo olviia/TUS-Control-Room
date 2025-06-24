@@ -42,25 +42,12 @@ public class SimpleConnectionManager : MonoBehaviour
         NetworkManager.Singleton.OnServerStarted += OnHostStarted;
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-        
-        NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
-        
+  
         // Add extra debug callbacks
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectDebug;
         
-
     }
 
-    private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
-    {
-        // The client identifier to be authenticated
-        var clientId = request.ClientNetworkId;
-
-        // Your approval logic determines the following values
-        response.Approved = true;
-        Debug.Log("client approved");
-        response.Pending = false;
-    }
 
     private void LoadBasedOnRole(Role role)
     {
