@@ -69,11 +69,11 @@ public class SimpleConnectionManager : MonoBehaviour
         
         if (role == Role.Director)
         {
-            StartCoroutine(DirectorConnectionProcess(targetIP));
+            DirectorConnectionProcess(targetIP);
         }
         else
         {
-            StartCoroutine(ClientConnectionProcess(targetIP));
+            ClientConnectionProcess(targetIP);
         }
     }
     
@@ -84,14 +84,15 @@ public class SimpleConnectionManager : MonoBehaviour
 
     #region Connection Logic
 
-    private IEnumerator DirectorConnectionProcess(string targetIP)
+    private void DirectorConnectionProcess(string targetIP)
     {
         Debug.Log("xx_🔧 Director: Attempting to start as host...");
         
         // Set up transport for hosting with actual network IP
         SetTransportConnection(targetIP, port);
+        NetworkManager.Singleton.StartHost();
         
-        if (NetworkManager.Singleton.StartHost())
+        if (NetworkManager.Singleton.IsServer)
         {
             Debug.Log($"xx_🔧 Director: Successfully started as HOST on {targetIP}:{port}");
             Debug.Log($"xx_🔧 📢 Other machines should connect to: {targetIP}:{port}");
@@ -99,44 +100,22 @@ public class SimpleConnectionManager : MonoBehaviour
         else
         {
             Debug.Log($"xx_🔧 Director: Failed to start as host on {targetIP}. Trying to connect as client...");
-            yield return new WaitForSeconds(1f);
             // Connect to the target IP (could be another Director's host)
-            yield return StartCoroutine(ClientConnectionProcess(targetIP));
+            ClientConnectionProcess(targetIP);
         }
     }
 
-    private IEnumerator ClientConnectionProcess(string targetIP)
+    private void ClientConnectionProcess(string targetIP)
     {
         Debug.Log($"xx_🔧 Attempting to connect as client to {targetIP}:{port}");
         
         // Set up transport for client connection
         SetTransportConnection(targetIP, port);
-        
-        if (NetworkManager.Singleton.StartClient())
+
+        NetworkManager.Singleton.StartClient();
+        if (NetworkManager.Singleton.IsClient &&!NetworkManager.Singleton.IsServer)
         {
-            Debug.Log("xx_🔧 Client connection initiated, waiting for result...");
-            // Wait for connection result
-            float timeWaited = 0f;
-            while (timeWaited < connectionTimeout && !NetworkManager.Singleton.IsConnectedClient)
-            {
-                yield return new WaitForSeconds(0.1f);
-                timeWaited += 0.1f;
-            }
-            
-            if (NetworkManager.Singleton.IsConnectedClient)
-            {
-                Debug.Log("xx_🔧 ✅ Successfully connected as client!");
-            }
-            else
-            {
-                Debug.LogError($"xx_🔧 ❌ Failed to connect to host at {targetIP}:{port} within {connectionTimeout} seconds");
-                HandleConnectionFailure();
-            }
-        }
-        else
-        {
-            Debug.LogError("xx_🔧 ❌ Failed to start client");
-            HandleConnectionFailure();
+            Debug.Log($"xx_🔧 Succesfully started remote client on {targetIP}:{port}");
         }
     }
 
