@@ -98,8 +98,7 @@ public class NetworkLightManager : NetworkBehaviour
     // Your existing methods, now with network sync
     public void SetLightIntensity(float value)
     {
-        // Only allow the owner to change network values
-        if (IsOwner && !isUpdatingFromNetwork)
+        if (!isUpdatingFromNetwork)
         {
             networkIntensity.Value = value;
         }
@@ -110,7 +109,7 @@ public class NetworkLightManager : NetworkBehaviour
 
     public void SetLightColor(Color newColor)
     {
-        if (!IsOwner || isUpdatingFromNetwork) return;
+        if (!isUpdatingFromNetwork) return;
         
         // Update both RGB and HSV network values
         networkRed.Value = newColor.r;
@@ -129,7 +128,7 @@ public class NetworkLightManager : NetworkBehaviour
 
     public void SetLightHue(float hue)
     {
-        if (IsOwner && !isUpdatingFromNetwork)
+        if (!isUpdatingFromNetwork)
         {
             networkHue.Value = hue;
             
@@ -147,7 +146,7 @@ public class NetworkLightManager : NetworkBehaviour
     // RGB Color Picker Methods
     public void SetRedValue(float red)
     {
-        if (IsOwner && !isUpdatingFromNetwork)
+        if (!isUpdatingFromNetwork)
         {
             networkRed.Value = red;
             UpdateHSVFromRGB();
@@ -158,7 +157,7 @@ public class NetworkLightManager : NetworkBehaviour
 
     public void SetGreenValue(float green)
     {
-        if (IsOwner && !isUpdatingFromNetwork)
+        if (!isUpdatingFromNetwork)
         {
             networkGreen.Value = green;
             UpdateHSVFromRGB();
@@ -169,7 +168,7 @@ public class NetworkLightManager : NetworkBehaviour
 
     public void SetBlueValue(float blue)
     {
-        if (IsOwner && !isUpdatingFromNetwork)
+        if (!isUpdatingFromNetwork)
         {
             networkBlue.Value = blue;
             UpdateHSVFromRGB();
@@ -193,7 +192,7 @@ public class NetworkLightManager : NetworkBehaviour
     // Additional methods for saturation and brightness
     public void SetLightSaturation(float saturation)
     {
-        if (IsOwner && !isUpdatingFromNetwork)
+        if (!isUpdatingFromNetwork)
         {
             networkSaturation.Value = saturation;
             
@@ -209,7 +208,7 @@ public class NetworkLightManager : NetworkBehaviour
 
     public void SetLightBrightness(float brightness)
     {
-        if (IsOwner && !isUpdatingFromNetwork)
+        if (!isUpdatingFromNetwork)
         {
             networkBrightness.Value = brightness;
             

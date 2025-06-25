@@ -509,6 +509,7 @@ GameObject:
   - component: {fileID: 431161376}
   - component: {fileID: 431161378}
   - component: {fileID: 431161377}
+  - component: {fileID: 431161379}
   m_Layer: 0
   m_Name: NetworkStreamCoordinator
   m_TagString: Untagged
@@ -543,7 +544,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c368e7883218c6488751be7d390fb2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  localPipelineManager: {fileID: 427570641}
 --- !u!114 &431161378
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -565,6 +565,18 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!114 &431161379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 431161375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c93c8d0f003c600488c8a6dae63c3e63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &469267701
 PrefabInstance:
   m_ObjectHideFlags: 0

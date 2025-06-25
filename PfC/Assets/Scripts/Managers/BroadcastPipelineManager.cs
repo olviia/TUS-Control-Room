@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BroadcastPipeline;
+using Klak.Ndi;
 using OBSWebsocketDotNet;
+using Unity.Netcode;
 using UnityEngine;
 
 public class BroadcastPipelineManager : MonoBehaviour 
@@ -28,6 +30,7 @@ public class BroadcastPipelineManager : MonoBehaviour
     private Dictionary<PipelineType, bool> networkControlledPipelines = new Dictionary<PipelineType, bool>();
     
     private NetworkStreamCoordinator networkStreamCoordinator;
+    
 
     private void Awake()
     {
@@ -39,35 +42,10 @@ public class BroadcastPipelineManager : MonoBehaviour
 
     private void Start()
     {
-        // Don't immediately try to find the network coordinator
-        StartCoroutine(WaitForNetworkStabilization());
+        networkStreamCoordinator = FindObjectOfType<NetworkStreamCoordinator>();
+        NetworkStreamCoordinator.OnStreamControlChanged -= OnNetworkStreamChanged;
     }
 
-    private IEnumerator WaitForNetworkStabilization()
-    {
-        // Wait for network to be ready
-        while (Unity.Netcode.NetworkManager.Singleton == null || 
-               (!Unity.Netcode.NetworkManager.Singleton.IsHost && !Unity.Netcode.NetworkManager.Singleton.IsConnectedClient))
-        {
-            //Debug.Log("xx_🔧 Waiting for network connection...");
-            yield return new WaitForSeconds(0.2f);
-        }
-        
-        // Give extra time for NetworkBehaviours to spawn
-        yield return new WaitForSeconds(1f);
-        
-        // Now safely find and connect to NetworkStreamCoordinator
-        networkStreamCoordinator = FindObjectOfType<NetworkStreamCoordinator>();
-        if (networkStreamCoordinator != null)
-        {
-            Debug.Log("xx_🔧 ✅ Successfully found NetworkStreamCoordinator");
-            NetworkStreamCoordinator.OnStreamControlChanged += OnNetworkStreamChanged;
-        }
-        else
-        {
-            Debug.LogWarning("xx_🔧 ⚠️ NetworkStreamCoordinator not found - operating in local mode");
-        }
-    }
 
     private void OnDestroy()
     {
@@ -156,14 +134,7 @@ public class BroadcastPipelineManager : MonoBehaviour
             {
                 Debug.Log($"xx_🌐 Additionally requesting network control for {toStage}");
                 
-                if (networkStreamCoordinator != null)
-                {
-                    networkStreamCoordinator.RequestStreamControl(toStage, sourceToForward.receiver);
-                }
-                else
-                {
-                    Debug.LogWarning("xx_NetworkStreamCoordinator not found! Operating in local-only mode");
-                }
+                networkStreamCoordinator?.RequestStreamControl(toStage, sourceToForward.receiver);
             }
         }
         else
@@ -367,9 +338,9 @@ public class BroadcastPipelineManager : MonoBehaviour
         bool isMyStream = false;
         
         // Check if this is my stream or someone else's
-        if (Unity.Netcode.NetworkManager.Singleton != null)
+        if (NetworkManager.Singleton != null)
         {
-            var localClientId = Unity.Netcode.NetworkManager.Singleton.LocalClientId;
+            var localClientId = NetworkManager.Singleton.LocalClientId;
             isMyStream = assignment.isActive && assignment.directorClientId == localClientId;
         }
         
