@@ -29,6 +29,13 @@ public class SimpleConnectionManager : MonoBehaviour
     private System.Net.Sockets.UdpClient udpBroadcaster;
     private System.Net.Sockets.UdpClient udpListener;
     private bool isHostBroadcasting = false;
+    
+    // Connection state tracking
+    private enum ConnectionState { Idle, ConnectingAsClient, BecomingHost }
+    private ConnectionState currentState = ConnectionState.Idle;
+    private Role pendingRole;
+    
+    private bool hostAlreadyRunning = false;
 
     private void Start()
     {
@@ -42,20 +49,28 @@ public class SimpleConnectionManager : MonoBehaviour
         NetworkManager.Singleton.OnServerStarted += OnHostStarted;
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-  
-        
     }
-
 
     private void LoadBasedOnRole(Role role)
     {
+        if (currentState != ConnectionState.Idle)
+        {
+            Debug.LogWarning("xx_🔧 Connection already in progress");
+            return;
+        }
+
         string targetIP = GetTargetIP();
         SetLocation(role);
         CommunicationManager.Instance.SetRole(role);
+        pendingRole = role;
         
         if (role == Role.Director)
         {
+            WebsocketManager websocketManager = FindAnyObjectByType<WebsocketManager>();
+            websocketManager.SetDefaultWsAdress(ipInput.text);
+            websocketManager.AutoConnectToServer();
             DirectorConnectionProcess(targetIP);
+            
         }
         else
         {
@@ -67,6 +82,7 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         return string.IsNullOrEmpty(ipInput.text) ? GetLocalIPAddress() : ipInput.text.Trim();
     }
+    
     private string GetLocalIPAddress()
     {
         try
@@ -92,21 +108,55 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void DirectorConnectionProcess(string targetIP)
     {
-        SetTransportConnection(targetIP, port);
-        NetworkManager.Singleton.StartHost();
+        Debug.Log($"xx_🔧 Director attempting to connect to {targetIP}:{port}");
+        currentState = ConnectionState.ConnectingAsClient;
         
-        if (!NetworkManager.Singleton.IsServer)
+        SetTransportConnection(targetIP, port);
+        if (!hostAlreadyRunning)
         {
-            Debug.Log($"xx_🔧 Director: Failed to start as host on {targetIP}. Trying to connect as client...");
-            ClientConnectionProcess(targetIP);
+            NetworkManager.Singleton.StartHost();
         }
+        else NetworkManager.Singleton.StartClient();
     }
+
 
     private void ClientConnectionProcess(string targetIP)
     {
         Debug.Log($"xx_🔧 Attempting to connect as client to {targetIP}:{port}");
+        currentState = ConnectionState.ConnectingAsClient;
+        
         SetTransportConnection(targetIP, port);
+        
+        // Start timeout for regular clients
+        if (connectionAttemptCoroutine != null)
+            StopCoroutine(connectionAttemptCoroutine);
+        connectionAttemptCoroutine = StartCoroutine(ClientConnectionTimeout());
+        
         NetworkManager.Singleton.StartClient();
+    }
+
+    private IEnumerator ClientConnectionTimeout()
+    {
+        yield return new WaitForSeconds(connectionTimeout);
+        
+        if (currentState == ConnectionState.ConnectingAsClient && !NetworkManager.Singleton.IsConnectedClient)
+        {
+            Debug.Log("xx_🔧 Client connection timeout - retrying once");
+            NetworkManager.Singleton.Shutdown();
+            
+            yield return new WaitForSeconds(1f); // Wait for potential host
+            
+            // Retry once
+            NetworkManager.Singleton.StartClient();
+            yield return new WaitForSeconds(connectionTimeout);
+            
+            if (!NetworkManager.Singleton.IsConnectedClient)
+            {
+                Debug.Log("xx_🔧 Client retry failed");
+                NetworkManager.Singleton.Shutdown();
+                HandleConnectionFailure();
+            }
+        }
     }
 
     private void SetTransportConnection(string ip, ushort port)
@@ -119,6 +169,7 @@ public class SimpleConnectionManager : MonoBehaviour
     private void HandleConnectionFailure()
     {
         Debug.Log("xx_🔧 Connection failed - returning to role selection");
+        currentState = ConnectionState.Idle;
         ShowInitialSetup();
     }
 
@@ -128,12 +179,31 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void OnHostStarted()
     {
+        Debug.Log("xx_🔧 ✅ Host started successfully");
+        currentState = ConnectionState.Idle;
+        
+        if (connectionAttemptCoroutine != null)
+        {
+            StopCoroutine(connectionAttemptCoroutine);
+            connectionAttemptCoroutine = null;
+        }
+        
         StartHostBroadcasting();
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        //might have some logic in future
+        if (clientId == NetworkManager.Singleton.LocalClientId)
+        {
+            Debug.Log("xx_🔧 ✅ Connected as client successfully");
+            currentState = ConnectionState.Idle;
+            
+            if (connectionAttemptCoroutine != null)
+            {
+                StopCoroutine(connectionAttemptCoroutine);
+                connectionAttemptCoroutine = null;
+            }
+        }
     }
     
 
@@ -147,6 +217,15 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void HandleDisconnect()
     {
+        Debug.Log("xx_🔧 Client disconnected");
+        currentState = ConnectionState.Idle;
+        
+        if (connectionAttemptCoroutine != null)
+        {
+            StopCoroutine(connectionAttemptCoroutine);
+            connectionAttemptCoroutine = null;
+        }
+        
         ShowInitialSetup();
     }
 
@@ -200,6 +279,7 @@ public class SimpleConnectionManager : MonoBehaviour
             Debug.Log("xx_🔧 Client disconnected");
         }
         
+        currentState = ConnectionState.Idle;
         NetworkManager.Singleton.Shutdown();
     }
 
@@ -243,6 +323,7 @@ public class SimpleConnectionManager : MonoBehaviour
                 if (result.found)
                 {
                     Debug.Log($"xx_🔧 ✅ Found host at: {result.ip}");
+                    hostAlreadyRunning = true;
                     FinalizeScan(true, result.ip);
                     yield break;
                 }
@@ -250,6 +331,7 @@ public class SimpleConnectionManager : MonoBehaviour
         }
     
         Debug.Log("xx_🔧 ⚠️ No hosts found");
+        hostAlreadyRunning = false;
         FinalizeScan(false, "");
     }
     private bool SetupUDPListener()

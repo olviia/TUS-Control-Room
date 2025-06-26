@@ -43,7 +43,7 @@ public class BroadcastPipelineManager : MonoBehaviour
     private void Start()
     {
         networkStreamCoordinator = FindObjectOfType<NetworkStreamCoordinator>();
-        NetworkStreamCoordinator.OnStreamControlChanged -= OnNetworkStreamChanged;
+        NetworkStreamCoordinator.OnStreamControlChanged += OnNetworkStreamChanged;
     }
 
 
@@ -349,6 +349,13 @@ public class BroadcastPipelineManager : MonoBehaviour
         {
             // Another director is controlling this pipeline
             networkControlledPipelines[pipelineType] = true;
+            
+            // Remove from active assignments to clear the outline
+            if (activeAssignments.ContainsKey(pipelineType))
+            {
+                Debug.Log($"xx_Removing {pipelineType} from active assignments - controlled by another director");
+                activeAssignments.Remove(pipelineType);
+            }
             Debug.Log($"xx_📡 {pipelineType} now controlled by Director {assignment.directorClientId}");
         }
         else if (assignment.isActive && isMyStream)

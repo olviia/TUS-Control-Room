@@ -20,28 +20,28 @@ public class NetworkLightManager : NetworkBehaviour
     
     private Light[] directionalLights; 
     
-    // Network variables to sync light properties
+    // Network variables to sync light properties - Server authority
     private NetworkVariable<float> networkIntensity = new NetworkVariable<float>(
-        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     
     private NetworkVariable<float> networkHue = new NetworkVariable<float>(
-        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     
     private NetworkVariable<float> networkSaturation = new NetworkVariable<float>(
-        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     
     private NetworkVariable<float> networkBrightness = new NetworkVariable<float>(
-        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // RGB Network variables for direct RGB control
     private NetworkVariable<float> networkRed = new NetworkVariable<float>(
-        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     
     private NetworkVariable<float> networkGreen = new NetworkVariable<float>(
-        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     
     private NetworkVariable<float> networkBlue = new NetworkVariable<float>(
-        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // Flag to prevent infinite loops when updating sliders
     private bool isUpdatingFromNetwork = false;
@@ -69,7 +69,7 @@ public class NetworkLightManager : NetworkBehaviour
         networkGreen.OnValueChanged += OnNetworkGreenChanged;
         networkBlue.OnValueChanged += OnNetworkBlueChanged;
         
-        // Setup slider listeners (for all clients, but only owner can change network values)
+        // Setup slider listeners (for all clients)
         SetupSliderListeners();
         
         // Apply initial network values to lights and sliders
@@ -95,52 +95,71 @@ public class NetworkLightManager : NetworkBehaviour
             bSlider.onValueChanged.AddListener(SetBlueValue);
     }
 
-    // Your existing methods, now with network sync
+    // Light control methods - now using ServerRPCs
     public void SetLightIntensity(float value)
     {
         if (!isUpdatingFromNetwork)
         {
-            networkIntensity.Value = value;
+            SetLightIntensityServerRpc(value);
         }
         
-        // Apply to lights immediately (for responsiveness)
+        // Apply to lights immediately for responsiveness
         ApplyIntensityToLights(value);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetLightIntensityServerRpc(float intensity)
+    {
+        networkIntensity.Value = intensity;
     }
 
     public void SetLightColor(Color newColor)
     {
-        if (!isUpdatingFromNetwork) return;
+        if (isUpdatingFromNetwork) return;
         
-        // Update both RGB and HSV network values
-        networkRed.Value = newColor.r;
-        networkGreen.Value = newColor.g;
-        networkBlue.Value = newColor.b;
+        SetLightColorServerRpc(newColor.r, newColor.g, newColor.b);
+        
+        // Apply immediately
+        ApplyColorToLights(newColor);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetLightColorServerRpc(float r, float g, float b)
+    {
+        // Update RGB network values
+        networkRed.Value = r;
+        networkGreen.Value = g;
+        networkBlue.Value = b;
         
         // Convert color to HSV for network sync
+        Color newColor = new Color(r, g, b);
         Color.RGBToHSV(newColor, out float h, out float s, out float v);
         networkHue.Value = h;
         networkSaturation.Value = s;
         networkBrightness.Value = v;
-        
-        // Apply immediately
-        ApplyColorToLights(newColor);
     }
 
     public void SetLightHue(float hue)
     {
         if (!isUpdatingFromNetwork)
         {
-            networkHue.Value = hue;
-            
-            // Update RGB values when HSV changes
-            Color newColor = Color.HSVToRGB(hue, networkSaturation.Value, networkBrightness.Value);
-            networkRed.Value = newColor.r;
-            networkGreen.Value = newColor.g;
-            networkBlue.Value = newColor.b;
+            SetLightHueServerRpc(hue);
         }
         
         // Apply to lights immediately
         ApplyHueToLights(hue);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetLightHueServerRpc(float hue)
+    {
+        networkHue.Value = hue;
+        
+        // Update RGB values when HSV changes
+        Color newColor = Color.HSVToRGB(hue, networkSaturation.Value, networkBrightness.Value);
+        networkRed.Value = newColor.r;
+        networkGreen.Value = newColor.g;
+        networkBlue.Value = newColor.b;
     }
 
     // RGB Color Picker Methods
@@ -148,42 +167,60 @@ public class NetworkLightManager : NetworkBehaviour
     {
         if (!isUpdatingFromNetwork)
         {
-            networkRed.Value = red;
-            UpdateHSVFromRGB();
+            SetRedValueServerRpc(red);
         }
         
         ApplyRGBColorToLights();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetRedValueServerRpc(float red)
+    {
+        networkRed.Value = red;
+        UpdateHSVFromRGB();
     }
 
     public void SetGreenValue(float green)
     {
         if (!isUpdatingFromNetwork)
         {
-            networkGreen.Value = green;
-            UpdateHSVFromRGB();
+            SetGreenValueServerRpc(green);
         }
         
         ApplyRGBColorToLights();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetGreenValueServerRpc(float green)
+    {
+        networkGreen.Value = green;
+        UpdateHSVFromRGB();
     }
 
     public void SetBlueValue(float blue)
     {
         if (!isUpdatingFromNetwork)
         {
-            networkBlue.Value = blue;
-            UpdateHSVFromRGB();
+            SetBlueValueServerRpc(blue);
         }
         
         ApplyRGBColorToLights();
     }
 
-    // Helper method to update HSV values when RGB changes
+    [ServerRpc(RequireOwnership = false)]
+    private void SetBlueValueServerRpc(float blue)
+    {
+        networkBlue.Value = blue;
+        UpdateHSVFromRGB();
+    }
+
+    // Helper method to update HSV values when RGB changes (server-side only)
     private void UpdateHSVFromRGB()
     {
         Color rgbColor = new Color(networkRed.Value, networkGreen.Value, networkBlue.Value);
         Color.RGBToHSV(rgbColor, out float h, out float s, out float v);
         
-        // Update HSV network variables (this will trigger their change events)
+        // Update HSV network variables
         networkHue.Value = h;
         networkSaturation.Value = s;
         networkBrightness.Value = v;
@@ -194,32 +231,44 @@ public class NetworkLightManager : NetworkBehaviour
     {
         if (!isUpdatingFromNetwork)
         {
-            networkSaturation.Value = saturation;
-            
-            // Update RGB values when HSV changes
-            Color newColor = Color.HSVToRGB(networkHue.Value, saturation, networkBrightness.Value);
-            networkRed.Value = newColor.r;
-            networkGreen.Value = newColor.g;
-            networkBlue.Value = newColor.b;
+            SetLightSaturationServerRpc(saturation);
         }
         
         ApplyCurrentColorToLights();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetLightSaturationServerRpc(float saturation)
+    {
+        networkSaturation.Value = saturation;
+        
+        // Update RGB values when HSV changes
+        Color newColor = Color.HSVToRGB(networkHue.Value, saturation, networkBrightness.Value);
+        networkRed.Value = newColor.r;
+        networkGreen.Value = newColor.g;
+        networkBlue.Value = newColor.b;
     }
 
     public void SetLightBrightness(float brightness)
     {
         if (!isUpdatingFromNetwork)
         {
-            networkBrightness.Value = brightness;
-            
-            // Update RGB values when HSV changes
-            Color newColor = Color.HSVToRGB(networkHue.Value, networkSaturation.Value, brightness);
-            networkRed.Value = newColor.r;
-            networkGreen.Value = newColor.g;
-            networkBlue.Value = newColor.b;
+            SetLightBrightnessServerRpc(brightness);
         }
         
         ApplyCurrentColorToLights();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetLightBrightnessServerRpc(float brightness)
+    {
+        networkBrightness.Value = brightness;
+        
+        // Update RGB values when HSV changes
+        Color newColor = Color.HSVToRGB(networkHue.Value, networkSaturation.Value, brightness);
+        networkRed.Value = newColor.r;
+        networkGreen.Value = newColor.g;
+        networkBlue.Value = newColor.b;
     }
 
     // Network variable change handlers
@@ -352,12 +401,5 @@ public class NetworkLightManager : NetworkBehaviour
     public Color GetCurrentColorHSV()
     {
         return Color.HSVToRGB(networkHue.Value, networkSaturation.Value, networkBrightness.Value);
-    }
-
-    // Method to transfer ownership (optional - useful if you want different clients to control at different times)
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestOwnershipServerRpc(ulong clientId)
-    {
-        GetComponent<NetworkObject>().ChangeOwnership(clientId);
     }
 }

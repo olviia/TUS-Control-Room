@@ -24,6 +24,8 @@ public class WebsocketManager : MonoBehaviour
     private Queue<Action> actionsToExecuteOnMainThread = new Queue<Action>();
 
     //Development Server Settings
+    
+    //ip is assigned in SimpleConnectionManager
     [SerializeField] private string defaultWsAdress = "0.0.0.0";
     [SerializeField] private int defaultWsPort = 32419;
     [SerializeField] private string defaultWsPassword = "";
@@ -38,9 +40,14 @@ public class WebsocketManager : MonoBehaviour
         actionsToExecuteOnMainThread = new Queue<Action>();
     }
 
+    public void SetDefaultWsAdress(string adress)
+    {
+        defaultWsAdress = adress;
+    }
     void Start()
     {
-        AutoConnectToServer();
+        //is triggered in SimpleConnectionManager
+        //AutoConnectToServer();
     }
 
     private void Update()
@@ -67,7 +74,7 @@ public class WebsocketManager : MonoBehaviour
     }
 
     #region Connection Handling
-    private void AutoConnectToServer()
+    public void AutoConnectToServer()
     {
         string serverAdress = defaultWsAdress;
         int serverPort = defaultWsPort;
