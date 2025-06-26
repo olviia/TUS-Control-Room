@@ -15,7 +15,18 @@ public struct StreamAssignment : INetworkSerializable
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref directorClientId);
-        serializer.SerializeValue(ref streamSourceName);
+    
+        // Handle null strings safely
+        if (serializer.IsWriter)
+        {
+            var safeString = streamSourceName ?? "";
+            serializer.SerializeValue(ref safeString);
+        }
+        else
+        {
+            serializer.SerializeValue(ref streamSourceName);
+        }
+    
         serializer.SerializeValue(ref pipelineType);
         serializer.SerializeValue(ref isActive);
     }
@@ -23,36 +34,46 @@ public struct StreamAssignment : INetworkSerializable
 
 public class NetworkStreamCoordinator : NetworkBehaviour
 {
-    private NetworkVariable<StreamAssignment> studioLiveStream;
-    private NetworkVariable<StreamAssignment> tvLiveStream;
+    private NetworkVariable<StreamAssignment> studioLiveStream = new NetworkVariable<StreamAssignment>(
+        new StreamAssignment { isActive = false },
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
     
+    private NetworkVariable<StreamAssignment> tvLiveStream = new NetworkVariable<StreamAssignment>(
+        new StreamAssignment { isActive = false },
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
     public static event Action<StreamAssignment, string> OnStreamControlChanged;
 
     private void Awake()
     {
-        studioLiveStream = new NetworkVariable<StreamAssignment>(
-            new StreamAssignment { isActive = false },
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Server
-        );
-        
-        tvLiveStream = new NetworkVariable<StreamAssignment>(
-            new StreamAssignment { isActive = false },
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Server
-        );
+
     }
 
     public override void OnNetworkSpawn()
     {
-        studioLiveStream.OnValueChanged += OnStudioLiveStreamChanged;
-        tvLiveStream.OnValueChanged += OnTvLiveStreamChanged;
+       
+        try
+        {
+            Debug.Log("[StreamCoordinator] OnNetworkSpawn starting");
+            studioLiveStream.OnValueChanged += OnStudioLiveStreamChanged;
+            tvLiveStream.OnValueChanged += OnTvLiveStreamChanged;
+            Debug.Log("[StreamCoordinator] OnNetworkSpawn completed");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[StreamCoordinator] OnNetworkSpawn failed: {e}");
+        }
     }
 
     #region Public Interface
 
     public void RequestStreamControl(PipelineType pipeline, NdiReceiver localNdiSource)
     {
+        Debug.Log($"[StreamCoordinator] RequestStreamControl pipeline:{pipeline} localNdiSource:{localNdiSource}");
+
         if (NetworkManager.Singleton == null || 
             (!NetworkManager.Singleton.IsConnectedClient && !NetworkManager.Singleton.IsHost)) return;
         if (pipeline != PipelineType.StudioLive && pipeline != PipelineType.TVLive) return;
@@ -75,6 +96,8 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestStreamControlServerRpc(PipelineType pipeline, string sourceIdentifier, ulong requestingClientId)
     {
+        Debug.Log($"[StreamCoordinator] RequestStreamControlServerRpc pipeline:{pipeline} localNdiSource:{sourceIdentifier}, requestingClientId:{requestingClientId}");
+
         StreamAssignment newAssignment = new StreamAssignment
         {
             directorClientId = requestingClientId,
@@ -118,16 +141,21 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     private void OnStudioLiveStreamChanged(StreamAssignment previousValue, StreamAssignment newValue)
     {
+        Debug.Log($"[StreamCoordinator] OnStudioLiveStreamChanged from {previousValue} to {newValue}");
         HandleStreamChange(previousValue, newValue, "Studio Live");
     }
 
     private void OnTvLiveStreamChanged(StreamAssignment previousValue, StreamAssignment newValue)
     {
+        Debug.Log($"[StreamCoordinator] OnTVLiveStreamChanged from {previousValue} to {newValue}");
+
         HandleStreamChange(previousValue, newValue, "TV Live");
     }
 
     private void HandleStreamChange(StreamAssignment previousValue, StreamAssignment newValue, string pipelineName)
     {
+        Debug.Log($"[StreamCoordinator] HandleStreamChange {previousValue} to {newValue}");
+
         string changeDescription = GetStreamChangeDescription(previousValue, newValue);
         OnStreamControlChanged?.Invoke(newValue, changeDescription);
     }

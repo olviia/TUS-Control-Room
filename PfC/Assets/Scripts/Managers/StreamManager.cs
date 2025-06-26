@@ -19,6 +19,8 @@ public class StreamManager : MonoBehaviour
     
     private void HandleStreamControlChange(StreamAssignment assignment, string description)
     {
+        Debug.Log($"[StreamManager] HandleStreamControlChange assignment {assignment}, description {description}");
+
         if (!assignment.isActive)
         {
             FallbackToLocal(assignment.pipelineType);

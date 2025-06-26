@@ -27,7 +27,7 @@ public class BroadcastTriggerClick : MonoBehaviour
 
         foreach (var ray in allRays)
         {
-            Debug.Log($"Ray: {ray.name} on parent: {ray.transform.parent?.name}");
+//            Debug.Log($"Ray: {ray.name} on parent: {ray.transform.parent?.name}");
 
             // Check by name patterns (case insensitive)
             string rayName = ray.name.ToLower();
@@ -36,12 +36,12 @@ public class BroadcastTriggerClick : MonoBehaviour
             if (rayName.Contains("left") || parentName.Contains("left"))
             {
                 leftHandRay = ray;
-                Debug.Log($"Assigned LEFT ray: {ray.name}");
+                //Debug.Log($"Assigned LEFT ray: {ray.name}");
             }
             else if (rayName.Contains("right") || parentName.Contains("right"))
             {
                 rightHandRay = ray;
-                Debug.Log($"Assigned RIGHT ray: {ray.name}");
+                //Debug.Log($"Assigned RIGHT ray: {ray.name}");
             }
         }
 

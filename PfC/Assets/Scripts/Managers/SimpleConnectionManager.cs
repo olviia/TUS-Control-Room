@@ -29,6 +29,13 @@ public class SimpleConnectionManager : MonoBehaviour
     private System.Net.Sockets.UdpClient udpBroadcaster;
     private System.Net.Sockets.UdpClient udpListener;
     private bool isHostBroadcasting = false;
+    
+    // Connection state tracking
+    private enum ConnectionState { Idle, ConnectingAsClient, BecomingHost }
+    private ConnectionState currentState = ConnectionState.Idle;
+    private Role pendingRole;
+    
+    private bool hostAlreadyRunning = false;
 
     private void Start()
     {
@@ -42,22 +49,28 @@ public class SimpleConnectionManager : MonoBehaviour
         NetworkManager.Singleton.OnServerStarted += OnHostStarted;
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-  
-        // Add extra debug callbacks
-        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectDebug;
-        
     }
-
 
     private void LoadBasedOnRole(Role role)
     {
+        if (currentState != ConnectionState.Idle)
+        {
+            Debug.LogWarning("xx_🔧 Connection already in progress");
+            return;
+        }
+
         string targetIP = GetTargetIP();
         SetLocation(role);
         CommunicationManager.Instance.SetRole(role);
+        pendingRole = role;
         
         if (role == Role.Director)
         {
+            WebsocketManager websocketManager = FindAnyObjectByType<WebsocketManager>();
+            websocketManager.SetDefaultWsAdress(ipInput.text);
+            websocketManager.AutoConnectToServer();
             DirectorConnectionProcess(targetIP);
+            
         }
         else
         {
@@ -67,43 +80,82 @@ public class SimpleConnectionManager : MonoBehaviour
     
     private string GetTargetIP()
     {
-        return string.IsNullOrEmpty(ipInput.text) ? "127.0.0.1" : ipInput.text.Trim();
+        return string.IsNullOrEmpty(ipInput.text) ? GetLocalIPAddress() : ipInput.text.Trim();
+    }
+    
+    private string GetLocalIPAddress()
+    {
+        try
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ip))
+                {
+                    return ip.ToString();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"xx_🔧 ⚠️ Failed to get local IP: {ex.Message}");
+        }
+    
+        return "127.0.0.1"; // Fallback to localhost
     }
 
     #region Connection Logic
 
     private void DirectorConnectionProcess(string targetIP)
     {
-        Debug.Log("xx_🔧 Director: Attempting to start as host...");
+        Debug.Log($"xx_🔧 Director attempting to connect to {targetIP}:{port}");
+        currentState = ConnectionState.ConnectingAsClient;
         
-        // Set up transport for hosting with actual network IP
         SetTransportConnection(targetIP, port);
-        NetworkManager.Singleton.StartHost();
-        
-        if (NetworkManager.Singleton.IsServer)
+        if (!hostAlreadyRunning)
         {
-            Debug.Log($"xx_🔧 Director: Successfully started as HOST on {targetIP}:{port}");
-            Debug.Log($"xx_🔧 📢 Other machines should connect to: {targetIP}:{port}");
+            NetworkManager.Singleton.StartHost();
         }
-        else
-        {
-            Debug.Log($"xx_🔧 Director: Failed to start as host on {targetIP}. Trying to connect as client...");
-            // Connect to the target IP (could be another Director's host)
-            ClientConnectionProcess(targetIP);
-        }
+        else NetworkManager.Singleton.StartClient();
     }
+
 
     private void ClientConnectionProcess(string targetIP)
     {
         Debug.Log($"xx_🔧 Attempting to connect as client to {targetIP}:{port}");
+        currentState = ConnectionState.ConnectingAsClient;
         
-        // Set up transport for client connection
         SetTransportConnection(targetIP, port);
-
+        
+        // Start timeout for regular clients
+        if (connectionAttemptCoroutine != null)
+            StopCoroutine(connectionAttemptCoroutine);
+        connectionAttemptCoroutine = StartCoroutine(ClientConnectionTimeout());
+        
         NetworkManager.Singleton.StartClient();
-        if (NetworkManager.Singleton.IsClient &&!NetworkManager.Singleton.IsServer)
+    }
+
+    private IEnumerator ClientConnectionTimeout()
+    {
+        yield return new WaitForSeconds(connectionTimeout);
+        
+        if (currentState == ConnectionState.ConnectingAsClient && !NetworkManager.Singleton.IsConnectedClient)
         {
-            Debug.Log($"xx_🔧 Succesfully started remote client on {targetIP}:{port}");
+            Debug.Log("xx_🔧 Client connection timeout - retrying once");
+            NetworkManager.Singleton.Shutdown();
+            
+            yield return new WaitForSeconds(1f); // Wait for potential host
+            
+            // Retry once
+            NetworkManager.Singleton.StartClient();
+            yield return new WaitForSeconds(connectionTimeout);
+            
+            if (!NetworkManager.Singleton.IsConnectedClient)
+            {
+                Debug.Log("xx_🔧 Client retry failed");
+                NetworkManager.Singleton.Shutdown();
+                HandleConnectionFailure();
+            }
         }
     }
 
@@ -117,6 +169,7 @@ public class SimpleConnectionManager : MonoBehaviour
     private void HandleConnectionFailure()
     {
         Debug.Log("xx_🔧 Connection failed - returning to role selection");
+        currentState = ConnectionState.Idle;
         ShowInitialSetup();
     }
 
@@ -126,105 +179,53 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void OnHostStarted()
     {
-        Debug.Log("xx_🔧 ✅ Host started successfully!");
-        var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-        Debug.Log($"xx_🔧 HOST: Running on {transport.ConnectionData.Address}:{transport.ConnectionData.Port}");
-        Debug.Log($"xx_🔧 HOST: LocalClientId = {NetworkManager.Singleton.LocalClientId}");
-        Debug.Log($"xx_🔧 HOST: Connected clients count = {NetworkManager.Singleton.ConnectedClients.Count}");
-        Debug.Log($"xx_🔧 HOST: IsServer = {NetworkManager.Singleton.IsServer}");
-        Debug.Log($"xx_🔧 HOST: IsClient = {NetworkManager.Singleton.IsClient}");
-        Debug.Log($"xx_🔧 HOST: IsHost = {NetworkManager.Singleton.IsHost}");
+        Debug.Log("xx_🔧 ✅ Host started successfully");
+        currentState = ConnectionState.Idle;
         
-        // List all connected clients
-        foreach(var client in NetworkManager.Singleton.ConnectedClients)
+        if (connectionAttemptCoroutine != null)
         {
-            Debug.Log($"xx_🔧   Connected Client: {client.Key}");
+            StopCoroutine(connectionAttemptCoroutine);
+            connectionAttemptCoroutine = null;
         }
         
-        // Check for NetworkBehaviours in scene
-        var allNetworkBehaviours = FindObjectsOfType<NetworkBehaviour>();
-        Debug.Log($"xx_🔧 NetworkBehaviours in scene: {allNetworkBehaviours.Length}");
-        foreach(var nb in allNetworkBehaviours)
-        {
-            Debug.Log($"xx_🔧   - {nb.GetType().Name} on {nb.gameObject.name}");
-        }
-        
-        // Start broadcasting our presence
         StartHostBroadcasting();
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        Debug.Log($"xx_🔧 ⭐ Client connected: {clientId}");
-        Debug.Log($"xx_🔧   My Local ClientId: {NetworkManager.Singleton.LocalClientId}");
-        Debug.Log($"xx_🔧   Total connected clients: {NetworkManager.Singleton.ConnectedClients.Count}");
-        Debug.Log($"xx_🔧   Am I the host? {NetworkManager.Singleton.IsHost}");
-        Debug.Log($"xx_🔧   Am I a client? {NetworkManager.Singleton.IsClient}");
-        Debug.Log($"xx_🔧   Am I connected? {NetworkManager.Singleton.IsConnectedClient}");
-        
         if (clientId == NetworkManager.Singleton.LocalClientId)
         {
-            Debug.Log("xx_🔧 ✅ This is MY connection event");
+            Debug.Log("xx_🔧 ✅ Connected as client successfully");
+            currentState = ConnectionState.Idle;
             
-            // Additional checks for local client
-            Debug.Log($"xx_🔧   My connection state - IsConnectedClient: {NetworkManager.Singleton.IsConnectedClient}");
-            Debug.Log($"xx_🔧   Network time: {NetworkManager.Singleton.ServerTime}");
-            
-            // Check NetworkBehaviours after connection
-            StartCoroutine(CheckNetworkBehavioursAfterConnection());
-        }
-        else
-        {
-            Debug.Log($"xx_🔧 ✅ Another client connected: {clientId}");
+            if (connectionAttemptCoroutine != null)
+            {
+                StopCoroutine(connectionAttemptCoroutine);
+                connectionAttemptCoroutine = null;
+            }
         }
     }
-
-    private IEnumerator CheckNetworkBehavioursAfterConnection()
-    {
-        yield return new WaitForSeconds(1f); // Wait a moment
-        
-        var allNetworkBehaviours = FindObjectsOfType<NetworkBehaviour>();
-        Debug.Log($"xx_🔧 NetworkBehaviours after connection: {allNetworkBehaviours.Length}");
-        foreach(var nb in allNetworkBehaviours)
-        {
-            Debug.Log($"xx_🔧   - {nb.GetType().Name} (Spawned: {nb.IsSpawned}, IsClient: {nb.IsClient}, IsServer: {nb.IsServer})");
-        }
-    }
+    
 
     private void OnClientDisconnected(ulong clientId)
     {
         if (clientId == NetworkManager.Singleton.LocalClientId)
         {
-            Debug.Log("xx_🔧 Local client disconnected from host");
-            HandleLocalClientDisconnect();
-        }
-        else if (NetworkManager.Singleton.IsHost)
-        {
-            Debug.Log($"xx_🔧 Client {clientId} disconnected from our host");
+            HandleDisconnect();
         }
     }
 
-    private void OnClientDisconnectDebug(ulong clientId)
+    private void HandleDisconnect()
     {
-        Debug.LogError($"xx_🔧 🚨 CLIENT DISCONNECT DETECTED! ClientId: {clientId}");
-        Debug.LogError($"xx_🔧   Local ClientId: {NetworkManager.Singleton?.LocalClientId}");
-        Debug.LogError($"xx_🔧   Is this local client? {clientId == NetworkManager.Singleton?.LocalClientId}");
-        Debug.LogError($"xx_🔧   Network state - IsHost: {NetworkManager.Singleton?.IsHost}");
-        Debug.LogError($"xx_🔧   Network state - IsClient: {NetworkManager.Singleton?.IsClient}");
-        Debug.LogError($"xx_🔧   Network state - IsConnectedClient: {NetworkManager.Singleton?.IsConnectedClient}");
+        Debug.Log("xx_🔧 Client disconnected");
+        currentState = ConnectionState.Idle;
         
-        // Check if any NetworkBehaviours are causing issues
-        var allNetworkBehaviours = FindObjectsOfType<NetworkBehaviour>();
-        Debug.LogError($"xx_🔧   Active NetworkBehaviours: {allNetworkBehaviours.Length}");
-        foreach(var nb in allNetworkBehaviours)
+        if (connectionAttemptCoroutine != null)
         {
-            Debug.LogError($"xx_🔧     - {nb.GetType().Name} (Spawned: {nb.IsSpawned}, Enabled: {nb.enabled})");
+            StopCoroutine(connectionAttemptCoroutine);
+            connectionAttemptCoroutine = null;
         }
-    }
-
-    private void HandleLocalClientDisconnect()
-    {
-        Debug.Log("xx_🔧 Handling local client disconnect...");
+        
         ShowInitialSetup();
     }
 
@@ -239,7 +240,6 @@ public class SimpleConnectionManager : MonoBehaviour
         journalistButton.interactable = true;
         audienceButton.interactable = true;
         
-        Debug.Log("xx_🔧 Returned to initial setup - role selection available");
     }
 
     #endregion
@@ -279,6 +279,7 @@ public class SimpleConnectionManager : MonoBehaviour
             Debug.Log("xx_🔧 Client disconnected");
         }
         
+        currentState = ConnectionState.Idle;
         NetworkManager.Singleton.Shutdown();
     }
 
@@ -288,6 +289,7 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private void AutoDetectIP()
     {
+        //change the autodetecting
         string detectedIP = GetTargetIP();
         ipInput.text = detectedIP;
         Debug.Log($"xx_🔧 🔍 Auto-detected IP: {detectedIP}");
@@ -298,115 +300,110 @@ public class SimpleConnectionManager : MonoBehaviour
         Debug.Log("xx_🔧 🔍 Scanning for hosts on local network...");
         StartCoroutine(ScanForHostsCoroutine());
     }
-
     private IEnumerator ScanForHostsCoroutine()
     {
-        // Disable scan button during scan
         scanForHostsButton.interactable = false;
-
-        bool scanSuccessful = false;
-        string foundHostIP = "";
-        bool setupSuccessful = false;
-
-        // Setup UDP listener
-        try
+    
+        if (!SetupUDPListener() || !SendBroadcastRequest())
         {
-            udpListener = new System.Net.Sockets.UdpClient(broadcastPort + 1);
-            udpListener.Client.ReceiveTimeout = 100; // Short timeout for non-blocking
-            setupSuccessful = true;
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError("xx_🔧 ❌ Failed to create UDP listener: " + ex.Message);
-        }
-
-        if (!setupSuccessful)
-        {
-            yield return FinalizeScan(scanSuccessful, foundHostIP);
+            FinalizeScan(false, "");
             yield break;
         }
-
-        // Send broadcast request
-        bool broadcastSent = false;
-        try
-        {
-            var broadcastClient = new System.Net.Sockets.UdpClient();
-            broadcastClient.EnableBroadcast = true;
-            
-            string request = "FIND_HOST";
-            byte[] data = System.Text.Encoding.UTF8.GetBytes(request);
-            var broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, broadcastPort);
-            
-            broadcastClient.Send(data, data.Length, broadcastEndpoint);
-            Debug.Log($"xx_🔧 📡 Broadcast sent on port {broadcastPort}");
-            
-            broadcastClient.Close();
-            broadcastSent = true;
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError("xx_🔧 ❌ Failed to send broadcast: " + ex.Message);
-        }
-
-        if (!broadcastSent)
-        {
-            yield return FinalizeScan(scanSuccessful, foundHostIP);
-            yield break;
-        }
-
-        // Wait and listen for responses (outside try-catch)
+    
+// Simple scan loop
         float scanTime = 0f;
-        const float maxScanTime = 3f;
-
-        while (scanTime < maxScanTime && !scanSuccessful)
+        while (scanTime < 3f)
         {
             yield return new WaitForSeconds(0.1f);
             scanTime += 0.1f;
-
-            // Try to receive response (non-blocking)
+        
             if (udpListener.Available > 0)
             {
-                try
+                var result = TryReceiveHostResponse();
+                if (result.found)
                 {
-                    var remoteEndpoint = new IPEndPoint(IPAddress.Any, broadcastPort + 1);
-                    byte[] receivedData = udpListener.Receive(ref remoteEndpoint);
-                    string response = System.Text.Encoding.UTF8.GetString(receivedData);
-
-                    if (response.StartsWith("HOST_IP:"))
-                    {
-                        foundHostIP = response.Substring(8); // Remove "HOST_IP:" prefix
-                        scanSuccessful = true;
-                        Debug.Log($"xx_🔧 ✅ Found host at: {foundHostIP}");
-                        break;
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogWarning("xx_🔧 ⚠️ Error receiving UDP data: " + ex.Message);
+                    Debug.Log($"xx_🔧 ✅ Found host at: {result.ip}");
+                    hostAlreadyRunning = true;
+                    FinalizeScan(true, result.ip);
+                    yield break;
                 }
             }
         }
-
-        if (!scanSuccessful)
-        {
-            Debug.Log("xx_🔧 ⚠️ No hosts found on network");
-        }
-
-        yield return FinalizeScan(scanSuccessful, foundHostIP);
+    
+        Debug.Log("xx_🔧 ⚠️ No hosts found");
+        hostAlreadyRunning = false;
+        FinalizeScan(false, "");
     }
-
-    private IEnumerator FinalizeScan(bool successful, string hostIP)
+    private bool SetupUDPListener()
     {
-        // Clean up
+        try
+        {
+            udpListener = new UdpClient(broadcastPort + 1);
+            udpListener.Client.ReceiveTimeout = 100;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.Log($"xx_Failed to create UDP listener: {ex.Message}");
+            CleanupUDP();
+            return false;
+        }
+    }
+    private void CleanupUDP()
+    {
         try
         {
             udpListener?.Close();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"xx_🔧 Warning during UDP cleanup: {ex.Message}");
+        }
+        finally
+        {
             udpListener = null;
         }
-        catch (System.Exception ex)
+    }
+    private bool SendBroadcastRequest()
+    {
+        try
         {
-            Debug.LogWarning("xx_🔧 Warning during UDP cleanup: " + ex.Message);
+            using var broadcastClient = new UdpClient();
+            broadcastClient.EnableBroadcast = true;
+        
+            byte[] data = System.Text.Encoding.UTF8.GetBytes("FIND_HOST");
+            broadcastClient.Send(data, data.Length, new IPEndPoint(IPAddress.Broadcast, broadcastPort));
+        
+            Debug.Log($"xx_🔧 📡 Broadcast sent on port {broadcastPort}");
+            return true;
         }
+        catch (Exception ex)
+        {
+            Debug.LogError($"xx_🔧 ❌ Failed to send broadcast: {ex.Message}");
+            return false;
+        }
+    }
+    private (bool found, string ip) TryReceiveHostResponse()
+    {
+        try
+        {
+            var remoteEndpoint = new IPEndPoint(IPAddress.Any, broadcastPort + 1);
+            byte[] data = udpListener.Receive(ref remoteEndpoint);
+            string response = System.Text.Encoding.UTF8.GetString(data);
+        
+            if (response.StartsWith("HOST_IP:"))
+                return (true, response.Substring(8));
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"xx_🔧 ⚠️ Error receiving UDP data: {ex.Message}");
+        }
+    
+        return (false, "");
+    }
+    private void FinalizeScan(bool successful, string hostIP)
+    {
+        CleanupUDP();
 
         // Update UI
         if (successful)
@@ -417,8 +414,6 @@ public class SimpleConnectionManager : MonoBehaviour
         // Re-enable scan button
         scanForHostsButton.interactable = true;
         //scanForHostsButton.GetComponentInChildren<TMP_Text>().text = "Scan for Hosts";
-
-        yield return null; // Complete the coroutine
     }
 
     private void StartHostBroadcasting()
@@ -431,66 +426,70 @@ public class SimpleConnectionManager : MonoBehaviour
 
     private IEnumerator HostBroadcastCoroutine()
     {
-        
-        // Setup UDP broadcaster
-        try
-        {
-            udpBroadcaster = new System.Net.Sockets.UdpClient(broadcastPort);
-            udpBroadcaster.Client.ReceiveTimeout = 100; // Short timeout for non-blocking
-            Debug.Log($"xx_🔧 📡 Host broadcasting on port {broadcastPort}");
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"xx_🔧 ❌ Failed to start host broadcasting: {ex.Message}");
-            isHostBroadcasting = false;
-            yield break;
-        }
-
-        // Main broadcasting loop
+        if (!SetupUDPBroadcaster()) yield break;
+    
+        Debug.Log($"xx_🔧 📡 Host broadcasting on port {broadcastPort}");
+    
         while (isHostBroadcasting && NetworkManager.Singleton.IsHost)
         {
-            // Check for incoming requests (non-blocking)
             if (udpBroadcaster.Available > 0)
-            {
-                try
-                {
-                    var remoteEndpoint = new IPEndPoint(IPAddress.Any, broadcastPort);
-                    byte[] receivedData = udpBroadcaster.Receive(ref remoteEndpoint);
-                    string request = System.Text.Encoding.UTF8.GetString(receivedData);
-
-                    if (request == "FIND_HOST")
-                    {
-                        Debug.Log($"xx_🔧 📡 Received host discovery request from {remoteEndpoint.Address}");
-                        
-                        // Send our IP back
-                        SendHostResponse(GetTargetIP(), remoteEndpoint.Address);
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    if (isHostBroadcasting)
-                    {
-                        Debug.LogWarning($"xx_🔧 ⚠️ Broadcast receive error: {ex.Message}");
-                    }
-                }
-            }
+                HandleDiscoveryRequest();
             
-            yield return new WaitForSeconds(0.1f); // Small delay to prevent tight loop
+            yield return new WaitForSeconds(0.1f);
         }
+    
+        CleanupBroadcaster();
+    }
+    private bool SetupUDPBroadcaster()
+    {
+        try
+        {
+            udpBroadcaster = new UdpClient(broadcastPort);
+            udpBroadcaster.Client.ReceiveTimeout = 100;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"xx_🔧 ❌ Failed to start broadcasting: {ex.Message}");
+            isHostBroadcasting = false;
+            return false;
+        }
+    }
+    private void HandleDiscoveryRequest()
+    {
+        try
+        {
+            var remoteEndpoint = new IPEndPoint(IPAddress.Any, broadcastPort);
+            byte[] data = udpBroadcaster.Receive(ref remoteEndpoint);
+            string request = System.Text.Encoding.UTF8.GetString(data);
 
-        // Cleanup
+            if (request == "FIND_HOST")
+            {
+                Debug.Log($"xx_🔧 📡 Discovery request from {remoteEndpoint.Address}");
+                SendHostResponse(GetTargetIP(), remoteEndpoint.Address);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (isHostBroadcasting)
+                Debug.LogWarning($"xx_🔧 ⚠️ Broadcast receive error: {ex.Message}");
+        }
+    }
+    private void CleanupBroadcaster()
+    {
         try
         {
             udpBroadcaster?.Close();
-            udpBroadcaster = null;
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Debug.LogWarning($"xx_🔧 Warning during broadcast cleanup: {ex.Message}");
         }
-        
-        isHostBroadcasting = false;
-        Debug.Log("xx_🔧 📡 Host broadcasting stopped");
+        finally
+        {
+            udpBroadcaster = null;
+            isHostBroadcasting = false;
+        }
     }
 
     private void SendHostResponse(string hostIP, IPAddress clientAddress)
