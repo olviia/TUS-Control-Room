@@ -136,6 +136,8 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     }
 
     #endregion
+    
+    
 
     #region Network Variable Callbacks
 

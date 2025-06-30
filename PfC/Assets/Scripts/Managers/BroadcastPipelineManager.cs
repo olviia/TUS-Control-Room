@@ -118,7 +118,11 @@ public class BroadcastPipelineManager : MonoBehaviour
             }
         }
     }
-    
+
+    public SourceObject GetActiveAssignment(PipelineType pipelineType)
+    {
+        return activeAssignments[pipelineType];
+    }
     private void ForwardContentToNextStage(PipelineType fromStage, PipelineType toStage)
     {
         if (activeAssignments.ContainsKey(fromStage))
@@ -150,6 +154,7 @@ public class BroadcastPipelineManager : MonoBehaviour
         UpdateActiveSourceHighlight();
         UpdateDestinationNDI(targetType);
     }
+    
 
     private void UpdateActiveSourceHighlight()
     {
