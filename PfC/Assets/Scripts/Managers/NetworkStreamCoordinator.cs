@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using System;
+using System.Collections;
 using BroadcastPipeline;
 using Klak.Ndi;
 
@@ -102,10 +103,27 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     private void RequestStreamControlServerRpc(PipelineType pipeline, string sourceIdentifier, ulong requestingClientId)
     {
         Debug.Log($"[🎬StreamCoordinator] RequestStreamControlServerRpc pipeline:{pipeline} source:{sourceIdentifier}, client:{requestingClientId}");
-
-        // Server generates authoritative session ID
-        string sessionId = GenerateSessionId();
         
+        var currentStream = GetNetworkVariableForPipeline(pipeline);
+        // If there's an active stream, first set it to inactive to trigger cleanup on all clients
+        if (currentStream?.Value.isActive == true)
+        {
+            currentStream.Value = new StreamAssignment
+            {
+                directorClientId = currentStream.Value.directorClientId,
+                streamSourceName = currentStream.Value.streamSourceName,
+                sessionId = currentStream.Value.sessionId,
+                pipelineType = pipeline,
+                isActive = false // This will trigger cleanup
+            };
+        }    StartCoroutine(SetNewAssignmentAfterCleanup(pipeline, sourceIdentifier, requestingClientId));
+    }
+
+    private IEnumerator SetNewAssignmentAfterCleanup(PipelineType pipeline, string sourceIdentifier, ulong requestingClientId)
+    {
+        yield return null; // Wait one frame for cleanup
+    
+        string sessionId = GenerateSessionId();
         StreamAssignment newAssignment = new StreamAssignment
         {
             directorClientId = requestingClientId,
@@ -115,19 +133,10 @@ public class NetworkStreamCoordinator : NetworkBehaviour
             isActive = true
         };
 
-        Debug.Log($"[🎬StreamCoordinator] Generated new session {sessionId} for {pipeline}");
-
-        switch (pipeline)
-        {
-            case PipelineType.StudioLive:
-                studioLiveStream.Value = newAssignment;
-                break;
-            case PipelineType.TVLive:
-                tvLiveStream.Value = newAssignment;
-                break;
-        }
+        var targetStream = GetNetworkVariableForPipeline(pipeline);
+        if (targetStream != null)
+            targetStream.Value = newAssignment;
     }
-
     [ServerRpc(RequireOwnership = false)]
     private void ReleaseStreamControlServerRpc(PipelineType pipeline, ulong requestingClientId)
     {

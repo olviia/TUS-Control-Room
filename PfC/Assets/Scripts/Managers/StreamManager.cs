@@ -109,11 +109,17 @@ public class StreamManager : MonoBehaviour
         }
         
         bool isMyStream = NetworkManager.Singleton?.LocalClientId == assignment.directorClientId;
+        
         // Stop any existing session
         if (activeSessions[pipeline] != null)
         {
             Debug.Log($"[🎯StreamManager] Stopping existing session for {pipeline}");
-            StopStreamingForPipeline(pipeline);
+            var streamer = GetStreamerForPipeline(pipeline);
+            if (streamer != null)
+            {
+                streamer.ForceStop(); // Use ForceStop to fully reset state
+            }
+            activeSessions[pipeline] = null;
         }
         
         if (!assignment.isActive)

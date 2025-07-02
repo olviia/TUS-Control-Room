@@ -159,7 +159,7 @@ public class WebRTCStreamer : MonoBehaviour
         
         Debug.Log($"[📡WebRTCStreamer] Ready to receive session {sessionId} for {pipelineType} - WILL WAIT FOR OFFER");
     }
-    private void ForceStop()
+    public void ForceStop()
     {
         Debug.Log($"[📡WebRTCStreamer] Force stopping {pipelineType}");
         
