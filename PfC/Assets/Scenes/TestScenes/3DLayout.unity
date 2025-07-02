@@ -334,6 +334,7 @@ MonoBehaviour:
   localNdiReceiver: {fileID: 696567851}
   debugMode: 0
   transitionDuration: 0.5
+  autoFallbackToLocal: 1
 --- !u!1001 &280670461
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -937,6 +938,37 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
+--- !u!1 &814891655
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 814891656}
+  m_Layer: 0
+  m_Name: WebRtcSignaling
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &814891656
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 814891655}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1596512535}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &871193773 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
@@ -2837,6 +2869,7 @@ Transform:
   - {fileID: 427570640}
   - {fileID: 431161376}
   - {fileID: 1672500621}
+  - {fileID: 814891656}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1597912412
@@ -3014,7 +3047,8 @@ MonoBehaviour:
     renderer: {fileID: 245043423}
     ndiReceiver: {fileID: 696567851}
     isActive: 1
-  streamStartDelay: 0.02
+  streamStartDelay: 0.84
+  sourceChangeGracePeriod: 1
 --- !u!1 &1709815565
 GameObject:
   m_ObjectHideFlags: 0
@@ -3182,6 +3216,7 @@ MonoBehaviour:
   localNdiReceiver: {fileID: 1318600841}
   debugMode: 0
   transitionDuration: 0.5
+  autoFallbackToLocal: 1
 --- !u!1001 &1868622709
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3756,6 +3791,9 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1388489234605136564, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 41866901482765250, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}

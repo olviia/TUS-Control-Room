@@ -9,24 +9,28 @@ public struct StreamAssignment : INetworkSerializable
 {
     public ulong directorClientId;
     public string streamSourceName;
+    public string sessionId;
     public PipelineType pipelineType;
     public bool isActive;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref directorClientId);
-    
+        
         // Handle null strings safely
         if (serializer.IsWriter)
         {
-            var safeString = streamSourceName ?? "";
-            serializer.SerializeValue(ref safeString);
+            var safeSourceName = streamSourceName ?? "";
+            var safeSessionId = sessionId ?? "";
+            serializer.SerializeValue(ref safeSourceName);
+            serializer.SerializeValue(ref safeSessionId);
         }
         else
         {
             serializer.SerializeValue(ref streamSourceName);
+            serializer.SerializeValue(ref sessionId);
         }
-    
+        
         serializer.SerializeValue(ref pipelineType);
         serializer.SerializeValue(ref isActive);
     }
@@ -45,26 +49,21 @@ public class NetworkStreamCoordinator : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
+    
     public static event Action<StreamAssignment, string> OnStreamControlChanged;
-
-    private void Awake()
-    {
-
-    }
 
     public override void OnNetworkSpawn()
     {
-       
         try
         {
-            Debug.Log("[StreamCoordinator] OnNetworkSpawn starting");
+            Debug.Log("[🎬StreamCoordinator] OnNetworkSpawn starting");
             studioLiveStream.OnValueChanged += OnStudioLiveStreamChanged;
             tvLiveStream.OnValueChanged += OnTvLiveStreamChanged;
-            Debug.Log("[StreamCoordinator] OnNetworkSpawn completed");
+            Debug.Log("[🎬StreamCoordinator] OnNetworkSpawn completed");
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[StreamCoordinator] OnNetworkSpawn failed: {e}");
+            Debug.LogError($"[🎬StreamCoordinator] OnNetworkSpawn failed: {e}");
         }
     }
 
@@ -72,11 +71,16 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     public void RequestStreamControl(PipelineType pipeline, NdiReceiver localNdiSource)
     {
-        Debug.Log($"[StreamCoordinator] RequestStreamControl pipeline:{pipeline} localNdiSource:{localNdiSource}");
+        Debug.Log($"[🎬StreamCoordinator] RequestStreamControl pipeline:{pipeline} localNdiSource:{localNdiSource?.ndiName}");
 
         if (NetworkManager.Singleton == null || 
             (!NetworkManager.Singleton.IsConnectedClient && !NetworkManager.Singleton.IsHost)) return;
         if (pipeline != PipelineType.StudioLive && pipeline != PipelineType.TVLive) return;
+        if (localNdiSource == null) 
+        {
+            Debug.LogError("[🎬StreamCoordinator] No NDI source provided");
+            return;
+        }
 
         RequestStreamControlServerRpc(pipeline, localNdiSource.ndiName, NetworkManager.Singleton.LocalClientId);
     }
@@ -86,6 +90,7 @@ public class NetworkStreamCoordinator : NetworkBehaviour
         if (NetworkManager.Singleton == null || 
             (!NetworkManager.Singleton.IsConnectedClient && !NetworkManager.Singleton.IsHost)) return;
         
+        Debug.Log($"[🎬StreamCoordinator] ReleaseStreamControl pipeline:{pipeline}");
         ReleaseStreamControlServerRpc(pipeline, NetworkManager.Singleton.LocalClientId);
     }
 
@@ -96,17 +101,22 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestStreamControlServerRpc(PipelineType pipeline, string sourceIdentifier, ulong requestingClientId)
     {
-        Debug.Log($"[StreamCoordinator] RequestStreamControlServerRpc pipeline:{pipeline} localNdiSource:{sourceIdentifier}, requestingClientId:{requestingClientId}");
+        Debug.Log($"[🎬StreamCoordinator] RequestStreamControlServerRpc pipeline:{pipeline} source:{sourceIdentifier}, client:{requestingClientId}");
 
+        // Server generates authoritative session ID
+        string sessionId = GenerateSessionId();
+        
         StreamAssignment newAssignment = new StreamAssignment
         {
             directorClientId = requestingClientId,
             streamSourceName = sourceIdentifier,
+            sessionId = sessionId,
             pipelineType = pipeline,
             isActive = true
         };
 
-        // TODO: Consider WebRTC vs NDI name for network streaming
+        Debug.Log($"[🎬StreamCoordinator] Generated new session {sessionId} for {pipeline}");
+
         switch (pipeline)
         {
             case PipelineType.StudioLive:
@@ -121,6 +131,8 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void ReleaseStreamControlServerRpc(PipelineType pipeline, ulong requestingClientId)
     {
+        Debug.Log($"[🎬StreamCoordinator] ReleaseStreamControlServerRpc pipeline:{pipeline} client:{requestingClientId}");
+        
         NetworkVariable<StreamAssignment> targetStream = GetNetworkVariableForPipeline(pipeline);
         
         if (targetStream?.Value.directorClientId == requestingClientId)
@@ -129,6 +141,7 @@ public class NetworkStreamCoordinator : NetworkBehaviour
             {
                 directorClientId = 0,
                 streamSourceName = "",
+                sessionId = "",
                 pipelineType = pipeline,
                 isActive = false
             };
@@ -136,29 +149,25 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     }
 
     #endregion
-    
-    
 
     #region Network Variable Callbacks
 
     private void OnStudioLiveStreamChanged(StreamAssignment previousValue, StreamAssignment newValue)
     {
-        Debug.Log($"[StreamCoordinator] OnStudioLiveStreamChanged from {previousValue} to {newValue}");
+        Debug.Log($"[🎬StreamCoordinator] OnStudioLiveStreamChanged session:{newValue.sessionId} active:{newValue.isActive} director:{newValue.directorClientId}");
         HandleStreamChange(previousValue, newValue, "Studio Live");
     }
 
     private void OnTvLiveStreamChanged(StreamAssignment previousValue, StreamAssignment newValue)
     {
-        Debug.Log($"[StreamCoordinator] OnTVLiveStreamChanged from {previousValue} to {newValue}");
-
+        Debug.Log($"[🎬StreamCoordinator] OnTVLiveStreamChanged session:{newValue.sessionId} active:{newValue.isActive} director:{newValue.directorClientId}");
         HandleStreamChange(previousValue, newValue, "TV Live");
     }
 
     private void HandleStreamChange(StreamAssignment previousValue, StreamAssignment newValue, string pipelineName)
     {
-        Debug.Log($"[StreamCoordinator] HandleStreamChange {previousValue} to {newValue}");
-
         string changeDescription = GetStreamChangeDescription(previousValue, newValue);
+        Debug.Log($"[🎬StreamCoordinator] HandleStreamChange: {changeDescription}");
         OnStreamControlChanged?.Invoke(newValue, changeDescription);
     }
 
@@ -176,7 +185,12 @@ public class NetworkStreamCoordinator : NetworkBehaviour
         };
     }
 
-    private string GetDirectorName(ulong clientId) => $"Director_{clientId}";
+    private string GenerateSessionId()
+    {
+        return $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{UnityEngine.Random.Range(1000, 9999)}";
+    }
+
+    private string GetDirectorName(ulong clientId) => $"Client_{clientId}";
 
     private string GetStreamChangeDescription(StreamAssignment previous, StreamAssignment current)
     {
@@ -187,12 +201,24 @@ public class NetworkStreamCoordinator : NetworkBehaviour
         return "Stream updated";
     }
 
+    public StreamAssignment GetCurrentAssignment(PipelineType pipeline)
+    {
+        return pipeline switch
+        {
+            PipelineType.StudioLive => studioLiveStream.Value,
+            PipelineType.TVLive => tvLiveStream.Value,
+            _ => new StreamAssignment { isActive = false }
+        };
+    }
+
     #endregion
 
     #region Cleanup
 
     public override void OnNetworkDespawn()
     {
+        Debug.Log("[🎬StreamCoordinator] OnNetworkDespawn");
+        
         if (studioLiveStream != null)
             studioLiveStream.OnValueChanged -= OnStudioLiveStreamChanged;
         if (tvLiveStream != null)

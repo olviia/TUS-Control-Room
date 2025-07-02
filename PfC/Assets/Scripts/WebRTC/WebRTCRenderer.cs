@@ -14,16 +14,26 @@ public class WebRTCRenderer : MonoBehaviour
     [Header("Display Settings")]
     [SerializeField] private bool debugMode = false;
     [SerializeField] private float transitionDuration = 0.5f;
+    [SerializeField] private bool autoFallbackToLocal = true;
     
     private Material originalMaterial;
     private Material remoteMaterial;
     private bool isShowingRemoteStream = false;
     private Coroutine transitionCoroutine;
+    private string currentDisplaySession = string.Empty;
     
-    // Events for debugging
-    public static event System.Action<PipelineType, bool> OnDisplayModeChanged;
+    // Events
+    public static event System.Action<PipelineType, bool, string> OnDisplayModeChanged;
     
     void Start()
+    {
+        ValidateComponents();
+        InitializeRenderer();
+        
+        Debug.Log($"[WebRTCRenderer] Initialized for {pipelineType}");
+    }
+    
+    private void ValidateComponents()
     {
         if (sharedRenderer == null)
         {
@@ -31,15 +41,23 @@ public class WebRTCRenderer : MonoBehaviour
             return;
         }
         
-        originalMaterial = sharedRenderer.material;
-        
-        // Start by showing local NDI
-        ShowLocalNDI();
-        
-        Debug.Log($"[WebRTCRenderer] Initialized for {pipelineType}");
+        if (localNdiReceiver == null)
+        {
+            Debug.LogWarning($"[WebRTCRenderer] No local NDI receiver assigned for {pipelineType}");
+        }
     }
     
-    public void ShowRemoteStream(VideoStreamTrack remoteTrack)
+    private void InitializeRenderer()
+    {
+        if (sharedRenderer != null)
+        {
+            originalMaterial = sharedRenderer.material;
+        }
+        
+        ShowLocalNDI();
+    }
+    
+    public void ShowRemoteStream(VideoStreamTrack remoteTrack, string sessionId = "")
     {
         if (remoteTrack?.Texture == null)
         {
@@ -47,60 +65,78 @@ public class WebRTCRenderer : MonoBehaviour
             return;
         }
         
-        Debug.Log($"[WebRTCRenderer] 🔴 ShowRemoteStream called for {pipelineType}");
+        Debug.Log($"[WebRTCRenderer] ShowRemoteStream called for {pipelineType} session {sessionId}");
         
-        // Create material for remote stream
+        // Create or update remote material
         if (remoteMaterial == null)
         {
             remoteMaterial = new Material(originalMaterial.shader);
         }
         remoteMaterial.mainTexture = remoteTrack.Texture;
         
-        // Disable local NDI GameObject
+        // Disable local NDI
         SetNdiReceiverActive(false);
         
         // Transition to remote material
         StartCoroutine(TransitionToMaterial(remoteMaterial, () => {
             isShowingRemoteStream = true;
-            OnDisplayModeChanged?.Invoke(pipelineType, true);
-            Debug.Log($"[WebRTCRenderer] 📺 {pipelineType} now showing remote stream");
+            currentDisplaySession = sessionId;
+            OnDisplayModeChanged?.Invoke(pipelineType, true, sessionId);
+            Debug.Log($"[WebRTCRenderer] Now showing remote stream for {pipelineType}");
         }));
     }
     
     public void ShowLocalNDI()
     {
-        Debug.Log($"[WebRTCRenderer] 🔴 ShowLocalNDI called for {pipelineType}");
+        Debug.Log($"[WebRTCRenderer] ShowLocalNDI called for {pipelineType}");
         
-        // Enable local NDI GameObject - it will handle the material
+        // Enable local NDI
         SetNdiReceiverActive(true);
         
-        // Clean up remote material
-        if (remoteMaterial != null && isShowingRemoteStream)
+        // Clean up remote session
+        if (isShowingRemoteStream)
         {
             StartCoroutine(TransitionToLocalNDI(() => {
                 isShowingRemoteStream = false;
-                OnDisplayModeChanged?.Invoke(pipelineType, false);
-                Debug.Log($"[WebRTCRenderer] 📺 {pipelineType} now showing local NDI");
+                currentDisplaySession = string.Empty;
+                OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
+                Debug.Log($"[WebRTCRenderer] Now showing local NDI for {pipelineType}");
             }));
         }
         else
         {
             isShowingRemoteStream = false;
-            OnDisplayModeChanged?.Invoke(pipelineType, false);
+            currentDisplaySession = string.Empty;
+            OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
         }
     }
     
     public void ClearDisplay()
     {
-        Debug.Log($"[WebRTCRenderer] 🔴 ClearDisplay called for {pipelineType}");
+        Debug.Log($"[WebRTCRenderer] ClearDisplay called for {pipelineType}");
         
         SetNdiReceiverActive(false);
         
         StartCoroutine(TransitionToMaterial(originalMaterial, () => {
             isShowingRemoteStream = false;
-            OnDisplayModeChanged?.Invoke(pipelineType, false);
-            Debug.Log($"[WebRTCRenderer] 📺 {pipelineType} display cleared");
+            currentDisplaySession = string.Empty;
+            OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
+            Debug.Log($"[WebRTCRenderer] Display cleared for {pipelineType}");
         }));
+    }
+    
+    public void HandleStreamFailure()
+    {
+        Debug.LogWarning($"[WebRTCRenderer] Stream failure detected for {pipelineType}");
+        
+        if (autoFallbackToLocal)
+        {
+            ShowLocalNDI();
+        }
+        else
+        {
+            ClearDisplay();
+        }
     }
     
     private void SetNdiReceiverActive(bool active)
@@ -123,14 +159,13 @@ public class WebRTCRenderer : MonoBehaviour
         if (transitionCoroutine != null)
             StopCoroutine(transitionCoroutine);
         
-        // Immediate switch for now - you can add fade effects here if desired
-        if (sharedRenderer != null)
+        if (sharedRenderer != null && targetMaterial != null)
         {
+            // Could add fade effects here in the future
             sharedRenderer.material = targetMaterial;
         }
         
-        yield return null; // Wait one frame
-        
+        yield return null;
         onComplete?.Invoke();
     }
     
@@ -139,21 +174,19 @@ public class WebRTCRenderer : MonoBehaviour
         if (transitionCoroutine != null)
             StopCoroutine(transitionCoroutine);
         
-        // The NDI receiver will handle setting its own material when activated
-        // We just need to make sure we're not overriding it
-        
-        yield return null; // Wait one frame for NDI to set its material
-        
+        yield return null;
         onComplete?.Invoke();
     }
     
-    // Public properties for external inspection
+    #region Public Properties
+    
     public bool IsShowingRemoteStream => isShowingRemoteStream;
+    public string CurrentDisplaySession => currentDisplaySession;
     
     public string GetCurrentDisplayMode()
     {
         if (isShowingRemoteStream)
-            return "Remote WebRTC";
+            return $"Remote WebRTC ({currentDisplaySession})";
         else if (localNdiReceiver != null && localNdiReceiver.gameObject.activeInHierarchy)
             return "Local NDI";
         else
@@ -162,14 +195,15 @@ public class WebRTCRenderer : MonoBehaviour
     
     public Texture GetCurrentTexture()
     {
-        if (sharedRenderer?.material?.mainTexture != null)
-            return sharedRenderer.material.mainTexture;
-        return null;
+        return sharedRenderer?.material?.mainTexture;
     }
+
+    #endregion
+    
+    #region Cleanup
     
     void OnDestroy()
     {
-        // Clean up created materials
         if (remoteMaterial != null)
         {
             DestroyImmediate(remoteMaterial);
@@ -181,8 +215,11 @@ public class WebRTCRenderer : MonoBehaviour
             StopCoroutine(transitionCoroutine);
         }
     }
+
+    #endregion
     
-    // Debug methods
+    #region Debug Methods
+    
     [ContextMenu("Force Show Local NDI")]
     public void DebugShowLocalNDI()
     {
@@ -197,16 +234,16 @@ public class WebRTCRenderer : MonoBehaviour
     
     void OnValidate()
     {
-        // Auto-assign renderer if not set
         if (sharedRenderer == null)
         {
             sharedRenderer = GetComponent<MeshRenderer>();
         }
         
-        // Auto-find NDI receiver if not set
         if (localNdiReceiver == null)
         {
             localNdiReceiver = GetComponentInChildren<NdiReceiver>();
         }
     }
+
+    #endregion
 }
