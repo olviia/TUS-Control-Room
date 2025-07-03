@@ -1,5 +1,9 @@
 # Approach
-## Current Implementation
+## Current Implemetation
+There is a single scene with different rooms. All users are spawned in lobby room, where they connect to the network. Directors spawn in director's room, audience spawns in Studio, presenters are under development, but they might be controlled by one of directors and not have a separate role for them
+
+
+## Previous Implementation
 
 There are two scenes at the moment, _preload and ControlRoom. First plays the _preload scene and then goes ControlRoom.
 ## _preload Scene
