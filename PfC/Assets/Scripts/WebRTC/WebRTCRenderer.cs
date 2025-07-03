@@ -21,6 +21,7 @@ public class WebRTCRenderer : MonoBehaviour
     private bool isShowingRemoteStream = false;
     private Coroutine transitionCoroutine;
     private string currentDisplaySession = string.Empty;
+    private MaterialPropertyBlock propertyBlock;
     
     // Events
     public static event System.Action<PipelineType, bool, string> OnDisplayModeChanged;
@@ -52,38 +53,44 @@ public class WebRTCRenderer : MonoBehaviour
         if (sharedRenderer != null)
         {
             originalMaterial = sharedRenderer.material;
+            propertyBlock = new MaterialPropertyBlock();
         }
         
         ShowLocalNDI();
     }
     
-    public void ShowRemoteStream(VideoStreamTrack remoteTrack, string sessionId = "")
+    public void ShowRemoteStream(Texture remoteTexture, string sessionId = "")
     {
-        if (remoteTrack?.Texture == null)
+        // Always recreate material for fresh connections
+        if (remoteMaterial != null)
         {
-            Debug.LogError($"[WebRTCRenderer] Invalid remote track for {pipelineType}");
-            return;
+            DestroyImmediate(remoteMaterial);
         }
-        
-        Debug.Log($"[WebRTCRenderer] ShowRemoteStream called for {pipelineType} session {sessionId}");
-        
-        // Create or update remote material
-        if (remoteMaterial == null)
-        {
-            remoteMaterial = new Material(originalMaterial.shader);
-        }
-        remoteMaterial.mainTexture = remoteTrack.Texture;
+    
+        remoteMaterial = new Material(originalMaterial.shader);
+        remoteMaterial.mainTexture = remoteTexture;
+        sharedRenderer.material = remoteMaterial;
         
         // Disable local NDI
         SetNdiReceiverActive(false);
         
-        // Transition to remote material
-        StartCoroutine(TransitionToMaterial(remoteMaterial, () => {
-            isShowingRemoteStream = true;
-            currentDisplaySession = sessionId;
-            OnDisplayModeChanged?.Invoke(pipelineType, true, sessionId);
-            Debug.Log($"[WebRTCRenderer] Now showing remote stream for {pipelineType}");
-        }));
+ 
+        // Get current property block values to preserve other properties
+        sharedRenderer.GetPropertyBlock(propertyBlock);
+        
+        // Set the texture through property block
+        propertyBlock.SetTexture("_BaseMap", remoteTexture);
+        propertyBlock.SetTexture("_MainTex", remoteTexture); // For URP materials
+        
+        // Apply the property block
+        sharedRenderer.SetPropertyBlock(propertyBlock);
+        
+        isShowingRemoteStream = true;
+        currentDisplaySession = sessionId;
+        OnDisplayModeChanged?.Invoke(pipelineType, true, sessionId);
+        
+        Debug.Log($"[WebRTCRenderer] Applied remote texture via MaterialPropertyBlock for {pipelineType}");
+
     }
     
     public void ShowLocalNDI()
@@ -93,36 +100,40 @@ public class WebRTCRenderer : MonoBehaviour
         // Enable local NDI
         SetNdiReceiverActive(true);
         
+        // Clear the MaterialPropertyBlock to revert to material defaults
+        if (propertyBlock == null)
+            propertyBlock = new MaterialPropertyBlock();
+            
+        propertyBlock.Clear(); // This removes all property block overrides
+        sharedRenderer.SetPropertyBlock(propertyBlock);
+        
         // Clean up remote session
-        if (isShowingRemoteStream)
-        {
-            StartCoroutine(TransitionToLocalNDI(() => {
-                isShowingRemoteStream = false;
-                currentDisplaySession = string.Empty;
-                OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
-                Debug.Log($"[WebRTCRenderer] Now showing local NDI for {pipelineType}");
-            }));
-        }
-        else
-        {
-            isShowingRemoteStream = false;
-            currentDisplaySession = string.Empty;
-            OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
-        }
+        isShowingRemoteStream = false;
+        currentDisplaySession = string.Empty;
+        OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
+        
+        Debug.Log($"[WebRTCRenderer] Cleared MaterialPropertyBlock, showing local NDI for {pipelineType}");
+
     }
     
     public void ClearDisplay()
-    {
-        Debug.Log($"[WebRTCRenderer] ClearDisplay called for {pipelineType}");
+    {Debug.Log($"[WebRTCRenderer] ClearDisplay called for {pipelineType}");
         
         SetNdiReceiverActive(false);
         
-        StartCoroutine(TransitionToMaterial(originalMaterial, () => {
-            isShowingRemoteStream = false;
-            currentDisplaySession = string.Empty;
-            OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
-            Debug.Log($"[WebRTCRenderer] Display cleared for {pipelineType}");
-        }));
+        // Clear property block and set to original material
+        if (propertyBlock == null)
+            propertyBlock = new MaterialPropertyBlock();
+            
+        propertyBlock.Clear();
+        sharedRenderer.SetPropertyBlock(propertyBlock);
+        sharedRenderer.material = originalMaterial;
+        
+        isShowingRemoteStream = false;
+        currentDisplaySession = string.Empty;
+        OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
+        
+        Debug.Log($"[WebRTCRenderer] Display cleared for {pipelineType}");
     }
     
     public void HandleStreamFailure()
