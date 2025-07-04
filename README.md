@@ -38,55 +38,35 @@ This can be automatically done using Unity services. Follow the steps on the lin
 
 [Unity Vivox SDK](https://docs.unity.com/ugs/en-us/manual/vivox-unity/manual/Unity/vivox-unity-first-steps)
 
-### Step 5 - Set up NDI bridge for Multicasting of a Unicast OBS output
 
-- Start NDI Tools (optional)
-- Set up private groups using access manager (optional)
-- Start NDI Bridge
-- Choose Local Bridge
-- Customise the quality and encoding (optional)
-- Click Start
-- Local devices should be able to see your Bridge with the name written on the page here
-- More information on NDI bridges can be found in the [NDI Tools docs](https://docs.ndi.video/all/using-ndi/ndi-tools/ndi-tools-for-windows/bridge)
+### Step 5 - Scenes to run
 
-### Step 6 - Scenes to add to build
-
-- _preload
-- ControlRoom
-
-Run _preload, ControlRoom will be loaded by Role select/network connection UI.
+Scene name is **3DLayout**, this scene is in Test folder
 
 ## How to test locally
 
-1. In the editor, choose the correct Websocket settings based on the OBS websocket plugin.
-2. Build using the previous instructions (network behaviour is different on editor windows, so use the builds, or do a developer build if troubleshooting).
-3. Have at least two devices, one for the director and one for a journalist.
-4. Both devices need to be on the same network.
-5. Both devices must be connected to the internet (for voice communication).
-6. Run OBS on the director device.
-7. Make sure the director is logged in before connecting any other role
-8. Run NDI Bridge on the director device.
-9. Choose the director in the login screen on the director device.
-10. Select screens, set up OBS outputs, add screens, and turn volume on/off as desired.
-11. OBS can be controlled from a WebSocket using the controls UI. Options are transition, record, and stream.
-12. Turn the NDI sender component on and set up a camera to record the output and send it to OBS.
-13. On the journalist device, choose the journalist on the login screen.
-14. You can view the program's output from the NDI Source Selector dropdown.
+1. Run OBS on host device (or on both, it's ok)
+2. Add scenes ObsScenes.json
+3. in OBS websocket settings set port number the same as in WebsocketManager in Unity
+4. Run several instances on machines that are connected to the same network.
+5. It is possible to use ParrelSync for that, just make sure that the first director (host) is launched from the original editor
+6. To launch the host, enter your IP or click button 'AutoDetect', then click 'Director'
+7. To launch the client, click button 'SearchForHost', then click 'Director'
+8. 'Audience' isn't implemented yet
+9. Both devices must be connected to the internet (for voice communication).
+11. Select screens, set up OBS outputs, add screens, and turn volume on/off as desired.
+12. OBS can be controlled from a WebSocket using the controls UI. Options are transition, record, stream, audio.
+15. Add the screen, select the source from the NDI Source Selector dropdown.
+16. Right click on source is for the studio screen pipeline
+17. Left click on soure is for the TV screen pipeline
 
 ## Troubleshooting
 
 #### Known issues: 
-- NDI stream reliability (mostly NDI related, not Unity)
-- Roles aren't yet established completely
-- Websockets don't have full functionality
-- Error handling with KlakNDI is minimal, so crashes are possible
-- Minimal error catching in Websockets
-
-#### To do:
-- Scenes are not yet synced for different roles
-- Spatial audio for the screens using OSC
-- More functionality is required with
-- Studio camera implementation and controls
+- NDI stream bufferization issue visible in log
+- Websockets don't have full functionality, tested only on host machine
+- WebRtc streaming is not fully implemented yet
+- Tested on two users
 
 If you don't see the NDI streams in the source selector:
 - Check if you have OBS on/or you are on the same network as the Bridge, if you are a journalist
