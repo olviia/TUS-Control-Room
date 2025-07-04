@@ -3,9 +3,13 @@ Current Name: TUS Control Room
 Technologies: Unity 2022.3.49, C#, OBS 31 + DitroAV plugin, NDI 6, Vivox voice chat, Customized PrefrontalCortex KlakNDI https://github.com/prefrontalcortex/KlakNDI, Unity Netcode for Game Objects, WebRTC plugin
 
 [Approach](https://github.com/olviia/TUS-Control-Room/blob/main/docs/Approach.md)
+
 [Broadcast Pipeline](https://github.com/olviia/TUS-Control-Room/blob/main/docs/BroadcastPipeline.md)
+
 [MultiClientNDIStreaming](https://github.com/olviia/TUS-Control-Room/blob/main/docs/MultiClientNDIStreaming.md)
+
 [OBSScripts](https://github.com/olviia/TUS-Control-Room/blob/main/docs/OBSScripts.md)
+
 [Utility scripts](https://github.com/olviia/TUS-Control-Room/blob/main/docs/UtilitaryScripts.md)
 
 Idea: implement an application that allows VR news creation and consumption experience
