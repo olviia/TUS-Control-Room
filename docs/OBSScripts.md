@@ -1,4 +1,7 @@
 # OBS Integration Scripts Overview
+
+Scripts in Legasy folder should be rewritten to use this architecture
+
 ## ObsOperationBase.cs - The OBS Foundation
 The parent class that all OBS operations inherit from. It handles the core OBS WebSocket connection, provides validation methods, error handling, and common utilities. Think of it as the "OBS connection manager" that ensures all other OBS scripts can safely communicate with OBS Studio.
 ## ObsUtilities.cs - The OBS Toolkit
