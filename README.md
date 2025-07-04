@@ -14,6 +14,9 @@ A Unity environment integrating control over a Media Stream using NDI and websoc
 - XR Interaction Toolkit
 - OSC Jack for positional NDI audio
 - Netcode for GameObjects
+
+### Documentation
+https://github.com/olviia/TUS-Control-Room/blob/main/docs/Introduction.md
   
 ## Setup
 
