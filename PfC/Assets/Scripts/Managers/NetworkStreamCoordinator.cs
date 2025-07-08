@@ -2,97 +2,137 @@ using Unity.Netcode;
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using BroadcastPipeline;
 using Klak.Ndi;
 
-[System.Serializable]
-public struct StreamAssignment : INetworkSerializable
-{
-    public ulong directorClientId;
-    public string streamSourceName;
-    public string sessionId;
-    public PipelineType pipelineType;
-    public bool isActive;
-
-    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-    {
-        serializer.SerializeValue(ref directorClientId);
-        
-        // Handle null strings safely
-        if (serializer.IsWriter)
-        {
-            var safeSourceName = streamSourceName ?? "";
-            var safeSessionId = sessionId ?? "";
-            serializer.SerializeValue(ref safeSourceName);
-            serializer.SerializeValue(ref safeSessionId);
-        }
-        else
-        {
-            serializer.SerializeValue(ref streamSourceName);
-            serializer.SerializeValue(ref sessionId);
-        }
-        
-        serializer.SerializeValue(ref pipelineType);
-        serializer.SerializeValue(ref isActive);
-    }
-}
-
+/// <summary>
+/// Auto-configuring network coordinator - detects pipelines from StreamManager
+/// No manual pipeline configuration needed
+/// </summary>
 public class NetworkStreamCoordinator : NetworkBehaviour
 {
-    private NetworkVariable<StreamAssignment> studioLiveStream = new NetworkVariable<StreamAssignment>(
-        new StreamAssignment { isActive = false },
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
+    // Auto-populated from StreamManager
+    private PipelineType[] supportedPipelines = new PipelineType[0];
     
-    private NetworkVariable<StreamAssignment> tvLiveStream = new NetworkVariable<StreamAssignment>(
-        new StreamAssignment { isActive = false },
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
+    // NetworkVariables - created dynamically
+    private NetworkVariable<StreamAssignment> studioLiveStream;
+    private NetworkVariable<StreamAssignment> tvLiveStream;
+    private Dictionary<PipelineType, NetworkVariable<StreamAssignment>> pipelineStreams;
     
     public static event Action<StreamAssignment, string> OnStreamControlChanged;
 
+    #region Auto-Configuration
+
+    void Awake()
+    {
+        InitializeCommonPipelines();
+    }
+
+    /// <summary>
+    /// Auto-configure from StreamManager - called by StreamManager
+    /// </summary>
+    public void AutoConfigureFromManager(StreamManager manager)
+    {
+        supportedPipelines = manager.GetSupportedPipelines();
+        Debug.Log($"[🎬StreamCoordinator] Auto-configured pipelines: {string.Join(", ", supportedPipelines)}");
+    }
+
+    /// <summary>
+    /// Initialize common pipeline NetworkVariables
+    /// </summary>
+    private void InitializeCommonPipelines()
+    {
+        studioLiveStream = new NetworkVariable<StreamAssignment>(
+            new StreamAssignment { isActive = false, pipelineType = PipelineType.StudioLive },
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+        
+        tvLiveStream = new NetworkVariable<StreamAssignment>(
+            new StreamAssignment { isActive = false, pipelineType = PipelineType.TVLive },
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+        
+        pipelineStreams = new Dictionary<PipelineType, NetworkVariable<StreamAssignment>>
+        {
+            { PipelineType.StudioLive, studioLiveStream },
+            { PipelineType.TVLive, tvLiveStream }
+        };
+    }
+
     public override void OnNetworkSpawn()
     {
-        try
-        {
-            Debug.Log("[🎬StreamCoordinator] OnNetworkSpawn starting");
-            studioLiveStream.OnValueChanged += OnStudioLiveStreamChanged;
-            tvLiveStream.OnValueChanged += OnTvLiveStreamChanged;
-            Debug.Log("[🎬StreamCoordinator] OnNetworkSpawn completed");
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[🎬StreamCoordinator] OnNetworkSpawn failed: {e}");
-        }
+        studioLiveStream.OnValueChanged += (prev, curr) => OnStreamChanged(prev, curr, "Studio Live");
+        tvLiveStream.OnValueChanged += (prev, curr) => OnStreamChanged(prev, curr, "TV Live");
+        
+        Debug.Log($"[🎬StreamCoordinator] Network spawned with {supportedPipelines.Length} pipelines");
     }
+
+    #endregion
 
     #region Public Interface
 
     public void RequestStreamControl(PipelineType pipeline, NdiReceiver localNdiSource)
     {
-        Debug.Log($"[🎬StreamCoordinator] RequestStreamControl pipeline:{pipeline} localNdiSource:{localNdiSource?.ndiName}");
-
-        if (NetworkManager.Singleton == null || 
-            (!NetworkManager.Singleton.IsConnectedClient && !NetworkManager.Singleton.IsHost)) return;
-        if (pipeline != PipelineType.StudioLive && pipeline != PipelineType.TVLive) return;
-        if (localNdiSource == null) 
-        {
-            Debug.LogError("[🎬StreamCoordinator] No NDI source provided");
-            return;
-        }
+        if (!ValidateRequest(pipeline, localNdiSource)) return;
 
         RequestStreamControlServerRpc(pipeline, localNdiSource.ndiName, NetworkManager.Singleton.LocalClientId);
     }
 
     public void ReleaseStreamControl(PipelineType pipeline)
     {
-        if (NetworkManager.Singleton == null || 
-            (!NetworkManager.Singleton.IsConnectedClient && !NetworkManager.Singleton.IsHost)) return;
+        if (!IsNetworkReady()) return;
         
-        Debug.Log($"[🎬StreamCoordinator] ReleaseStreamControl pipeline:{pipeline}");
         ReleaseStreamControlServerRpc(pipeline, NetworkManager.Singleton.LocalClientId);
+    }
+
+    public StreamAssignment GetCurrentAssignment(PipelineType pipeline)
+    {
+        return pipelineStreams.TryGetValue(pipeline, out var networkVar) 
+            ? networkVar.Value 
+            : new StreamAssignment { isActive = false, pipelineType = pipeline };
+    }
+
+    public bool IsPipelineActive(PipelineType pipeline)
+    {
+        return GetCurrentAssignment(pipeline).isActive;
+    }
+
+    public int GetActiveStreamCount()
+    {
+        return pipelineStreams.Values.Count(stream => stream.Value.isActive);
+    }
+
+    #endregion
+
+    #region Validation
+
+    private bool ValidateRequest(PipelineType pipeline, NdiReceiver localNdiSource)
+    {
+        if (!IsNetworkReady()) return false;
+        
+        if (!supportedPipelines.Contains(pipeline))
+        {
+            Debug.LogError($"[🎬StreamCoordinator] Unsupported pipeline: {pipeline}");
+            return false;
+        }
+        
+        if (localNdiSource == null)
+        {
+            Debug.LogError("[🎬StreamCoordinator] No NDI source provided");
+            return false;
+        }
+        
+        return true;
+    }
+
+    private bool IsNetworkReady()
+    {
+        return NetworkManager.Singleton != null && 
+               (NetworkManager.Singleton.IsConnectedClient || NetworkManager.Singleton.IsHost);
     }
 
     #endregion
@@ -102,81 +142,71 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestStreamControlServerRpc(PipelineType pipeline, string sourceIdentifier, ulong requestingClientId)
     {
-        Debug.Log($"[🎬StreamCoordinator] RequestStreamControlServerRpc pipeline:{pipeline} source:{sourceIdentifier}, client:{requestingClientId}");
-        
-        var currentStream = GetNetworkVariableForPipeline(pipeline);
-        // If there's an active stream, first set it to inactive to trigger cleanup on all clients
-        if (currentStream?.Value.isActive == true)
-        {
-            currentStream.Value = new StreamAssignment
-            {
-                directorClientId = currentStream.Value.directorClientId,
-                streamSourceName = currentStream.Value.streamSourceName,
-                sessionId = currentStream.Value.sessionId,
-                pipelineType = pipeline,
-                isActive = false // This will trigger cleanup
-            };
-        }    StartCoroutine(SetNewAssignmentAfterCleanup(pipeline, sourceIdentifier, requestingClientId));
-    }
-
-    private IEnumerator SetNewAssignmentAfterCleanup(PipelineType pipeline, string sourceIdentifier, ulong requestingClientId)
-    {
-        yield return null; // Wait one frame for cleanup
-    
-        string sessionId = GenerateSessionId();
-        StreamAssignment newAssignment = new StreamAssignment
-        {
-            directorClientId = requestingClientId,
-            streamSourceName = sourceIdentifier,
-            sessionId = sessionId,
-            pipelineType = pipeline,
-            isActive = true
-        };
-
         var targetStream = GetNetworkVariableForPipeline(pipeline);
-        if (targetStream != null)
-            targetStream.Value = newAssignment;
+        if (targetStream == null) return;
+        
+        // Deactivate existing stream
+        if (targetStream.Value.isActive)
+        {
+            DeactivateStream(targetStream, pipeline);
+        }
+        
+        SetNewAssignmentAfterCleanup(pipeline, sourceIdentifier, requestingClientId);
     }
+
     [ServerRpc(RequireOwnership = false)]
     private void ReleaseStreamControlServerRpc(PipelineType pipeline, ulong requestingClientId)
     {
-        Debug.Log($"[🎬StreamCoordinator] ReleaseStreamControlServerRpc pipeline:{pipeline} client:{requestingClientId}");
+        var targetStream = GetNetworkVariableForPipeline(pipeline);
         
-        NetworkVariable<StreamAssignment> targetStream = GetNetworkVariableForPipeline(pipeline);
-        
-        if (targetStream?.Value.directorClientId == requestingClientId)
+        if (targetStream?.Value.directorClientId == requestingClientId && targetStream.Value.isActive)
+        {
+            DeactivateStream(targetStream, pipeline);
+        }
+    }
+
+    private void DeactivateStream(NetworkVariable<StreamAssignment> targetStream, PipelineType pipeline)
+    {
+        var current = targetStream.Value;
+        targetStream.Value = new StreamAssignment
+        {
+            directorClientId = current.directorClientId,
+            streamSourceName = current.streamSourceName,
+            sessionId = current.sessionId,
+            pipelineType = pipeline,
+            isActive = false
+        };
+    }
+
+    private void SetNewAssignmentAfterCleanup(PipelineType pipeline, string sourceIdentifier, ulong requestingClientId)
+    {
+    
+        var targetStream = GetNetworkVariableForPipeline(pipeline);
+        if (targetStream != null)
         {
             targetStream.Value = new StreamAssignment
             {
-                directorClientId = 0,
-                streamSourceName = "",
-                sessionId = "",
+                directorClientId = requestingClientId,
+                streamSourceName = sourceIdentifier,
+                sessionId = GenerateSessionId(pipeline),
                 pipelineType = pipeline,
-                isActive = false
+                isActive = true
             };
         }
     }
 
     #endregion
 
-    #region Network Variable Callbacks
+    #region Network Variable Management
 
-    private void OnStudioLiveStreamChanged(StreamAssignment previousValue, StreamAssignment newValue)
+    private NetworkVariable<StreamAssignment> GetNetworkVariableForPipeline(PipelineType pipeline)
     {
-        Debug.Log($"[🎬StreamCoordinator] OnStudioLiveStreamChanged session:{newValue.sessionId} active:{newValue.isActive} director:{newValue.directorClientId}");
-        HandleStreamChange(previousValue, newValue, "Studio Live");
+        return pipelineStreams.TryGetValue(pipeline, out var networkVar) ? networkVar : null;
     }
 
-    private void OnTvLiveStreamChanged(StreamAssignment previousValue, StreamAssignment newValue)
-    {
-        Debug.Log($"[🎬StreamCoordinator] OnTVLiveStreamChanged session:{newValue.sessionId} active:{newValue.isActive} director:{newValue.directorClientId}");
-        HandleStreamChange(previousValue, newValue, "TV Live");
-    }
-
-    private void HandleStreamChange(StreamAssignment previousValue, StreamAssignment newValue, string pipelineName)
+    private void OnStreamChanged(StreamAssignment previousValue, StreamAssignment newValue, string pipelineName)
     {
         string changeDescription = GetStreamChangeDescription(previousValue, newValue);
-        Debug.Log($"[🎬StreamCoordinator] HandleStreamChange: {changeDescription}");
         OnStreamControlChanged?.Invoke(newValue, changeDescription);
     }
 
@@ -184,40 +214,20 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     #region Utility Methods
 
-    private NetworkVariable<StreamAssignment> GetNetworkVariableForPipeline(PipelineType pipeline)
+    private string GenerateSessionId(PipelineType pipeline)
     {
-        return pipeline switch
-        {
-            PipelineType.StudioLive => studioLiveStream,
-            PipelineType.TVLive => tvLiveStream,
-            _ => null
-        };
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var random = UnityEngine.Random.Range(1000, 9999);
+        return $"{pipeline}_{timestamp}_{random}";
     }
-
-    private string GenerateSessionId()
-    {
-        return $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{UnityEngine.Random.Range(1000, 9999)}";
-    }
-
-    private string GetDirectorName(ulong clientId) => $"Client_{clientId}";
 
     private string GetStreamChangeDescription(StreamAssignment previous, StreamAssignment current)
     {
         if (!current.isActive) return "Stream stopped";
-        if (!previous.isActive) return $"Stream started by {GetDirectorName(current.directorClientId)}";
+        if (!previous.isActive) return $"Stream started by Client_{current.directorClientId}";
         if (previous.directorClientId != current.directorClientId)
-            return $"Stream taken over by {GetDirectorName(current.directorClientId)}";
+            return $"Stream taken over by Client_{current.directorClientId}";
         return "Stream updated";
-    }
-
-    public StreamAssignment GetCurrentAssignment(PipelineType pipeline)
-    {
-        return pipeline switch
-        {
-            PipelineType.StudioLive => studioLiveStream.Value,
-            PipelineType.TVLive => tvLiveStream.Value,
-            _ => new StreamAssignment { isActive = false }
-        };
     }
 
     #endregion
@@ -226,12 +236,13 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        Debug.Log("[🎬StreamCoordinator] OnNetworkDespawn");
-        
         if (studioLiveStream != null)
-            studioLiveStream.OnValueChanged -= OnStudioLiveStreamChanged;
+            studioLiveStream.OnValueChanged -= (prev, curr) => OnStreamChanged(prev, curr, "Studio Live");
+        
         if (tvLiveStream != null)
-            tvLiveStream.OnValueChanged -= OnTvLiveStreamChanged;
+            tvLiveStream.OnValueChanged -= (prev, curr) => OnStreamChanged(prev, curr, "TV Live");
+        
+        pipelineStreams?.Clear();
     }
 
     #endregion
