@@ -2,6 +2,16 @@
 Current Name: TUS Control Room
 Technologies: Unity 2022.3.49, C#, OBS 31 + DitroAV plugin, NDI 6, Vivox voice chat, Customized PrefrontalCortex KlakNDI https://github.com/prefrontalcortex/KlakNDI, Unity Netcode for Game Objects, WebRTC plugin
 
+[Approach](https://github.com/olviia/TUS-Control-Room/blob/main/docs/Approach.md)
+
+[Broadcast Pipeline](https://github.com/olviia/TUS-Control-Room/blob/main/docs/BroadcastPipeline.md)
+
+[MultiClientNDIStreaming](https://github.com/olviia/TUS-Control-Room/blob/main/docs/MultiClientNDIStreaming.md)
+
+[OBSScripts](https://github.com/olviia/TUS-Control-Room/blob/main/docs/OBSScripts.md)
+
+[Utility scripts](https://github.com/olviia/TUS-Control-Room/blob/main/docs/UtilitaryScripts.md)
+
 Idea: implement an application that allows VR news creation and consumption experience
 
 Current Architecture Idea:
@@ -23,6 +33,5 @@ Current Architecture Idea:
 - 3D Audience (with hmd) is located in the Studio. Audience can hear both Reporter and Guest, but can not talk to them.
 - 2D Audience (watching from regular screen) receives TV Live content selected by Director, streamed from OBS to Youtube/Twitch/etc
 
-        
-        
+
 
