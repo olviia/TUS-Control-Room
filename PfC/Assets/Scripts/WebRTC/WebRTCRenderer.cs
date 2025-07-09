@@ -13,13 +13,10 @@ public class WebRTCRenderer : MonoBehaviour
     
     [Header("Display Settings")]
     [SerializeField] private bool debugMode = false;
-    [SerializeField] private float transitionDuration = 0.5f;
     [SerializeField] private bool autoFallbackToLocal = true;
     
     private Material originalMaterial;
-    private Material remoteMaterial;
     private bool isShowingRemoteStream = false;
-    private Coroutine transitionCoroutine;
     private string currentDisplaySession = string.Empty;
     private MaterialPropertyBlock propertyBlock;
     
@@ -31,20 +28,20 @@ public class WebRTCRenderer : MonoBehaviour
         ValidateComponents();
         InitializeRenderer();
         
-        Debug.Log($"[WebRTCRenderer] Initialized for {pipelineType}");
+        Debug.Log($"[🖥️Renderer] Initialized for {pipelineType}");
     }
     
     private void ValidateComponents()
     {
         if (sharedRenderer == null)
         {
-            Debug.LogError($"[WebRTCRenderer] No MeshRenderer assigned for {pipelineType}");
+            Debug.LogError($"[🖥️Renderer] No MeshRenderer assigned for {pipelineType}");
             return;
         }
         
         if (localNdiReceiver == null)
         {
-            Debug.LogWarning($"[WebRTCRenderer] No local NDI receiver assigned for {pipelineType}");
+            Debug.LogWarning($"[🖥️Renderer] No local NDI receiver assigned for {pipelineType}");
         }
     }
     
@@ -59,69 +56,84 @@ public class WebRTCRenderer : MonoBehaviour
         ShowLocalNDI();
     }
     
+    /// <summary>
+    /// Show remote stream - OPTIMIZED for instant switching
+    /// </summary>
     public void ShowRemoteStream(Texture remoteTexture, string sessionId = "")
     {
-        // Always recreate material for fresh connections
-        if (remoteMaterial != null)
-        {
-            DestroyImmediate(remoteMaterial);
-        }
-    
-        remoteMaterial = new Material(originalMaterial.shader);
-        remoteMaterial.mainTexture = remoteTexture;
-        sharedRenderer.material = remoteMaterial;
+        Debug.Log($"[🖥️Renderer] ShowRemoteStream called for {pipelineType} - INSTANT switch");
         
-        // Disable local NDI
+        if (sharedRenderer == null || remoteTexture == null)
+        {
+            Debug.LogError($"[🖥️Renderer] Missing components for remote stream");
+            return;
+        }
+        
+        // INSTANT texture switch - no material recreation
+        SetTextureInstant(remoteTexture);
+        
+        // Disable local NDI immediately
         SetNdiReceiverActive(false);
         
- 
-        // Get current property block values to preserve other properties
-        sharedRenderer.GetPropertyBlock(propertyBlock);
-        
-        // Set the texture through property block
-        propertyBlock.SetTexture("_BaseMap", remoteTexture);
-        propertyBlock.SetTexture("_MainTex", remoteTexture); // For URP materials
-        
-        // Apply the property block
-        sharedRenderer.SetPropertyBlock(propertyBlock);
-        
+        // Update state
         isShowingRemoteStream = true;
         currentDisplaySession = sessionId;
         OnDisplayModeChanged?.Invoke(pipelineType, true, sessionId);
         
-        Debug.Log($"[WebRTCRenderer] Applied remote texture via MaterialPropertyBlock for {pipelineType}");
-
+        Debug.Log($"[🖥️Renderer] Remote texture applied INSTANTLY for {pipelineType}");
     }
     
+    /// <summary>
+    /// Instant texture switching using property blocks only
+    /// </summary>
+    private void SetTextureInstant(Texture texture)
+    {
+        // Use property block for instant switching - no material changes
+        sharedRenderer.GetPropertyBlock(propertyBlock);
+        
+        // Set texture through property block (fastest method)
+        propertyBlock.SetTexture("_BaseMap", texture);
+        propertyBlock.SetTexture("_MainTex", texture); // Fallback for different shaders
+        
+        // Apply immediately
+        sharedRenderer.SetPropertyBlock(propertyBlock);
+    }
+    
+    /// <summary>
+    /// Show local NDI - INSTANT switch back
+    /// </summary>
     public void ShowLocalNDI()
     {
-        Debug.Log($"[WebRTCRenderer] ShowLocalNDI called for {pipelineType}");
+        Debug.Log($"[🖥️Renderer] ShowLocalNDI called for {pipelineType} - INSTANT switch");
         
-        // Enable local NDI
+        // Enable local NDI immediately
         SetNdiReceiverActive(true);
         
-        // Clear the MaterialPropertyBlock to revert to material defaults
+        // Clear property block immediately - revert to material defaults
         if (propertyBlock == null)
             propertyBlock = new MaterialPropertyBlock();
             
-        propertyBlock.Clear(); // This removes all property block overrides
+        propertyBlock.Clear(); // Remove all overrides
         sharedRenderer.SetPropertyBlock(propertyBlock);
         
-        // Clean up remote session
+        // Update state
         isShowingRemoteStream = false;
         currentDisplaySession = string.Empty;
         OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
         
-        Debug.Log($"[WebRTCRenderer] Cleared MaterialPropertyBlock, showing local NDI for {pipelineType}");
-
+        Debug.Log($"[🖥️Renderer] Local NDI restored INSTANTLY for {pipelineType}");
     }
     
+    /// <summary>
+    /// Clear display - INSTANT
+    /// </summary>
     public void ClearDisplay()
-    {Debug.Log($"[WebRTCRenderer] ClearDisplay called for {pipelineType}");
+    {
+        Debug.Log($"[🖥️Renderer] ClearDisplay called for {pipelineType} - INSTANT");
         
         SetNdiReceiverActive(false);
         
-        // Clear property block and set to original material
+        // Clear all overrides instantly
         if (propertyBlock == null)
             propertyBlock = new MaterialPropertyBlock();
             
@@ -133,12 +145,15 @@ public class WebRTCRenderer : MonoBehaviour
         currentDisplaySession = string.Empty;
         OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
         
-        Debug.Log($"[WebRTCRenderer] Display cleared for {pipelineType}");
+        Debug.Log($"[🖥️Renderer] Display cleared INSTANTLY for {pipelineType}");
     }
     
+    /// <summary>
+    /// Handle stream failure with instant fallback
+    /// </summary>
     public void HandleStreamFailure()
     {
-        Debug.LogWarning($"[WebRTCRenderer] Stream failure detected for {pipelineType}");
+        Debug.LogWarning($"[🖥️Renderer] Stream failure detected for {pipelineType} - INSTANT fallback");
         
         if (autoFallbackToLocal)
         {
@@ -150,6 +165,9 @@ public class WebRTCRenderer : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Set NDI receiver active state
+    /// </summary>
     private void SetNdiReceiverActive(bool active)
     {
         if (localNdiReceiver != null)
@@ -157,36 +175,12 @@ public class WebRTCRenderer : MonoBehaviour
             localNdiReceiver.gameObject.SetActive(active);
             
             if (debugMode)
-                Debug.Log($"[WebRTCRenderer] NDI receiver {(active ? "enabled" : "disabled")} for {pipelineType}");
+                Debug.Log($"[🖥️Renderer] NDI receiver {(active ? "enabled" : "disabled")} for {pipelineType}");
         }
         else if (debugMode)
         {
-            Debug.LogWarning($"[WebRTCRenderer] No local NDI receiver assigned for {pipelineType}");
+            Debug.LogWarning($"[🖥️Renderer] No local NDI receiver assigned for {pipelineType}");
         }
-    }
-    
-    private IEnumerator TransitionToMaterial(Material targetMaterial, System.Action onComplete = null)
-    {
-        if (transitionCoroutine != null)
-            StopCoroutine(transitionCoroutine);
-        
-        if (sharedRenderer != null && targetMaterial != null)
-        {
-            // Could add fade effects here in the future
-            sharedRenderer.material = targetMaterial;
-        }
-        
-        yield return null;
-        onComplete?.Invoke();
-    }
-    
-    private IEnumerator TransitionToLocalNDI(System.Action onComplete = null)
-    {
-        if (transitionCoroutine != null)
-            StopCoroutine(transitionCoroutine);
-        
-        yield return null;
-        onComplete?.Invoke();
     }
     
     #region Public Properties
@@ -215,16 +209,8 @@ public class WebRTCRenderer : MonoBehaviour
     
     void OnDestroy()
     {
-        if (remoteMaterial != null)
-        {
-            DestroyImmediate(remoteMaterial);
-            remoteMaterial = null;
-        }
-        
-        if (transitionCoroutine != null)
-        {
-            StopCoroutine(transitionCoroutine);
-        }
+        // No materials to cleanup since we're not creating them anymore
+        Debug.Log($"[🖥️Renderer] Destroyed for {pipelineType}");
     }
 
     #endregion
