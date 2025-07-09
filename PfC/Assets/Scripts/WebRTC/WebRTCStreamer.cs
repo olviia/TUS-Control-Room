@@ -13,76 +13,97 @@ public enum StreamerState
 }
 
 /// <summary>
-/// Pipeline-isolated WebRTC streamer with centralized engine management
-/// Each instance handles one pipeline independently
+/// WebRTC streamer for single pipeline
+/// Handles streaming and receiving video/audio between clients
 /// </summary>
 public class WebRTCStreamer : MonoBehaviour
 {
     [Header("Pipeline Identity")]
     public PipelineType pipelineType;
-    [SerializeField] private string pipelineInstanceId; // Unique identifier per instance
+    [SerializeField] private string instanceId;
     
     [Header("Configuration")]
     public NdiReceiver ndiReceiver;
     public WebRTCRenderer targetRenderer;
     
-    [Header("WebRTC Settings")]
+    [Header("Settings")]
     [SerializeField] private int textureWidth = 1920;
     [SerializeField] private int textureHeight = 1080;
-    [SerializeField] private float connectionTimeout = 3f;
+    [SerializeField] private float connectionTimeout = 5f; // Conservative for slow networks
+    [SerializeField] private bool enableOptimisticStates = true; // Can be disabled for slow networks
     [SerializeField] private int maxRetryAttempts = 3;
     
+    // WebRTC objects
     private RTCPeerConnection peerConnection;
     private VideoStreamTrack videoTrack;
     private AudioStreamTrack audioTrack;
     private RenderTexture webRtcTexture;
     
+    // State
     private WebRTCSignaling signaling;
     private StreamerState currentState = StreamerState.Idle;
     private string currentSessionId = string.Empty;
     private ulong connectedClientId;
     private int retryCount = 0;
+    private bool isOfferer = false;
+    private bool isRemoteDescriptionSet = false;
     
+    // Coroutines
     private Coroutine connectionTimeoutCoroutine;
     private Coroutine textureUpdateCoroutine;
-    private bool isOfferer = false;
-    private bool isTextureSourceValid = false;
-    private bool isCompletelyShutdown = true;
+    
+    // ICE candidate buffering
+    private System.Collections.Generic.List<RTCIceCandidate> pendingIceCandidates = new System.Collections.Generic.List<RTCIceCandidate>();
+    
+    // Offer buffering for race condition handling
+    private RTCSessionDescription? pendingOffer = null;
+    private ulong pendingOfferClient = 0;
     
     public static event Action<PipelineType, StreamerState, string> OnStateChanged;
     
-    #region Initialization
-
+    #region Unity Lifecycle
+    
     void Start()
     {
-        GeneratePipelineInstanceId();
-        RegisterWithEngineManager();
-        InitializeWebRTC();
-        SetupSignaling();
+        CreateInstanceId();
+        RegisterWithEngine();
+        CreateWebRtcObjects();
+        ConnectToSignaling();
         SetState(StreamerState.Idle);
     }
     
-    /// <summary>
-    /// Generate unique instance identifier for this pipeline
-    /// </summary>
-    private void GeneratePipelineInstanceId()
+    void OnDestroy()
     {
-        pipelineInstanceId = $"{pipelineType}_{System.Guid.NewGuid().ToString("N")[..8]}";
-        Debug.Log($"[📡{pipelineInstanceId}] Pipeline instance created");
+        DisconnectFromSignaling();
+        StopAllOperations();
+        DisposeWebRtcObjects();
+        UnregisterFromEngine();
     }
     
-    /// <summary>
-    /// Register with centralized WebRTC engine manager
-    /// </summary>
-    private void RegisterWithEngineManager()
+    #endregion
+    
+    #region Initialization
+    
+    private void CreateInstanceId()
+    {
+        instanceId = $"{pipelineType}_{System.Guid.NewGuid().ToString("N")[..8]}";
+        Debug.Log($"[📡{instanceId}] Created");
+    }
+    
+    private void RegisterWithEngine()
     {
         WebRTCEngineManager.Instance.RegisterStreamer(pipelineType);
     }
     
-    /// <summary>
-    /// Initialize WebRTC objects for this pipeline only
-    /// </summary>
-    private void InitializeWebRTC()
+    private void UnregisterFromEngine()
+    {
+        if (WebRTCEngineManager.Instance != null)
+        {
+            WebRTCEngineManager.Instance.UnregisterStreamer(pipelineType);
+        }
+    }
+    
+    private void CreateWebRtcObjects()
     {
         var format = WebRTC.GetSupportedRenderTextureFormat(SystemInfo.graphicsDeviceType);
         webRtcTexture = new RenderTexture(textureWidth, textureHeight, 0, format);
@@ -90,173 +111,792 @@ public class WebRTCStreamer : MonoBehaviour
         
         videoTrack = new VideoStreamTrack(webRtcTexture);
         
-        Debug.Log($"[📡{pipelineInstanceId}] WebRTC initialized {textureWidth}x{textureHeight}");
+        Debug.Log($"[📡{instanceId}] WebRTC objects created {textureWidth}x{textureHeight}");
     }
     
-    /// <summary>
-    /// Setup pipeline-filtered signaling events
-    /// </summary>
-    private void SetupSignaling()
+    private void ConnectToSignaling()
     {
         signaling = FindObjectOfType<WebRTCSignaling>();
         if (signaling == null)
         {
-            Debug.LogError($"[📡{pipelineInstanceId}] No WebRTCSignaling found");
+            Debug.LogError($"[📡{instanceId}] No WebRTCSignaling found");
             return;
         }
         
-        // Pipeline-specific event filtering prevents cross-talk
-        WebRTCSignaling.OnOfferReceived += OnOfferReceivedFiltered;
-        WebRTCSignaling.OnAnswerReceived += OnAnswerReceivedFiltered;
-        WebRTCSignaling.OnIceCandidateReceived += OnIceCandidateReceivedFiltered;
+        WebRTCSignaling.OnOfferReceived += HandleOfferReceived;
+        WebRTCSignaling.OnAnswerReceived += HandleAnswerReceived;
+        WebRTCSignaling.OnIceCandidateReceived += HandleIceCandidateReceived;
     }
-
-    #endregion
-
-    #region State Management
-
-    /// <summary>
-    /// Update streamer state with logging and events
-    /// </summary>
-    private void SetState(StreamerState newState)
+    
+    private void DisconnectFromSignaling()
     {
-        if (currentState != newState)
+        if (signaling != null)
         {
-            Debug.Log($"[📡{pipelineInstanceId}] {currentState} → {newState} session:{currentSessionId}");
-            currentState = newState;
-            OnStateChanged?.Invoke(pipelineType, newState, currentSessionId);
+            WebRTCSignaling.OnOfferReceived -= HandleOfferReceived;
+            WebRTCSignaling.OnAnswerReceived -= HandleAnswerReceived;
+            WebRTCSignaling.OnIceCandidateReceived -= HandleIceCandidateReceived;
         }
     }
-
+    
     #endregion
-
+    
     #region Public Interface
     
     /// <summary>
-    /// Start streaming with complete restart cycle
+    /// Start streaming for the given session
     /// </summary>
     public void StartStreaming(string sessionId)
     {
-        StartCoroutine(CompleteRestartAndStream(sessionId));
+        StartCoroutine(BeginStreamingSession(sessionId));
     }
     
     /// <summary>
-    /// Start receiving with complete restart cycle
+    /// Start receiving for the given session  
     /// </summary>
     public void StartReceiving(string sessionId)
-    {    
-        StartCoroutine(CompleteRestartAndReceive(sessionId));
-    }
-    
-    /// <summary>
-    /// Force stop all streaming operations
-    /// </summary>
-    public void ForceStop()
     {
-        StartCoroutine(CompleteShutdown());
-        targetRenderer?.ShowLocalNDI();
-    }
-    
-    /// <summary>
-    /// Gracefully stop current streaming session
-    /// </summary>
-    public void StopStreaming()
-    {
-        if (currentState == StreamerState.Idle || currentState == StreamerState.Disconnecting)
-            return;
-
-        Debug.Log($"[📡{pipelineInstanceId}] StopStreaming session:{currentSessionId}");
-        StartCoroutine(GracefulShutdown());
-    }
-
-    #endregion
-
-    #region Restart Cycles
-
-    /// <summary>
-    /// Complete restart cycle for streaming
-    /// </summary>
-    private IEnumerator CompleteRestartAndStream(string sessionId)
-    {
-        yield return StartCoroutine(CompleteShutdown());
-        yield return StartCoroutine(CompleteRestart());
+        Debug.Log($"[📡{instanceId}] StartReceiving called for: {sessionId}");
         
-        currentSessionId = sessionId;
-        isOfferer = true;
-        SetState(StreamerState.Connecting);
-        
-        yield return StartCoroutine(StartStreamingWithNdiValidation());
-    }
-
-    /// <summary>
-    /// Complete restart cycle for receiving
-    /// </summary>
-    private IEnumerator CompleteRestartAndReceive(string sessionId)
-    {
-        yield return StartCoroutine(CompleteShutdown());
-        yield return StartCoroutine(CompleteRestart());
-        
-        currentSessionId = sessionId;
+        // Do all the synchronous setup immediately
+        PrepareForNewSessionSync(sessionId);
         isOfferer = false;
-        SetState(StreamerState.Connecting);
+        SetupReceivingConnection();
         
-        CreatePeerConnection();
+        Debug.Log($"[📡{instanceId}] Receiver ready immediately for: {sessionId}");
+        
+        // Only use coroutine for timeout management
+        StartConnectionTimeout();
+    }
+    
+    private void PrepareForNewSessionSync(string sessionId)
+    {
+        Debug.Log($"[📡{instanceId}] PrepareForNewSessionSync START");
+        
+        if (currentState != StreamerState.Idle)
+        {
+            CleanupCurrentSession();
+        }
+        
+        currentSessionId = sessionId;
+        SetState(StreamerState.Connecting);
+        retryCount = 0;
+        
+        Debug.Log($"[📡{instanceId}] PrepareForNewSessionSync COMPLETE");
+    }
+    
+    /// <summary>
+    /// Stop current session and return to local display
+    /// </summary>
+    public void StopSession()
+    {
+        StartCoroutine(EndCurrentSession());
+    }
+    
+    /// <summary>
+    /// Force complete system restart - use only when normal stop fails
+    /// </summary>
+    public void ForceRestart()
+    {
+        StartCoroutine(ForceCompleteRestart());
+    }
+    
+    #endregion
+    
+    #region Session Management
+    
+    private IEnumerator BeginStreamingSession(string sessionId)
+    {
+        PrepareForNewSessionSync(sessionId);
+        isOfferer = true;
+        
+        if (!ValidateNdiSource())
+        {
+            SetState(StreamerState.Failed);
+            yield break;
+        }
+        
+        // Setup everything in parallel
+        SetupStreamingConnection();
+        
+        // Start operations immediately
+        StartConnectionTimeout();
+        StartCoroutine(CreateOffer());
+        
+        Debug.Log($"[📡{instanceId}] Streaming session initiated immediately");
+    }
+    
+    private IEnumerator BeginReceivingSession(string sessionId)
+    {
+        yield return StartCoroutine(PrepareForNewSession(sessionId));
+        
+        isOfferer = false;
+        
+        // Create peer connection and ensure it's ready
+        SetupReceivingConnection();
+        
+        // Wait one frame to ensure peer connection is fully initialized
+        yield return null;
+        
+        if (peerConnection == null)
+        {
+            Debug.LogError($"[📡{instanceId}] Failed to create peer connection for receiving");
+            SetState(StreamerState.Failed);
+            yield break;
+        }
+        
+        // Process any offer that arrived while we were setting up
+        ProcessPendingOffer();
+        
         StartConnectionTimeout();
         
-        Debug.Log($"[📡{pipelineInstanceId}] Ready to receive");
+        Debug.Log($"[📡{instanceId}] Ready to receive - peer connection confirmed ready");
     }
-
-    /// <summary>
-    /// Complete shutdown of pipeline resources
-    /// </summary>
-    private IEnumerator CompleteShutdown()
+    
+    private IEnumerator PrepareForNewSession(string sessionId)
     {
-        if (!isCompletelyShutdown)
+        Debug.Log($"[📡{instanceId}] PrepareForNewSession START");
+        
+        if (currentState != StreamerState.Idle)
         {
-            Debug.Log($"[📡{pipelineInstanceId}] COMPLETE SHUTDOWN");
-            
-            StopAllCoroutines();
-            ClearConnectionTimeout();
-            isTextureSourceValid = false;
-            
-            ClosePeerConnection();
-            DisposeWebRTCObjects();
-            
-            // Unregister from engine manager (not stopping engine directly)
-            WebRTCEngineManager.Instance.UnregisterStreamer(pipelineType);
-            
-            ResetState();
-            SetState(StreamerState.Idle);
-
+            Debug.Log($"[📡{instanceId}] Cleaning up previous session...");
+            CleanupCurrentSession();
+            yield return null; // This might be the delay!
+        }
+        
+        currentSessionId = sessionId;
+        SetState(StreamerState.Connecting);
+        retryCount = 0;
+        
+        Debug.Log($"[📡{instanceId}] PrepareForNewSession COMPLETE for: {sessionId}");
+    }
+    
+    private IEnumerator EndCurrentSession()
+    {
+        if (currentState == StreamerState.Idle) yield break;
+        
+        SetState(StreamerState.Disconnecting);
+        
+        StopAllOperations();
+        CleanupCurrentSession();
+        ResetSessionState();
+        
+        SetState(StreamerState.Idle);
+        targetRenderer?.ShowLocalNDI();
+        
+        yield return null;
+    }
+    
+    private IEnumerator ForceCompleteRestart()
+    {
+        Debug.LogWarning($"[📡{instanceId}] Force restart");
+        
+        StopAllOperations();
+        DisposeWebRtcObjects();
+        yield return null;
+        
+        CreateWebRtcObjects();
+        ResetSessionState();
+        SetState(StreamerState.Idle);
+    }
+    
+    #endregion
+    
+    #region Connection Setup
+    
+    private void SetupStreamingConnection()
+    {
+        CreatePeerConnection();
+        AddTracksToConnection();
+        StartTextureUpdates();
+    }
+    
+    private void SetupReceivingConnection()
+    {
+        CreatePeerConnection();
+    }
+    
+    private void CreatePeerConnection()
+    {
+        Debug.Log($"[📡{instanceId}] CreatePeerConnection START");
+        
+        ClosePeerConnection();
+        
+        var config = new RTCConfiguration
+        {
+            iceServers = new RTCIceServer[]
+            {
+                new RTCIceServer { urls = new string[] { "stun:stun.l.google.com:19302" } },
+                new RTCIceServer { urls = new string[] { "stun:stun1.l.google.com:19302" } }
+            }
+        };
+        
+        peerConnection = new RTCPeerConnection(ref config);
+        peerConnection.OnIceCandidate = OnIceCandidate;
+        peerConnection.OnTrack = OnTrackReceived;
+        peerConnection.OnConnectionStateChange = OnConnectionStateChange;
+        peerConnection.OnIceConnectionChange = OnIceConnectionChange;
+        
+        Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE (Host: {NetworkManager.Singleton?.IsHost})");
+    }
+    
+    private void AddTracksToConnection()
+    {
+        if (peerConnection == null || videoTrack == null) 
+        {
+            Debug.LogError($"[📡{instanceId}] Cannot add tracks - missing components");
+            SetState(StreamerState.Failed);
+            return;
+        }
+        
+        peerConnection.AddTrack(videoTrack);
+        TryAddAudioTrack();
+        
+        Debug.Log($"[📡{instanceId}] Tracks added to connection");
+    }
+    
+    private void TryAddAudioTrack()
+    {
+        var audioSource = ndiReceiver?.GetComponentInChildren<AudioSource>();
+        if (audioSource?.clip != null)
+        {
+            audioTrack = new AudioStreamTrack(audioSource);
+            peerConnection.AddTrack(audioTrack);
+            Debug.Log($"[📡{instanceId}] Audio track added");
+        }
+    }
+    
+    #endregion
+    
+    #region NDI Management
+    
+    private bool ValidateNdiSource()
+    {
+        if (ndiReceiver == null)
+        {
+            Debug.LogError($"[📡{instanceId}] No NDI receiver assigned");
+            return false;
+        }
+        
+        ActivateNdiReceiver();
+        return HasValidNdiTexture();
+    }
+    
+    private void ActivateNdiReceiver()
+    {
+        if (!ndiReceiver.gameObject.activeInHierarchy)
+        {
+            ndiReceiver.gameObject.SetActive(true);
+            Debug.Log($"[📡{instanceId}] NDI receiver activated");
+        }
+    }
+    
+    private bool HasValidNdiTexture()
+    {
+        var texture = ndiReceiver.GetTexture();
+        bool isValid = texture != null && texture.width > 0 && texture.height > 0;
+        
+        if (isValid)
+        {
+            Debug.Log($"[📡{instanceId}] NDI validated: {texture.width}x{texture.height}");
+        }
+        else
+        {
+            Debug.LogError($"[📡{instanceId}] Invalid NDI texture");
+        }
+        
+        return isValid;
+    }
+    
+    #endregion
+    
+    #region Texture Updates
+    
+    private void StartTextureUpdates()
+    {
+        StopTextureUpdates();
+        textureUpdateCoroutine = StartCoroutine(UpdateTextureFromNdi());
+    }
+    
+    private void StopTextureUpdates()
+    {
+        if (textureUpdateCoroutine != null)
+        {
+            StopCoroutine(textureUpdateCoroutine);
+            textureUpdateCoroutine = null;
+        }
+    }
+    
+    private IEnumerator UpdateTextureFromNdi()
+    {
+        while (IsStreamingOrConnecting())
+        {
+            var ndiTexture = ndiReceiver?.GetTexture();
+            if (ndiTexture != null && webRtcTexture != null)
+            {
+                Graphics.Blit(ndiTexture, webRtcTexture);
+            }
             yield return new WaitForEndOfFrame();
         }
     }
-
-    /// <summary>
-    /// Complete restart of pipeline resources
-    /// </summary>
-    private IEnumerator CompleteRestart()
+    
+    private bool IsStreamingOrConnecting()
     {
-        Debug.Log($"[📡{pipelineInstanceId}] COMPLETE RESTART");
-        
-        // Re-register with engine manager
-        WebRTCEngineManager.Instance.RegisterStreamer(pipelineType);
-        
-        // Recreate local WebRTC objects
-        RecreateWebRTCObjects();
-        
-        isCompletelyShutdown = false;
-        yield return new WaitForEndOfFrame();
+        return currentState == StreamerState.Connecting || currentState == StreamerState.Streaming;
     }
-
+    
     #endregion
+    
+    #region WebRTC Signaling
+    
+    private IEnumerator CreateOffer()
+    {
+        // Ensure everything is ready before creating offer
+        yield return null;
+        
+        var offerOp = peerConnection.CreateOffer();
+        yield return offerOp;
+        
+        if (offerOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Offer creation failed: {offerOp.Error}");
+            HandleConnectionFailure();
+            yield break;
+        }
+        
+        yield return StartCoroutine(SetLocalDescription(offerOp.Desc));
+        
+        // Send offer immediately after setting local description
+        signaling.SendOffer(pipelineType, offerOp.Desc, currentSessionId);
+        
+        Debug.Log($"[📡{instanceId}] Offer sent");
+    }
+    
 
-    #region Resource Management
-
-    /// <summary>
-    /// Dispose all WebRTC objects safely
-    /// </summary>
-    private void DisposeWebRTCObjects()
+    
+    private IEnumerator SetLocalDescription(RTCSessionDescription desc)
+    {
+        var setOp = peerConnection.SetLocalDescription(ref desc);
+        yield return setOp;
+        
+        if (setOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Set local description failed: {setOp.Error}");
+            HandleConnectionFailure();
+        }
+    }
+    
+    private IEnumerator SetRemoteDescription(RTCSessionDescription desc)
+    {
+        var setOp = peerConnection.SetRemoteDescription(ref desc);
+        yield return setOp;
+        
+        if (setOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Set remote description failed: {setOp.Error}");
+            HandleConnectionFailure();
+        }
+        else
+        {
+            isRemoteDescriptionSet = true;
+            ProcessBufferedIceCandidates();
+        }
+    }
+    
+    #endregion
+    
+    #region Event Handlers - Signaling
+    
+    private void HandleOfferReceived(PipelineType pipeline, RTCSessionDescription offer, ulong fromClient, string sessionId)
+    {
+        if (!IsForThisInstance(pipeline, sessionId) || isOfferer) return;
+        
+        Debug.Log($"[📡{instanceId}] Processing offer from client {fromClient}");
+        
+        // Check if peer connection is ready
+        if (peerConnection == null)
+        {
+            Debug.LogWarning($"[📡{instanceId}] Offer arrived before peer connection ready - buffering");
+            pendingOffer = offer;
+            pendingOfferClient = fromClient;
+            return;
+        }
+        
+        // Process offer immediately
+        StartCoroutine(ProcessOfferImmediately(offer, fromClient));
+    }
+    
+    private void ProcessPendingOffer()
+    {
+        if (pendingOffer.HasValue && peerConnection != null)
+        {
+            Debug.Log($"[📡{instanceId}] Processing buffered offer from client {pendingOfferClient}");
+            StartCoroutine(ProcessOfferImmediately(pendingOffer.Value, pendingOfferClient));
+            
+            pendingOffer = null;
+            pendingOfferClient = 0;
+        }
+    }
+    
+    private IEnumerator ProcessOfferImmediately(RTCSessionDescription offer, ulong fromClient)
+    {
+        // Ensure peer connection is ready
+        if (peerConnection == null)
+        {
+            Debug.LogError($"[📡{instanceId}] No peer connection for offer");
+            yield break;
+        }
+        
+        // Set remote description first (this must succeed)
+        Debug.Log($"[📡{instanceId}] Setting remote description...");
+        yield return StartCoroutine(SetRemoteDescription(offer));
+        
+        // Only proceed if remote description was set successfully
+        if (!isRemoteDescriptionSet)
+        {
+            Debug.LogError($"[📡{instanceId}] Failed to set remote description");
+            yield break;
+        }
+        
+        // Create answer immediately
+        Debug.Log($"[📡{instanceId}] Creating answer...");
+        yield return StartCoroutine(CreateAnswerImmediate(fromClient));
+    }
+    
+    private IEnumerator CreateAnswerImmediate(ulong toClient)
+    {
+        var answerOp = peerConnection.CreateAnswer();
+        yield return answerOp;
+        
+        if (answerOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Answer creation failed: {answerOp.Error}");
+            HandleConnectionFailure();
+            yield break;
+        }
+        
+        // Set local description
+        yield return StartCoroutine(SetLocalDescription(answerOp.Desc));
+        
+        // Send answer
+        signaling.SendAnswer(pipelineType, answerOp.Desc, toClient, currentSessionId);
+        connectedClientId = toClient;
+        
+        Debug.Log($"[📡{instanceId}] Answer completed for client {toClient}");
+    }
+    
+    private void HandleAnswerReceived(PipelineType pipeline, RTCSessionDescription answer, ulong fromClient, string sessionId)
+    {
+        if (!IsForThisInstance(pipeline, sessionId) || !isOfferer) return;
+        
+        Debug.Log($"[📡{instanceId}] Processing answer from client {fromClient}");
+        
+        // Only set optimistic state if enabled (good for fast networks)
+        if (enableOptimisticStates)
+        {
+            SetState(StreamerState.Streaming);
+        }
+        
+        StartCoroutine(SetRemoteDescription(answer));
+        connectedClientId = fromClient;
+    }
+    
+    private void HandleIceCandidateReceived(PipelineType pipeline, RTCIceCandidate candidate, ulong fromClient, string sessionId)
+    {
+        if (!IsForThisInstance(pipeline, sessionId)) return;
+        
+        if (peerConnection == null) return;
+        
+        // Buffer candidates if remote description not set yet
+        if (!isRemoteDescriptionSet)
+        {
+            pendingIceCandidates.Add(candidate);
+            Debug.Log($"[📡{instanceId}] ICE candidate buffered (total: {pendingIceCandidates.Count})");
+            return;
+        }
+        
+        // Add candidate immediately if ready
+        AddIceCandidate(candidate);
+    }
+    
+    private void AddIceCandidate(RTCIceCandidate candidate)
+    {
+        try
+        {
+            peerConnection.AddIceCandidate(candidate);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[📡{instanceId}] Failed to add ICE candidate: {e.Message}");
+        }
+    }
+    
+    private void ProcessBufferedIceCandidates()
+    {
+        Debug.Log($"[📡{instanceId}] Processing {pendingIceCandidates.Count} buffered ICE candidates");
+        
+        foreach (var candidate in pendingIceCandidates)
+        {
+            AddIceCandidate(candidate);
+        }
+        
+        pendingIceCandidates.Clear();
+    }
+    
+    private bool IsForThisInstance(PipelineType pipeline, string sessionId)
+    {
+        return pipeline == this.pipelineType && sessionId == this.currentSessionId;
+    }
+    
+    #endregion
+    
+    #region Event Handlers - WebRTC
+    
+    private void OnIceCandidate(RTCIceCandidate candidate)
+    {
+        signaling?.SendIceCandidate(pipelineType, candidate, currentSessionId);
+    }
+    
+    private void OnTrackReceived(RTCTrackEvent e)
+    {
+        Debug.Log($"[📡{instanceId}] Track received: {e.Track.Kind}");
+        
+        if (e.Track is VideoStreamTrack videoStreamTrack)
+        {
+            videoStreamTrack.OnVideoReceived += OnVideoReceived;
+            
+            // Set to receiving state immediately when track arrives
+            SetState(StreamerState.Receiving);
+            ClearConnectionTimeout();
+        }
+    }
+    
+    private void OnVideoReceived(Texture texture)
+    {
+        Debug.Log($"[📡{instanceId}] Video received: {texture.width}x{texture.height}");
+        targetRenderer?.ShowRemoteStream(texture, currentSessionId);
+        
+        // Consider this the moment we're fully connected
+        SetState(StreamerState.Receiving);
+    }
+    
+    // Network quality tracking
+    private float lastConnectionTime = 0f;
+    
+    private void OnConnectionStateChange(RTCPeerConnectionState state)
+    {
+        Debug.Log($"[📡{instanceId}] Connection state: {state}");
+        
+        switch (state)
+        {
+            case RTCPeerConnectionState.Connecting:
+                lastConnectionTime = Time.time;
+                
+                // Only show optimistic state for fast networks
+                if (enableOptimisticStates && isOfferer)
+                {
+                    SetState(StreamerState.Streaming);
+                    targetRenderer?.ShowLocalNDI();
+                }
+                break;
+                
+            case RTCPeerConnectionState.Connected:
+                // Measure connection speed and adapt
+                float connectionDuration = Time.time - lastConnectionTime;
+                AdaptToNetworkPerformance(connectionDuration);
+                
+                // Always set confirmed state regardless of network speed
+                SetState(isOfferer ? StreamerState.Streaming : StreamerState.Receiving);
+                ClearConnectionTimeout();
+                retryCount = 0;
+                break;
+                
+            case RTCPeerConnectionState.Failed:
+            case RTCPeerConnectionState.Disconnected:
+                if (currentState != StreamerState.Disconnecting)
+                    HandleConnectionFailure();
+                break;
+        }
+    }
+    
+    private void AdaptToNetworkPerformance(float connectionTime)
+    {
+        Debug.Log($"[📡{instanceId}] Connection took {connectionTime:F1}s");
+        
+        // Adapt settings based on actual performance
+        if (connectionTime > 3f)
+        {
+            // Slow network detected - be more conservative
+            connectionTimeout = 8f;
+            enableOptimisticStates = false;
+            Debug.Log($"[📡{instanceId}] Slow network detected - using conservative settings");
+        }
+        else if (connectionTime < 1f)
+        {
+            // Fast network - can be more aggressive
+            connectionTimeout = 3f;
+            enableOptimisticStates = true;
+            Debug.Log($"[📡{instanceId}] Fast network detected - using optimized settings");
+        }
+    }
+    
+    private void OnIceConnectionChange(RTCIceConnectionState state)
+    {
+        Debug.Log($"[📡{instanceId}] ICE state: {state}");
+        
+        if (state == RTCIceConnectionState.Failed && currentState != StreamerState.Disconnecting)
+        {
+            HandleConnectionFailure();
+        }
+    }
+    
+    #endregion
+    
+    #region Error Handling
+    
+    private void HandleConnectionFailure()
+    {
+        if (currentState == StreamerState.Disconnecting || currentState == StreamerState.Failed)
+            return;
+        
+        Debug.LogError($"[📡{instanceId}] Connection failed (attempt {retryCount + 1})");
+        
+        ClearConnectionTimeout();
+        
+        // Adaptive retry strategy based on network performance
+        int maxRetries = GetAdaptiveMaxRetries();
+        
+        if (retryCount < maxRetries)
+        {
+            retryCount++;
+            
+            // Increase timeout after failures (network might be slow)
+            connectionTimeout = Mathf.Min(connectionTimeout * 1.5f, 10f);
+            Debug.Log($"[📡{instanceId}] Adapted timeout to {connectionTimeout}s for retry {retryCount}");
+            
+            StartCoroutine(RetryConnection());
+        }
+        else
+        {
+            SetState(StreamerState.Failed);
+            targetRenderer?.ShowLocalNDI();
+            Debug.LogError($"[📡{instanceId}] Max retries reached");
+        }
+    }
+    
+    private int GetAdaptiveMaxRetries()
+    {
+        // More retries for slower apparent networks
+        if (connectionTimeout > 7f) return 5; // Slow network detected
+        if (connectionTimeout > 4f) return 3; // Medium network
+        return 2; // Fast network (like yours)
+    }
+    
+    private IEnumerator RetryConnection()
+    {
+        Debug.Log($"[📡{instanceId}] Retrying connection");
+        
+        ClosePeerConnection();
+        yield return null;
+        
+        if (string.IsNullOrEmpty(currentSessionId)) yield break;
+        
+        if (isOfferer)
+        {
+            SetupStreamingConnection();
+            StartCoroutine(CreateOffer());
+        }
+        else
+        {
+            SetupReceivingConnection();
+        }
+        
+        StartConnectionTimeout();
+    }
+    
+    #endregion
+    
+    #region Connection Timeout
+    
+    private void StartConnectionTimeout()
+    {
+        ClearConnectionTimeout();
+        connectionTimeoutCoroutine = StartCoroutine(ConnectionTimeoutTimer());
+    }
+    
+    private void ClearConnectionTimeout()
+    {
+        if (connectionTimeoutCoroutine != null)
+        {
+            StopCoroutine(connectionTimeoutCoroutine);
+            connectionTimeoutCoroutine = null;
+        }
+    }
+    
+    private IEnumerator ConnectionTimeoutTimer()
+    {
+        yield return new WaitForSeconds(connectionTimeout);
+        
+        if (currentState == StreamerState.Connecting)
+        {
+            Debug.LogWarning($"[📡{instanceId}] Connection timeout");
+            HandleConnectionFailure();
+        }
+    }
+    
+    #endregion
+    
+    #region Cleanup Operations
+    
+    private void StopAllOperations()
+    {
+        ClearConnectionTimeout();
+        StopTextureUpdates();
+    }
+    
+    private void CleanupCurrentSession()
+    {
+        StopAllOperations();
+        ClosePeerConnection();
+    }
+    
+    private void ResetSessionState()
+    {
+        currentSessionId = string.Empty;
+        connectedClientId = 0;
+        retryCount = 0;
+        isOfferer = false;
+    }
+    
+    private void ClosePeerConnection()
+    {
+        if (peerConnection != null)
+        {
+            UnsubscribeFromVideoEvents();
+            peerConnection.Close();
+            peerConnection.Dispose();
+            peerConnection = null;
+        }
+        
+        // Reset state
+        isRemoteDescriptionSet = false;
+        pendingIceCandidates.Clear();
+        pendingOffer = null;
+        pendingOfferClient = 0;
+    }
+    
+    private void UnsubscribeFromVideoEvents()
+    {
+        var transceivers = peerConnection.GetTransceivers();
+        foreach (var transceiver in transceivers)
+        {
+            if (transceiver.Receiver?.Track is VideoStreamTrack videoTrack)
+            {
+                videoTrack.OnVideoReceived -= OnVideoReceived;
+            }
+        }
+    }
+    
+    private void DisposeWebRtcObjects()
     {
         if (videoTrack != null)
         {
@@ -278,692 +918,28 @@ public class WebRTCStreamer : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// Recreate all WebRTC objects with fresh state
-    /// </summary>
-    private void RecreateWebRTCObjects()
-    {
-        var format = WebRTC.GetSupportedRenderTextureFormat(SystemInfo.graphicsDeviceType);
-        webRtcTexture = new RenderTexture(textureWidth, textureHeight, 0, format);
-        webRtcTexture.Create();
-        
-        videoTrack = new VideoStreamTrack(webRtcTexture);
-        
-        Debug.Log($"[📡{pipelineInstanceId}] WebRTC objects recreated");
-    }
-    
-    /// <summary>
-    /// Reset internal state variables
-    /// </summary>
-    private void ResetState()
-    {
-        currentSessionId = string.Empty;
-        connectedClientId = 0;
-        retryCount = 0;
-        isCompletelyShutdown = true;
-    }
-
     #endregion
-
-    #region NDI Validation & Streaming
-
-    /// <summary>
-    /// Start streaming with NDI validation
-    /// </summary>
-    private IEnumerator StartStreamingWithNdiValidation()
+    
+    #region State Management
+    
+    private void SetState(StreamerState newState)
     {
-        if (!ActivateNdiReceiver())
+        if (currentState != newState)
         {
-            SetState(StreamerState.Failed);
-            yield break;
+            Debug.Log($"[📡{instanceId}] {currentState} → {newState}");
+            currentState = newState;
+            OnStateChanged?.Invoke(pipelineType, newState, currentSessionId);
         }
-        
-        yield return StartCoroutine(WaitForValidNdiTexture());
-        
-        if (!isTextureSourceValid)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] NDI validation failed");
-            SetState(StreamerState.Failed);
-            yield break;
-        }
-        
-        CreatePeerConnection();
-        RecreateVideoStreamTrack();
-        StartTextureUpdates();
-        
-        yield return new WaitForEndOfFrame();
-        yield return new WaitForEndOfFrame();
-        
-        AddTracksToConnection();
-        StartConnectionTimeout();
-        StartCoroutine(CreateAndSendOffer());
     }
     
-    /// <summary>
-    /// Activate NDI receiver for this pipeline
-    /// </summary>
-    private bool ActivateNdiReceiver()
-    {
-        if (ndiReceiver == null)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] No NDI receiver assigned");
-            return false;
-        }
-        
-        if (!ndiReceiver.gameObject.activeInHierarchy)
-        {
-            ndiReceiver.gameObject.SetActive(true);
-            Debug.Log($"[📡{pipelineInstanceId}] NDI receiver activated");
-        }
-        
-        return true;
-    }
-    
-    /// <summary>
-    /// Wait for NDI to produce valid texture
-    /// </summary>
-    private IEnumerator WaitForValidNdiTexture()
-    {
-        float timeout = 2f;
-        float elapsed = 0f;
-        
-        while (elapsed < timeout)
-        {
-            var ndiTexture = ndiReceiver.GetTexture();
-            
-            if (ndiTexture != null && ndiTexture.width > 0 && ndiTexture.height > 0)
-            {
-                isTextureSourceValid = true;
-                Debug.Log($"[📡{pipelineInstanceId}] NDI validated: {ndiTexture.width}x{ndiTexture.height}");
-                yield break;
-            }
-            
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-        
-        isTextureSourceValid = false;
-        Debug.LogError($"[📡{pipelineInstanceId}] NDI validation timeout");
-    }
-    
-    /// <summary>
-    /// Recreate video track with fresh texture
-    /// </summary>
-    private void RecreateVideoStreamTrack()
-    {
-        if (videoTrack != null)
-        {
-            videoTrack.Dispose();
-            videoTrack = null;
-        }
-        
-        if (webRtcTexture != null)
-        {
-            webRtcTexture.Release();
-            DestroyImmediate(webRtcTexture);
-        }
-        
-        var format = WebRTC.GetSupportedRenderTextureFormat(SystemInfo.graphicsDeviceType);
-        webRtcTexture = new RenderTexture(textureWidth, textureHeight, 0, format);
-        webRtcTexture.Create();
-        
-        videoTrack = new VideoStreamTrack(webRtcTexture);
-        
-        Debug.Log($"[📡{pipelineInstanceId}] VideoStreamTrack recreated");
-    }
-
     #endregion
-
-    #region Connection Management
     
-    /// <summary>
-    /// Create peer connection without affecting global engine
-    /// </summary>
-    private void CreatePeerConnection()
-    {
-        ClosePeerConnection();
-        
-        var config = new RTCConfiguration
-        {
-            iceServers = new RTCIceServer[]
-            {
-                new RTCIceServer { urls = new string[] { "stun:stun.l.google.com:19302" } }
-            }
-        };
-        
-        peerConnection = new RTCPeerConnection(ref config);
-        
-        peerConnection.OnIceCandidate = OnIceCandidate;
-        peerConnection.OnTrack = OnTrackReceived;
-        peerConnection.OnConnectionStateChange = OnConnectionStateChange;
-        peerConnection.OnIceConnectionChange = OnIceConnectionChange;
-        
-        Debug.Log($"[📡{pipelineInstanceId}] Peer connection created");
-    }
-    
-    /// <summary>
-    /// Add video/audio tracks to peer connection
-    /// </summary>
-    private void AddTracksToConnection()
-    {
-        if (peerConnection == null || videoTrack == null) 
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Missing peer connection or video track");
-            return;
-        }
-        
-        if (!isTextureSourceValid)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] NDI texture invalid for track addition");
-            SetState(StreamerState.Failed);
-            return;
-        }
-        
-        try
-        {
-            peerConnection.AddTrack(videoTrack);
-            Debug.Log($"[📡{pipelineInstanceId}] Video track added");
-            
-            var audioSource = ndiReceiver?.GetComponentInChildren<AudioSource>();
-            if (audioSource?.clip != null)
-            {
-                audioTrack = new AudioStreamTrack(audioSource);
-                peerConnection.AddTrack(audioTrack);
-                Debug.Log($"[📡{pipelineInstanceId}] Audio track added");
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Failed to add tracks: {e.Message}");
-            SetState(StreamerState.Failed);
-        }
-    }
-    
-    /// <summary>
-    /// Start continuous texture updates from NDI to WebRTC
-    /// </summary>
-    private void StartTextureUpdates()
-    {
-        if (textureUpdateCoroutine != null)
-            StopCoroutine(textureUpdateCoroutine);
-            
-        textureUpdateCoroutine = StartCoroutine(UpdateTextureLoop());
-    }
-    
-    /// <summary>
-    /// Continuous texture update loop
-    /// </summary>
-    private IEnumerator UpdateTextureLoop()
-    {
-        while (currentState == StreamerState.Connecting || currentState == StreamerState.Streaming)
-        {
-            if (ndiReceiver != null && webRtcTexture != null && isTextureSourceValid)
-            {
-                var ndiTexture = ndiReceiver.GetTexture();
-                if (ndiTexture?.width > 0)
-                {
-                    Graphics.Blit(ndiTexture, webRtcTexture);
-                }
-            }
-            yield return new WaitForEndOfFrame();
-        }
-    }
-
-    #endregion
-
-    #region Pipeline-Filtered Event Handlers
-    
-    /// <summary>
-    /// Handle offer only for this pipeline and session
-    /// </summary>
-    private void OnOfferReceivedFiltered(PipelineType pipeline, RTCSessionDescription offer, ulong fromClient, string sessionId)
-    {
-        if (pipeline == this.pipelineType && sessionId == this.currentSessionId && !isOfferer)
-            HandleOfferReceived(pipeline, offer, fromClient, sessionId);
-    }
-    
-    /// <summary>
-    /// Handle answer only for this pipeline and session
-    /// </summary>
-    private void OnAnswerReceivedFiltered(PipelineType pipeline, RTCSessionDescription answer, ulong fromClient, string sessionId)
-    {
-        if (pipeline == this.pipelineType && sessionId == this.currentSessionId && isOfferer)
-            HandleAnswerReceived(pipeline, answer, fromClient, sessionId);
-    }
-    
-    /// <summary>
-    /// Handle ICE candidate only for this pipeline and session
-    /// </summary>
-    private void OnIceCandidateReceivedFiltered(PipelineType pipeline, RTCIceCandidate candidate, ulong fromClient, string sessionId)
-    {
-        if (pipeline == this.pipelineType && sessionId == this.currentSessionId)
-            HandleIceCandidateReceived(pipeline, candidate, fromClient, sessionId);
-    }
-
-    #endregion
-
-    #region WebRTC Event Handlers
-    
-    /// <summary>
-    /// Handle ICE candidate generation
-    /// </summary>
-    private void OnIceCandidate(RTCIceCandidate candidate)
-    {
-        signaling?.SendIceCandidate(pipelineType, candidate, currentSessionId);
-    }
-    
-    /// <summary>
-    /// Handle incoming track reception
-    /// </summary>
-    private void OnTrackReceived(RTCTrackEvent e)
-    {
-        Debug.Log($"[📡{pipelineInstanceId}] Track received: {e.Track.Kind}");
-        
-        if (e.Track is VideoStreamTrack videoStreamTrack)
-        {
-            videoStreamTrack.OnVideoReceived += OnVideoReceived;
-            ClearConnectionTimeout();
-        }
-    }
-    
-    /// <summary>
-    /// Handle received video texture
-    /// </summary>
-    private void OnVideoReceived(Texture texture)
-    {
-        Debug.Log($"[📡{pipelineInstanceId}] Video received: {texture.width}x{texture.height}");
-        
-        if (targetRenderer != null && texture != null)
-        {
-            targetRenderer.ShowRemoteStream(texture, currentSessionId);
-        }
-    }
-    
-    /// <summary>
-    /// Handle peer connection state changes
-    /// </summary>
-    private void OnConnectionStateChange(RTCPeerConnectionState state)
-    {
-        Debug.Log($"[📡{pipelineInstanceId}] Connection state: {state}");
-        
-        switch (state)
-        {
-            case RTCPeerConnectionState.Connected:
-                SetState(isOfferer ? StreamerState.Streaming : StreamerState.Receiving);
-                ClearConnectionTimeout();
-                retryCount = 0;
-                break;
-                
-            case RTCPeerConnectionState.Failed:
-            case RTCPeerConnectionState.Disconnected:
-                if (currentState != StreamerState.Disconnecting)
-                    HandleConnectionFailure();
-                break;
-        }
-    }
-    
-    /// <summary>
-    /// Handle ICE connection state changes
-    /// </summary>
-    private void OnIceConnectionChange(RTCIceConnectionState state)
-    {
-        Debug.Log($"[📡{pipelineInstanceId}] ICE state: {state}");
-        
-        if (state == RTCIceConnectionState.Failed && currentState != StreamerState.Disconnecting)
-        {
-            HandleConnectionFailure();
-        }
-    }
-
-    #endregion
-
-    #region Signaling Event Handlers
-    
-    /// <summary>
-    /// Process received offer and create answer
-    /// </summary>
-    private void HandleOfferReceived(PipelineType pipeline, RTCSessionDescription offer, ulong fromClient, string sessionId)
-    {
-        if (currentState != StreamerState.Connecting) return;
-        
-        Debug.Log($"[📡{pipelineInstanceId}] Processing offer from client {fromClient}");
-        StartCoroutine(CreateAndSendAnswer(offer, fromClient));
-    }
-    
-    /// <summary>
-    /// Process received answer
-    /// </summary>
-    private void HandleAnswerReceived(PipelineType pipeline, RTCSessionDescription answer, ulong fromClient, string sessionId)
-    {
-        if (currentState != StreamerState.Connecting) return;
-        
-        Debug.Log($"[📡{pipelineInstanceId}] Processing answer from client {fromClient}");
-        StartCoroutine(SetRemoteAnswer(answer));
-        connectedClientId = fromClient;
-    }
-    
-    /// <summary>
-    /// Process received ICE candidate
-    /// </summary>
-    private void HandleIceCandidateReceived(PipelineType pipeline, RTCIceCandidate candidate, ulong fromClient, string sessionId)
-    {
-        if (peerConnection == null) return;
-        
-        try
-        {
-            peerConnection.AddIceCandidate(candidate);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] ICE candidate error: {e.Message}");
-        }
-    }
-
-    #endregion
-
-    #region Offer/Answer Creation
-    
-    /// <summary>
-    /// Create and send WebRTC offer
-    /// </summary>
-    private IEnumerator CreateAndSendOffer()
-    {
-        if (peerConnection == null) yield break;
-        
-        Debug.Log($"[📡{pipelineInstanceId}] Creating offer");
-        
-        var offerOp = peerConnection.CreateOffer();
-        yield return offerOp;
-        
-        if (offerOp.IsError)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Offer creation failed: {offerOp.Error}");
-            HandleConnectionFailure();
-            yield break;
-        }
-        
-        var offer = offerOp.Desc;
-        var setLocalOp = peerConnection.SetLocalDescription(ref offer);
-        yield return setLocalOp;
-        
-        if (setLocalOp.IsError)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Set local description failed: {setLocalOp.Error}");
-            HandleConnectionFailure();
-            yield break;
-        }
-        
-        signaling.SendOffer(pipelineType, offer, currentSessionId);
-        Debug.Log($"[📡{pipelineInstanceId}] Offer sent");
-    }
-    
-    /// <summary>
-    /// Create and send WebRTC answer
-    /// </summary>
-    private IEnumerator CreateAndSendAnswer(RTCSessionDescription offer, ulong toClient)
-    {
-        if (peerConnection == null) yield break;
-        
-        Debug.Log($"[📡{pipelineInstanceId}] Creating answer");
-        
-        var setRemoteOp = peerConnection.SetRemoteDescription(ref offer);
-        yield return setRemoteOp;
-        
-        if (setRemoteOp.IsError)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Set remote description failed: {setRemoteOp.Error}");
-            HandleConnectionFailure();
-            yield break;
-        }
-        
-        var answerOp = peerConnection.CreateAnswer();
-        yield return answerOp;
-        
-        if (answerOp.IsError)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Answer creation failed: {answerOp.Error}");
-            HandleConnectionFailure();
-            yield break;
-        }
-        
-        var answer = answerOp.Desc;
-        var setLocalOp = peerConnection.SetLocalDescription(ref answer);
-        yield return setLocalOp;
-        
-        if (setLocalOp.IsError)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Set local answer failed: {setLocalOp.Error}");
-            HandleConnectionFailure();
-            yield break;
-        }
-        
-        signaling.SendAnswer(pipelineType, answer, toClient, currentSessionId);
-        connectedClientId = toClient;
-        
-        Debug.Log($"[📡{pipelineInstanceId}] Answer sent to client {toClient}");
-    }
-    
-    /// <summary>
-    /// Set remote answer for outgoing connection
-    /// </summary>
-    private IEnumerator SetRemoteAnswer(RTCSessionDescription answer)
-    {
-        if (peerConnection == null) yield break;
-        
-        var setRemoteOp = peerConnection.SetRemoteDescription(ref answer);
-        yield return setRemoteOp;
-        
-        if (setRemoteOp.IsError)
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Set remote answer failed: {setRemoteOp.Error}");
-            HandleConnectionFailure();
-        }
-    }
-
-    #endregion
-
-    #region Connection Timeout & Error Handling
-    
-    /// <summary>
-    /// Start connection timeout timer
-    /// </summary>
-    private void StartConnectionTimeout()
-    {
-        ClearConnectionTimeout();
-        connectionTimeoutCoroutine = StartCoroutine(ConnectionTimeoutRoutine());
-    }
-    
-    /// <summary>
-    /// Clear active connection timeout
-    /// </summary>
-    private void ClearConnectionTimeout()
-    {
-        if (connectionTimeoutCoroutine != null)
-        {
-            StopCoroutine(connectionTimeoutCoroutine);
-            connectionTimeoutCoroutine = null;
-        }
-    }
-    
-    /// <summary>
-    /// Connection timeout routine
-    /// </summary>
-    private IEnumerator ConnectionTimeoutRoutine()
-    {
-        yield return new WaitForSeconds(connectionTimeout);
-        
-        if (currentState == StreamerState.Connecting)
-        {
-            Debug.LogWarning($"[📡{pipelineInstanceId}] Connection timeout");
-            HandleConnectionFailure();
-        }
-    }
-    
-    /// <summary>
-    /// Handle connection failures with retry logic
-    /// </summary>
-    private void HandleConnectionFailure()
-    {
-        if (currentState == StreamerState.Disconnecting || currentState == StreamerState.Failed)
-            return;
-
-        Debug.LogError($"[📡{pipelineInstanceId}] Connection failed");
-        
-        ClearConnectionTimeout();
-        
-        if (retryCount < maxRetryAttempts)
-        {
-            retryCount++;
-            Debug.Log($"[📡{pipelineInstanceId}] Retry {retryCount}/{maxRetryAttempts}");
-            StartCoroutine(RetryConnection());
-        }
-        else
-        {
-            Debug.LogError($"[📡{pipelineInstanceId}] Max retries reached");
-            SetState(StreamerState.Failed);
-            targetRenderer?.ShowLocalNDI();
-        }
-    }
-    
-    /// <summary>
-    /// Retry connection after failure
-    /// </summary>
-    private IEnumerator RetryConnection()
-    {
-        ClosePeerConnection();
-        yield return new WaitForSeconds(2f);
-        
-        if (currentState != StreamerState.Failed && !string.IsNullOrEmpty(currentSessionId))
-        {
-            if (isOfferer)
-                StartStreaming(currentSessionId);
-            else
-                StartReceiving(currentSessionId);
-        }
-    }
-
-    #endregion
-
-    #region Session Management
-
-    /// <summary>
-    /// Graceful shutdown of current session
-    /// </summary>
-    private IEnumerator GracefulShutdown()
-    {
-        if (currentState == StreamerState.Disconnecting || currentState == StreamerState.Idle)
-            yield break;
-
-        SetState(StreamerState.Disconnecting);
-        
-        ClearConnectionTimeout();
-        
-        if (textureUpdateCoroutine != null)
-        {
-            StopCoroutine(textureUpdateCoroutine);
-            textureUpdateCoroutine = null;
-        }
-        
-        ClosePeerConnection();
-        
-        currentSessionId = string.Empty;
-        connectedClientId = 0;
-        retryCount = 0;
-        
-        SetState(StreamerState.Idle);
-        
-        targetRenderer?.ShowLocalNDI();
-        
-        Debug.Log($"[📡{pipelineInstanceId}] Graceful shutdown completed");
-        
-        yield return null;
-    }
-
-    #endregion
-
-    #region Cleanup
-    
-    /// <summary>
-    /// Close and dispose peer connection safely
-    /// </summary>
-    private void ClosePeerConnection()
-    {
-        if (peerConnection != null)
-        {
-            try
-            {
-                var transceivers = peerConnection.GetTransceivers();
-                foreach (var transceiver in transceivers)
-                {
-                    if (transceiver.Receiver?.Track is VideoStreamTrack videoTrack)
-                    {
-                        videoTrack.OnVideoReceived -= OnVideoReceived;
-                    }
-                }
-                
-                peerConnection.Close();
-                peerConnection.Dispose();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[📡{pipelineInstanceId}] Peer connection cleanup error: {e.Message}");
-            }
-            finally
-            {
-                peerConnection = null;
-            }
-        }
-        
-        if (textureUpdateCoroutine != null)
-        {
-            StopCoroutine(textureUpdateCoroutine);
-            textureUpdateCoroutine = null;
-        }
-    }
-    
-    /// <summary>
-    /// Component destruction cleanup
-    /// </summary>
-    void OnDestroy()
-    {
-        isTextureSourceValid = false;
-        
-        // Unsubscribe from signaling events
-        if (signaling != null)
-        {
-            WebRTCSignaling.OnOfferReceived -= OnOfferReceivedFiltered;
-            WebRTCSignaling.OnAnswerReceived -= OnAnswerReceivedFiltered;
-            WebRTCSignaling.OnIceCandidateReceived -= OnIceCandidateReceivedFiltered;
-        }
-        
-        // Graceful shutdown
-        StartCoroutine(GracefulShutdown());
-        
-        // Dispose WebRTC objects
-        DisposeWebRTCObjects();
-        
-        // Unregister from engine manager
-        if (WebRTCEngineManager.Instance != null)
-        {
-            WebRTCEngineManager.Instance.UnregisterStreamer(pipelineType);
-        }
-    }
-
-    #endregion
-
     #region Public Properties
     
-    /// <summary>Current streamer state</summary>
     public StreamerState CurrentState => currentState;
-    
-    /// <summary>Current session identifier</summary>
     public string CurrentSessionId => currentSessionId;
-    
-    /// <summary>Pipeline instance identifier</summary>
-    public string PipelineInstanceId => pipelineInstanceId;
-    
-    /// <summary>Check if currently connected and streaming/receiving</summary>
+    public string InstanceId => instanceId;
     public bool IsConnected => currentState == StreamerState.Streaming || currentState == StreamerState.Receiving;
-
+    
     #endregion
 }

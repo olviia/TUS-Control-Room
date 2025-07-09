@@ -16,7 +16,7 @@ public class StreamSource
     public bool isActive = true;
 }
 
-public class StreamingSession
+public class StreamSession
 {
     public string sessionId;
     public string sourceIdentifier;
@@ -25,97 +25,100 @@ public class StreamingSession
 }
 
 /// <summary>
-/// Single configuration point for all streaming pipelines
-/// Auto-configures entire system from streamSources list
+/// Manages all streaming pipelines from single configuration
+/// Creates and controls WebRTC streamers for each configured pipeline
 /// </summary>
 public class StreamManager : MonoBehaviour
 {
-    [Header("Stream Configuration - SINGLE SOURCE OF TRUTH")]
+    [Header("Stream Configuration")]
     public List<StreamSource> streamSources = new List<StreamSource>();
     
     private Dictionary<PipelineType, WebRTCStreamer> streamers = new Dictionary<PipelineType, WebRTCStreamer>();
-    private Dictionary<PipelineType, StreamingSession> activeSessions = new Dictionary<PipelineType, StreamingSession>();
+    private Dictionary<PipelineType, StreamSession> activeSessions = new Dictionary<PipelineType, StreamSession>();
     
-    /// <summary>
-    /// Get supported pipelines from active stream sources
-    /// </summary>
-    public PipelineType[] GetSupportedPipelines()
-    {
-        return streamSources.Where(s => s.isActive).Select(s => s.pipelineType).Distinct().ToArray();
-    }
-
-    #region Initialization
-
+    #region Unity Lifecycle
+    
     private void Start()
     {
-        SubscribeToEvents();
-        StartCoroutine(InitializeStreamers());
+        ConnectToEvents();
+        StartCoroutine(CreateStreamers());
         
-        var supportedPipelines = GetSupportedPipelines();
-        Debug.Log($"[🎯StreamManager] Auto-configured {supportedPipelines.Length} pipelines: {string.Join(", ", supportedPipelines)}");
+        Debug.Log($"[🎯StreamManager] Managing {GetActiveSources().Length} pipelines");
     }
     
-    private void SubscribeToEvents()
+    private void OnDestroy()
+    {
+        DisconnectFromEvents();
+        StopAllStreamers();
+    }
+    
+    #endregion
+    
+    #region Initialization
+    
+    private void ConnectToEvents()
     {
         NetworkStreamCoordinator.OnStreamControlChanged += HandleStreamControlChange;
         WebRTCStreamer.OnStateChanged += HandleStreamerStateChange;
     }
     
-    private void UnsubscribeFromEvents()
+    private void DisconnectFromEvents()
     {
         NetworkStreamCoordinator.OnStreamControlChanged -= HandleStreamControlChange;
         WebRTCStreamer.OnStateChanged -= HandleStreamerStateChange;
     }
     
-    /// <summary>
-    /// Auto-create streamers from configured sources
-    /// </summary>
-    private IEnumerator InitializeStreamers()
+    private IEnumerator CreateStreamers()
     {
         yield return new WaitForEndOfFrame();
         
-        foreach (var source in streamSources.Where(s => s.isActive && s.renderer != null))
+        foreach (var source in GetActiveSources())
         {
             CreateStreamerForSource(source);
         }
         
-        // Auto-configure coordinator with detected pipelines
-        var coordinator = FindObjectOfType<NetworkStreamCoordinator>();
-        coordinator?.AutoConfigureFromManager(this);
+        ConfigureCoordinator();
         
-        Debug.Log($"[🎯StreamManager] System auto-configured from {streamSources.Count} sources");
+        Debug.Log($"[🎯StreamManager] Created {streamers.Count} streamers");
     }
     
-    /// <summary>
-    /// Create isolated streamer with full configuration
-    /// </summary>
     private void CreateStreamerForSource(StreamSource source)
     {
-        var streamerGO = new GameObject($"WebRTC_{source.pipelineType}_{source.sourceName}");
-        streamerGO.transform.SetParent(transform);
+        var streamerObject = new GameObject($"Streamer_{source.pipelineType}");
+        streamerObject.transform.SetParent(transform);
         
-        var streamer = streamerGO.AddComponent<WebRTCStreamer>();
+        var streamer = streamerObject.AddComponent<WebRTCStreamer>();
         streamer.pipelineType = source.pipelineType;
         streamer.targetRenderer = source.renderer;
         streamer.ndiReceiver = source.ndiReceiver;
         
-        // Configure renderer
+        ConfigureRenderer(source);
+        
+        streamers[source.pipelineType] = streamer;
+        activeSessions[source.pipelineType] = null;
+        
+        Debug.Log($"[🎯StreamManager] Created streamer for {source.pipelineType}");
+    }
+    
+    private void ConfigureRenderer(StreamSource source)
+    {
         if (source.renderer != null && source.ndiReceiver != null)
         {
             source.renderer.localNdiReceiver = source.ndiReceiver;
             source.renderer.pipelineType = source.pipelineType;
         }
-        
-        streamers[source.pipelineType] = streamer;
-        activeSessions[source.pipelineType] = null;
-        
-        Debug.Log($"[🎯StreamManager] Auto-created {source.pipelineType} streamer");
     }
-
+    
+    private void ConfigureCoordinator()
+    {
+        var coordinator = FindObjectOfType<NetworkStreamCoordinator>();
+        coordinator?.AutoConfigureFromManager(this);
+    }
+    
     #endregion
-
-    #region Stream Control Event Handling
-
+    
+    #region Stream Control Events
+    
     private void HandleStreamControlChange(StreamAssignment assignment, string description)
     {
         var pipeline = assignment.pipelineType;
@@ -123,26 +126,40 @@ public class StreamManager : MonoBehaviour
         
         if (source?.renderer == null)
         {
-            Debug.LogError($"[🎯StreamManager] No configuration found for {pipeline}");
+            Debug.LogError($"[🎯StreamManager] No configuration for {pipeline}");
             return;
         }
         
-        bool isMyStream = NetworkManager.Singleton?.LocalClientId == assignment.directorClientId;
-        
-        // Clean shutdown existing session
-        if (activeSessions[pipeline] != null)
-        {
-            GetStreamerForPipeline(pipeline)?.ForceStop();
-            activeSessions[pipeline] = null;
-        }
+        StopCurrentSession(pipeline);
         
         if (!assignment.isActive)
         {
-            source.renderer.ShowLocalNDI();
+            ShowLocalContent(source);
             return;
         }
         
-        activeSessions[pipeline] = new StreamingSession
+        StartNewSession(pipeline, assignment, source);
+    }
+    
+    private void StopCurrentSession(PipelineType pipeline)
+    {
+        if (activeSessions[pipeline] != null)
+        {
+            GetStreamerForPipeline(pipeline)?.StopSession();
+            activeSessions[pipeline] = null;
+        }
+    }
+    
+    private void ShowLocalContent(StreamSource source)
+    {
+        source.renderer.ShowLocalNDI();
+    }
+    
+    private void StartNewSession(PipelineType pipeline, StreamAssignment assignment, StreamSource source)
+    {
+        bool isMyStream = NetworkManager.Singleton?.LocalClientId == assignment.directorClientId;
+        
+        activeSessions[pipeline] = new StreamSession
         {
             sessionId = assignment.sessionId,
             sourceIdentifier = assignment.streamSourceName,
@@ -151,31 +168,35 @@ public class StreamManager : MonoBehaviour
         };
         
         if (isMyStream)
-            StartMyStream(pipeline, assignment.streamSourceName, source, assignment.sessionId);
+        {
+            StartStreaming(pipeline, assignment, source);
+        }
         else
-            StartReceivingStream(pipeline, source, assignment.sessionId);
+        {
+            StartReceiving(pipeline, assignment.sessionId);
+        }
     }
     
-    private void StartMyStream(PipelineType pipeline, string sourceIdentifier, StreamSource source, string sessionId)
+    private void StartStreaming(PipelineType pipeline, StreamAssignment assignment, StreamSource source)
     {
-        var sourceObject = FindSourceByName(sourceIdentifier);
+        var sourceObject = FindSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
         
         if (sourceObject?.receiver == null || streamer == null)
         {
-            Debug.LogError($"[🎯StreamManager] Missing source/streamer for {pipeline}");
-            source.renderer.ShowLocalNDI();
+            Debug.LogError($"[🎯StreamManager] Cannot start streaming {pipeline} - missing components");
+            ShowLocalContent(source);
             return;
         }
         
         streamer.ndiReceiver = sourceObject.receiver;
-        streamer.StartStreaming(sessionId);
+        streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
         
-        Debug.Log($"[🎯StreamManager] Started streaming {sourceIdentifier} for {pipeline}");
+        Debug.Log($"[🎯StreamManager] Started streaming {assignment.streamSourceName} for {pipeline}");
     }
     
-    private void StartReceivingStream(PipelineType pipeline, StreamSource source, string sessionId)
+    private void StartReceiving(PipelineType pipeline, string sessionId)
     {
         var streamer = GetStreamerForPipeline(pipeline);
         if (streamer == null)
@@ -187,15 +208,14 @@ public class StreamManager : MonoBehaviour
         streamer.StartReceiving(sessionId);
         Debug.Log($"[🎯StreamManager] Started receiving {pipeline}");
     }
-
+    
     #endregion
-
-    #region Streamer State Handling
-
+    
+    #region Streamer State Events
+    
     private void HandleStreamerStateChange(PipelineType pipeline, StreamerState state, string sessionId)
     {
-        if (activeSessions[pipeline] != null)
-            activeSessions[pipeline].state = state;
+        UpdateSessionState(pipeline, state);
         
         var source = GetSourceForPipeline(pipeline);
         if (source?.renderer == null) return;
@@ -204,23 +224,46 @@ public class StreamManager : MonoBehaviour
         {
             case StreamerState.Failed:
                 source.renderer.HandleStreamFailure();
-                activeSessions[pipeline] = null;
+                ClearSession(pipeline);
                 break;
                 
             case StreamerState.Idle:
-                if (activeSessions[pipeline]?.sessionId == sessionId)
+                if (IsSessionEnded(pipeline, sessionId))
                 {
                     source.renderer.ShowLocalNDI();
-                    activeSessions[pipeline] = null;
+                    ClearSession(pipeline);
                 }
                 break;
         }
     }
-
+    
+    private void UpdateSessionState(PipelineType pipeline, StreamerState state)
+    {
+        if (activeSessions[pipeline] != null)
+        {
+            activeSessions[pipeline].state = state;
+        }
+    }
+    
+    private bool IsSessionEnded(PipelineType pipeline, string sessionId)
+    {
+        return activeSessions[pipeline]?.sessionId == sessionId;
+    }
+    
+    private void ClearSession(PipelineType pipeline)
+    {
+        activeSessions[pipeline] = null;
+    }
+    
     #endregion
-
+    
     #region Helper Methods
-
+    
+    private StreamSource[] GetActiveSources()
+    {
+        return streamSources.Where(s => s.isActive && s.renderer != null).ToArray();
+    }
+    
     private SourceObject FindSourceByName(string sourceName)
     {
         if (string.IsNullOrEmpty(sourceName)) return null;
@@ -238,41 +281,59 @@ public class StreamManager : MonoBehaviour
     {
         return streamers.GetValueOrDefault(pipeline);
     }
-
+    
     #endregion
-
+    
     #region Public Interface
     
+    /// <summary>
+    /// Get all supported pipeline types
+    /// </summary>
+    public PipelineType[] GetSupportedPipelines()
+    {
+        return GetActiveSources().Select(s => s.pipelineType).Distinct().ToArray();
+    }
+    
+    /// <summary>
+    /// Check if pipeline is currently streaming or receiving
+    /// </summary>
     public bool IsStreamActive(PipelineType pipeline)
     {
         var session = activeSessions.GetValueOrDefault(pipeline);
         return session?.state == StreamerState.Streaming || session?.state == StreamerState.Receiving;
     }
     
+    /// <summary>
+    /// Force stop stream and return to local content
+    /// </summary>
     public void ForceStopStream(PipelineType pipeline)
     {
-        GetStreamerForPipeline(pipeline)?.ForceStop();
+        GetStreamerForPipeline(pipeline)?.StopSession();
         GetSourceForPipeline(pipeline)?.renderer?.ShowLocalNDI();
-        activeSessions[pipeline] = null;
+        ClearSession(pipeline);
     }
     
-    public StreamingSession GetActiveSession(PipelineType pipeline)
+    /// <summary>
+    /// Get current session information
+    /// </summary>
+    public StreamSession GetActiveSession(PipelineType pipeline)
     {
         return activeSessions.GetValueOrDefault(pipeline);
     }
-
+    
     #endregion
-
+    
     #region Cleanup
-
-    private void OnDestroy()
+    
+    private void StopAllStreamers()
     {
-        UnsubscribeFromEvents();
         foreach (var streamer in streamers.Values)
-            streamer?.ForceStop();
+        {
+            streamer?.StopSession();
+        }
         streamers.Clear();
         activeSessions.Clear();
     }
-
+    
     #endregion
 }

@@ -5,12 +5,12 @@ using BroadcastPipeline;
 using System;
 
 /// <summary>
-/// Enhanced WebRTC signaling with pipeline isolation
-/// Handles message routing for multiple simultaneous streams
+/// Simple WebRTC message relay for multiple pipelines
+/// Routes signaling messages between clients with minimal validation
 /// </summary>
 public class WebRTCSignaling : NetworkBehaviour
 {
-    // Pipeline-aware message relay events with enhanced filtering
+    // Events for pipeline-specific message delivery
     public static event Action<PipelineType, RTCSessionDescription, ulong, string> OnOfferReceived;
     public static event Action<PipelineType, RTCSessionDescription, ulong, string> OnAnswerReceived;
     public static event Action<PipelineType, RTCIceCandidate, ulong, string> OnIceCandidateReceived;
@@ -24,7 +24,7 @@ public class WebRTCSignaling : NetworkBehaviour
     {
         if (!IsNetworkReady()) return;
         
-        Debug.Log($"[🔗WebRTCSignaling] SendOffer pipeline:{pipeline} session:{sessionId}");
+        Debug.Log($"[🔗Signaling] SendOffer {pipeline}:{sessionId}");
         SendOfferServerRpc(pipeline, offer.type.ToString(), offer.sdp, 
                           NetworkManager.Singleton.LocalClientId, sessionId);
     }
@@ -36,7 +36,7 @@ public class WebRTCSignaling : NetworkBehaviour
     {
         if (!IsNetworkReady()) return;
         
-        Debug.Log($"[🔗WebRTCSignaling] SendAnswer pipeline:{pipeline} session:{sessionId} to:{toClient}");
+        Debug.Log($"[🔗Signaling] SendAnswer {pipeline}:{sessionId} to:{toClient}");
         SendAnswerServerRpc(pipeline, answer.type.ToString(), answer.sdp,
                            NetworkManager.Singleton.LocalClientId, toClient, sessionId);
     }
@@ -54,191 +54,121 @@ public class WebRTCSignaling : NetworkBehaviour
 
     #endregion
 
-    #region Server RPCs - Pipeline-Aware Message Relay
+    #region Server RPCs - Simple Message Relay
 
-    /// <summary>
-    /// Server relay for WebRTC offers with pipeline filtering
-    /// </summary>
     [ServerRpc(RequireOwnership = false)]
     private void SendOfferServerRpc(PipelineType pipeline, string sdpType, string sdp, 
                                    ulong fromClient, string sessionId)
     {
-            ReceiveOfferClientRpc(pipeline, sdpType, sdp, fromClient, sessionId);
-        
+        BroadcastOfferClientRpc(pipeline, sdpType, sdp, fromClient, sessionId);
     }
 
-    /// <summary>
-    /// Server relay for WebRTC answers with pipeline filtering
-    /// </summary>
     [ServerRpc(RequireOwnership = false)]
     private void SendAnswerServerRpc(PipelineType pipeline, string sdpType, string sdp,
                                     ulong fromClient, ulong toClient, string sessionId)
     {
-
-            ReceiveAnswerClientRpc(pipeline, sdpType, sdp, fromClient, toClient, sessionId);
-        
+        BroadcastAnswerClientRpc(pipeline, sdpType, sdp, fromClient, toClient, sessionId);
     }
 
-    /// <summary>
-    /// Server relay for ICE candidates with pipeline filtering
-    /// </summary>
     [ServerRpc(RequireOwnership = false)]
     private void SendIceCandidateServerRpc(PipelineType pipeline, string candidate, string sdpMid,
                                           int sdpMLineIndex, ulong fromClient, string sessionId)
     {
-        // ICE candidates are less critical, relay with basic validation
-        if (IsValidSessionFormat(sessionId))
-        {
-            ReceiveIceCandidateClientRpc(pipeline, candidate, sdpMid, sdpMLineIndex, fromClient, sessionId);
-        }
+        BroadcastIceCandidateClientRpc(pipeline, candidate, sdpMid, sdpMLineIndex, fromClient, sessionId);
     }
 
     #endregion
 
-    #region Client RPCs - Enhanced Pipeline Filtering
+    #region Client RPCs - Message Broadcasting
 
-    /// <summary>
-    /// Client RPC for receiving WebRTC offers
-    /// </summary>
     [ClientRpc]
-    private void ReceiveOfferClientRpc(PipelineType pipeline, string sdpType, string sdp,
-                                      ulong fromClient, string sessionId)
+    private void BroadcastOfferClientRpc(PipelineType pipeline, string sdpType, string sdp,
+                                        ulong fromClient, string sessionId)
     {
-        // Prevent self-reception
-        if (NetworkManager.Singleton.LocalClientId == fromClient) return;
+        if (ShouldIgnoreMessage(fromClient)) return;
         
-        Debug.Log($"[🔗WebRTCSignaling] Client {NetworkManager.Singleton.LocalClientId} received offer pipeline:{pipeline} session:{sessionId} from:{fromClient}");
+        Debug.Log($"[🔗Signaling] Offer received {pipeline}:{sessionId} from:{fromClient}");
         
-        try
+        var sessionDesc = CreateSessionDescription(sdpType, sdp);
+        if (sessionDesc.HasValue)
         {
-            var sessionDesc = new RTCSessionDescription
-            {
-                type = ParseSdpType(sdpType),
-                sdp = sdp
-            };
-            
-            // Pipeline-filtered event dispatch
-            OnOfferReceived?.Invoke(pipeline, sessionDesc, fromClient, sessionId);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[🔗WebRTCSignaling] Error processing offer for {pipeline}: {e.Message}");
+            OnOfferReceived?.Invoke(pipeline, sessionDesc.Value, fromClient, sessionId);
         }
     }
 
-    /// <summary>
-    /// Client RPC for receiving WebRTC answers
-    /// </summary>
     [ClientRpc]
-    private void ReceiveAnswerClientRpc(PipelineType pipeline, string sdpType, string sdp,
-                                       ulong fromClient, ulong toClient, string sessionId)
+    private void BroadcastAnswerClientRpc(PipelineType pipeline, string sdpType, string sdp,
+                                         ulong fromClient, ulong toClient, string sessionId)
     {
-        // Only process if this client is the intended recipient
-        if (NetworkManager.Singleton.LocalClientId != toClient) return;
+        if (ShouldIgnoreMessage(fromClient) || !IsMessageForMe(toClient)) return;
         
-        Debug.Log($"[🔗WebRTCSignaling] Client {toClient} received answer pipeline:{pipeline} session:{sessionId} from:{fromClient}");
+        Debug.Log($"[🔗Signaling] Answer received {pipeline}:{sessionId} from:{fromClient}");
         
-        try
+        var sessionDesc = CreateSessionDescription(sdpType, sdp);
+        if (sessionDesc.HasValue)
         {
-            var sessionDesc = new RTCSessionDescription
-            {
-                type = ParseSdpType(sdpType),
-                sdp = sdp
-            };
-            
-            // Pipeline-filtered event dispatch
-            OnAnswerReceived?.Invoke(pipeline, sessionDesc, fromClient, sessionId);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[🔗WebRTCSignaling] Error processing answer for {pipeline}: {e.Message}");
+            OnAnswerReceived?.Invoke(pipeline, sessionDesc.Value, fromClient, sessionId);
         }
     }
 
-    /// <summary>
-    /// Client RPC for receiving ICE candidates
-    /// </summary>
     [ClientRpc]
-    private void ReceiveIceCandidateClientRpc(PipelineType pipeline, string candidate, string sdpMid,
-                                             int sdpMLineIndex, ulong fromClient, string sessionId)
+    private void BroadcastIceCandidateClientRpc(PipelineType pipeline, string candidate, string sdpMid,
+                                               int sdpMLineIndex, ulong fromClient, string sessionId)
     {
-        // Prevent self-reception
-        if (NetworkManager.Singleton.LocalClientId == fromClient) return;
+        if (ShouldIgnoreMessage(fromClient)) return;
         
         try
         {
-            var iceCandidate = new RTCIceCandidate(new RTCIceCandidateInit
-            {
-                candidate = candidate,
-                sdpMid = sdpMid,
-                sdpMLineIndex = sdpMLineIndex
-            });
-            
-            // Pipeline-filtered event dispatch
+            var iceCandidate = CreateIceCandidate(candidate, sdpMid, sdpMLineIndex);
             OnIceCandidateReceived?.Invoke(pipeline, iceCandidate, fromClient, sessionId);
         }
         catch (Exception e)
         {
-            Debug.LogError($"[🔗WebRTCSignaling] Error processing ICE candidate for {pipeline}: {e.Message}");
+            Debug.LogError($"[🔗Signaling] Failed to process ICE candidate: {e.Message}");
         }
     }
 
     #endregion
 
-    #region Session Validation
+    #region Message Processing
 
-    /// <summary>
-    /// Validate session against current coordinator state
-    /// </summary>
-    private bool ValidateSession(PipelineType pipeline, string sessionId, ulong fromClient)
+    private bool ShouldIgnoreMessage(ulong fromClient)
     {
-        // Basic validation
-        if (!IsValidSessionFormat(sessionId)) return false;
-        
-        // Get coordinator to validate session
-        var coordinator = FindObjectOfType<NetworkStreamCoordinator>();
-        if (coordinator == null) return true; // Allow if no coordinator (fallback)
-        
-        var currentAssignment = coordinator.GetCurrentAssignment(pipeline);
-        
-        // Validate session ID and client authorization
-        bool isValidSession = currentAssignment.isActive && 
-                             currentAssignment.sessionId == sessionId &&
-                             currentAssignment.directorClientId == fromClient;
-        
-        if (!isValidSession)
+        return NetworkManager.Singleton.LocalClientId == fromClient;
+    }
+
+    private bool IsMessageForMe(ulong toClient)
+    {
+        return NetworkManager.Singleton.LocalClientId == toClient;
+    }
+
+    private RTCSessionDescription? CreateSessionDescription(string sdpType, string sdp)
+    {
+        try
         {
-            Debug.LogWarning($"[🔗WebRTCSignaling] Session validation failed for {pipeline}:{sessionId} from client {fromClient}");
-            Debug.LogWarning($"[🔗WebRTCSignaling] Expected session:{currentAssignment.sessionId} from client:{currentAssignment.directorClientId}");
+            return new RTCSessionDescription
+            {
+                type = ParseSdpType(sdpType),
+                sdp = sdp
+            };
         }
-        
-        return isValidSession;
+        catch (Exception e)
+        {
+            Debug.LogError($"[🔗Signaling] Failed to create session description: {e.Message}");
+            return null;
+        }
     }
 
-    /// <summary>
-    /// Validate basic session ID format
-    /// </summary>
-    private bool IsValidSessionFormat(string sessionId)
+    private RTCIceCandidate CreateIceCandidate(string candidate, string sdpMid, int sdpMLineIndex)
     {
-        return !string.IsNullOrEmpty(sessionId) && sessionId.Length > 5;
+        return new RTCIceCandidate(new RTCIceCandidateInit
+        {
+            candidate = candidate,
+            sdpMid = sdpMid,
+            sdpMLineIndex = sdpMLineIndex
+        });
     }
 
-    #endregion
-
-    #region Utility Methods
-
-    /// <summary>
-    /// Check if network is ready for signaling operations
-    /// </summary>
-    private bool IsNetworkReady()
-    {
-        return NetworkManager.Singleton != null && 
-               (NetworkManager.Singleton.IsConnectedClient || NetworkManager.Singleton.IsHost);
-    }
-
-    /// <summary>
-    /// Parse SDP type string to WebRTC enum
-    /// </summary>
     private RTCSdpType ParseSdpType(string sdpType)
     {
         return sdpType.ToLower() switch
@@ -253,32 +183,40 @@ public class WebRTCSignaling : NetworkBehaviour
 
     #endregion
 
-    #region Network Events
+    #region Network Status
 
-    public override void OnNetworkSpawn()
+    private bool IsNetworkReady()
     {
-        Debug.Log("[🔗WebRTCSignaling] Network spawned - signaling active");
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        Debug.Log("[🔗WebRTCSignaling] Network despawned - signaling inactive");
+        return NetworkManager.Singleton != null && 
+               (NetworkManager.Singleton.IsConnectedClient || NetworkManager.Singleton.IsHost);
     }
 
     #endregion
 
-    #region Debug & Monitoring
+    #region Unity Netcode Events
+
+    public override void OnNetworkSpawn()
+    {
+        Debug.Log("[🔗Signaling] Network spawned - signaling active");
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        Debug.Log("[🔗Signaling] Network despawned - signaling inactive");
+    }
+
+    #endregion
+
+    #region Debug Information
 
     /// <summary>
-    /// Get signaling statistics for monitoring
+    /// Get current signaling status for debugging
     /// </summary>
-    public SignalingStats GetSignalingStats()
+    public SignalingStats GetStats()
     {
-        var coordinator = FindObjectOfType<NetworkStreamCoordinator>();
         return new SignalingStats
         {
             IsNetworkReady = IsNetworkReady(),
-            ActiveStreamCount = coordinator?.GetActiveStreamCount() ?? 0,
             LocalClientId = NetworkManager.Singleton?.LocalClientId ?? 0,
             IsHost = NetworkManager.Singleton?.IsHost ?? false
         };
@@ -288,13 +226,12 @@ public class WebRTCSignaling : NetworkBehaviour
 }
 
 /// <summary>
-/// Signaling statistics for monitoring and debugging
+/// Simple signaling statistics
 /// </summary>
 [System.Serializable]
 public struct SignalingStats
 {
     public bool IsNetworkReady;
-    public int ActiveStreamCount;
     public ulong LocalClientId;
     public bool IsHost;
 }
