@@ -362,12 +362,53 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void TryAddAudioTrack()
     {
-        var audioSource = ndiReceiverSource?.GetComponentInChildren<AudioSource>();
-        if (audioSource?.clip != null)
+        // Create a silent AudioSource that will feed WebRTC
+        var audioSourceGO = new GameObject($"WebRTC_AudioSource_{instanceId}");
+        audioSourceGO.transform.SetParent(transform, false);
+    
+        var audioSource = audioSourceGO.AddComponent<AudioSource>();
+        audioSource.volume = 0f; // Silent on sender side
+        audioSource.spatialBlend = 0f; // 2D for transmission
+        audioSource.loop = true;
+    
+        // Create a streaming audio clip that gets data from NDI
+        var sampleRate = AudioSettings.outputSampleRate;
+        var channels = 2; // Start with stereo, adjust based on NDI
+        var clip = AudioClip.Create("NDI_Audio_Feed", sampleRate, channels, sampleRate, true, OnAudioRead);
+    
+        audioSource.clip = clip;
+        audioSource.Play();
+    
+        // Create WebRTC track from this AudioSource
+        audioTrack = new AudioStreamTrack(audioSource);
+        peerConnection.AddTrack(audioTrack);
+    
+        Debug.Log($"[📡{instanceId}] Audio track added from NDI-fed AudioSource");
+    }
+    // This method feeds NDI audio data to the AudioSource
+    // This callback feeds NDI audio to the AudioSource
+    private void OnAudioRead(float[] data)
+    {
+        // Get fresh audio data from NDI
+        if (ndiReceiverSource?.GetAudioData(out float[] samples, out int channels, out int sampleRate) == true)
         {
-            audioTrack = new AudioStreamTrack(audioSource);
-            peerConnection.AddTrack(audioTrack);
-            Debug.Log($"[📡{instanceId}] Audio track added");
+            // Handle channel conversion if needed
+            if (samples.Length >= data.Length)
+            {
+                Array.Copy(samples, data, data.Length);
+            }
+            else
+            {
+                // Pad with silence if not enough data
+                Array.Copy(samples, data, samples.Length);
+                for (int i = samples.Length; i < data.Length; i++)
+                    data[i] = 0f;
+            }
+        }
+        else
+        {
+            // No NDI audio - fill with silence
+            Array.Fill(data, 0f);
         }
     }
     
@@ -461,6 +502,7 @@ public class WebRTCStreamer : MonoBehaviour
         }
     }
     
+
     private bool IsStreamingOrConnecting()
     {
         return currentState == StreamerState.Connecting || currentState == StreamerState.Streaming;

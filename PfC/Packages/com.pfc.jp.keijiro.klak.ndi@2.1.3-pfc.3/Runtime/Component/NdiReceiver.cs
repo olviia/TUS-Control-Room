@@ -1267,10 +1267,33 @@ namespace Klak.Ndi
 		}
 
 		#endregion
-
+//custom added
 		public Texture GetTexture()
 		{
 			return _texture;
+		}
+		
+		public bool GetAudioData(out float[] audioData, out int channels, out int sampleRate)
+		{
+			audioData = null;
+			channels = 0;
+			sampleRate = 0;
+    
+			if (!_receiveAudio || _audioFramesBuffer.Count == 0)
+				return false;
+        
+			lock (audioBufferLock)
+			{
+				if (_audioFramesBuffer.Count > 0)
+				{
+					var frame = _audioFramesBuffer[0];
+					audioData = frame.GetAllChannelsArray().ToArray(); // Convert to managed array
+					channels = frame.noChannels;
+					sampleRate = frame.sampleRate;
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 
