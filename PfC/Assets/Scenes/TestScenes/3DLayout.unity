@@ -332,6 +332,7 @@ MonoBehaviour:
   sharedRenderer: {fileID: 1323068258}
   pipelineType: 3
   localNdiReceiver: {fileID: 696567851}
+  localNdiReceiverCaptions: {fileID: 1033888033}
   debugMode: 0
   autoFallbackToLocal: 1
 --- !u!1001 &280670461
@@ -924,6 +925,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
+--- !u!114 &825912305 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1481559178822832145, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+  m_PrefabInstance: {fileID: 1323068256}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a09ab5fc64402d49b12d170a7577986, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &871193773 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
@@ -1074,6 +1086,17 @@ Transform:
   - {fileID: 1709815566}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1033888033 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6980856403464687181, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+  m_PrefabInstance: {fileID: 1323068256}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a09ab5fc64402d49b12d170a7577986, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &1080717045 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 585528581796481183, guid: db1d9cd3c2194814e99221c0895dc498, type: 3}
@@ -3098,12 +3121,14 @@ MonoBehaviour:
   - sourceName: studio-live
     pipelineType: 1
     renderer: {fileID: 1835391955}
-    ndiReceiver: {fileID: 1318600841}
+    ndiReceiverSource: {fileID: 1318600841}
+    ndiReceiverCaptions: {fileID: 825912305}
     isActive: 1
   - sourceName: tv-live
     pipelineType: 3
     renderer: {fileID: 245043423}
-    ndiReceiver: {fileID: 696567851}
+    ndiReceiverSource: {fileID: 696567851}
+    ndiReceiverCaptions: {fileID: 1033888033}
     isActive: 1
   isStreaming: 0
 --- !u!1 &1709815565
@@ -3276,6 +3301,7 @@ MonoBehaviour:
   sharedRenderer: {fileID: 1323068259}
   pipelineType: 1
   localNdiReceiver: {fileID: 1318600841}
+  localNdiReceiverCaptions: {fileID: 825912305}
   debugMode: 0
   autoFallbackToLocal: 1
 --- !u!1001 &1868622709

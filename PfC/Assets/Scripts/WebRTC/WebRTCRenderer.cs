@@ -10,6 +10,7 @@ public class WebRTCRenderer : MonoBehaviour
     public MeshRenderer sharedRenderer;
     public PipelineType pipelineType;
     public NdiReceiver localNdiReceiver;
+    public NdiReceiver localNdiReceiverCaptions;
     
     [Header("Display Settings")]
     [SerializeField] private bool debugMode = false;

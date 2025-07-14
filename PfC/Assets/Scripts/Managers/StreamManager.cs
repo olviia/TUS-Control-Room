@@ -12,7 +12,8 @@ public class StreamSource
     public string sourceName;
     public PipelineType pipelineType;
     public WebRTCRenderer renderer;
-    public NdiReceiver ndiReceiver;
+    public NdiReceiver ndiReceiverSource;
+    public NdiReceiver ndiReceiverCaptions;
     public bool isActive = true;
 }
 
@@ -91,7 +92,8 @@ public class StreamManager : MonoBehaviour
         var streamer = streamerObject.AddComponent<WebRTCStreamer>();
         streamer.pipelineType = source.pipelineType;
         streamer.targetRenderer = source.renderer;
-        streamer.ndiReceiver = source.ndiReceiver;
+        streamer.ndiReceiverSource = source.ndiReceiverSource;
+        streamer.ndiReceiverCaptions = source.ndiReceiverCaptions;
         
         ConfigureRenderer(source);
         
@@ -103,9 +105,10 @@ public class StreamManager : MonoBehaviour
     
     private void ConfigureRenderer(StreamSource source)
     {
-        if (source.renderer != null && source.ndiReceiver != null)
+        if (source.renderer != null && source.ndiReceiverSource != null && source.ndiReceiverCaptions != null)
         {
-            source.renderer.localNdiReceiver = source.ndiReceiver;
+            source.renderer.localNdiReceiver = source.ndiReceiverSource;
+            source.renderer.localNdiReceiverCaptions = source.ndiReceiverCaptions;
             source.renderer.pipelineType = source.pipelineType;
         }
     }
@@ -191,7 +194,7 @@ public class StreamManager : MonoBehaviour
             return;
         }
         
-        streamer.ndiReceiver = sourceObject.receiver;
+        streamer.ndiReceiverSource = sourceObject.receiver;
         streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
         

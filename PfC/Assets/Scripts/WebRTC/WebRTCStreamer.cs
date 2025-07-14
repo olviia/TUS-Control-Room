@@ -23,7 +23,8 @@ public class WebRTCStreamer : MonoBehaviour
     [SerializeField] private string instanceId;
     
     [Header("Configuration")]
-    public NdiReceiver ndiReceiver;
+    public NdiReceiver ndiReceiverSource;
+    public NdiReceiver ndiReceiverCaptions;
     public WebRTCRenderer targetRenderer;
     
     [Header("Settings")]
@@ -38,6 +39,10 @@ public class WebRTCStreamer : MonoBehaviour
     private VideoStreamTrack videoTrack;
     private AudioStreamTrack audioTrack;
     private RenderTexture webRtcTexture;
+    
+    //blending captions and media source
+    private RenderTexture compositeRT;
+    private Material blendMaterial;
     
     // State
     private WebRTCSignaling signaling;
@@ -70,6 +75,7 @@ public class WebRTCStreamer : MonoBehaviour
         CreateWebRtcObjects();
         ConnectToSignaling();
         SetState(StreamerState.Idle);
+        blendMaterial = new Material(Shader.Find("Custom/BlendTwoTextures"));
     }
     
     void OnDestroy()
@@ -356,7 +362,7 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void TryAddAudioTrack()
     {
-        var audioSource = ndiReceiver?.GetComponentInChildren<AudioSource>();
+        var audioSource = ndiReceiverSource?.GetComponentInChildren<AudioSource>();
         if (audioSource?.clip != null)
         {
             audioTrack = new AudioStreamTrack(audioSource);
@@ -371,17 +377,18 @@ public class WebRTCStreamer : MonoBehaviour
     
     private bool ValidateNdiSource()
     {
-        if (ndiReceiver == null)
+        if (ndiReceiverSource == null)
         {
             Debug.LogError($"[📡{instanceId}] No NDI receiver assigned");
             return false;
         }
         
-        ActivateNdiReceiver();
+        ActivateNdiReceiver(ndiReceiverSource);
+        ActivateNdiReceiver(ndiReceiverCaptions);
         return HasValidNdiTexture();
     }
     
-    private void ActivateNdiReceiver()
+    private void ActivateNdiReceiver(NdiReceiver ndiReceiver)
     {
         if (!ndiReceiver.gameObject.activeInHierarchy)
         {
@@ -392,7 +399,7 @@ public class WebRTCStreamer : MonoBehaviour
     
     private bool HasValidNdiTexture()
     {
-        var texture = ndiReceiver.GetTexture();
+        var texture = ndiReceiverSource.GetTexture();
         bool isValid = texture != null && texture.width > 0 && texture.height > 0;
         
         if (isValid)
@@ -430,10 +437,25 @@ public class WebRTCStreamer : MonoBehaviour
     {
         while (IsStreamingOrConnecting())
         {
-            var ndiTexture = ndiReceiver?.GetTexture();
-            if (ndiTexture != null && webRtcTexture != null)
+            var ndiTexture = ndiReceiverSource?.GetTexture();
+            var ndiTextureCaptions = ndiReceiverCaptions?.GetTexture();
+            
+            if (compositeRT == null)
             {
-                Graphics.Blit(ndiTexture, webRtcTexture);
+                compositeRT = new RenderTexture(ndiTexture.width, ndiTexture.height, depth: 0);
+                compositeRT.Create();
+            }
+            
+            if (ndiTexture != null && webRtcTexture != null && ndiTextureCaptions!=null )
+            {
+                // Graphics.Blit(ndiTexture, webRtcTexture);
+
+                    blendMaterial.SetTexture("_MainTex", ndiTexture);
+                    blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
+
+                    Graphics.Blit(null, compositeRT, blendMaterial);
+                    Graphics.Blit( compositeRT, webRtcTexture);
+                          
             }
             yield return new WaitForEndOfFrame();
         }
