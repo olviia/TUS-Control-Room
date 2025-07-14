@@ -35,7 +35,8 @@ public class StreamManager : MonoBehaviour
     
     private Dictionary<PipelineType, WebRTCStreamer> streamers = new Dictionary<PipelineType, WebRTCStreamer>();
     private Dictionary<PipelineType, StreamSession> activeSessions = new Dictionary<PipelineType, StreamSession>();
-    
+
+    public bool isStreaming;
     #region Unity Lifecycle
     
     private void Start()
@@ -181,6 +182,7 @@ public class StreamManager : MonoBehaviour
     {
         var sourceObject = FindSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
+        isStreaming = true;
         
         if (sourceObject?.receiver == null || streamer == null)
         {
@@ -198,6 +200,7 @@ public class StreamManager : MonoBehaviour
     
     private void StartReceiving(PipelineType pipeline, string sessionId)
     {
+        isStreaming = false;
         var streamer = GetStreamerForPipeline(pipeline);
         if (streamer == null)
         {

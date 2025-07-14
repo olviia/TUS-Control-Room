@@ -333,7 +333,6 @@ MonoBehaviour:
   pipelineType: 3
   localNdiReceiver: {fileID: 696567851}
   debugMode: 0
-  transitionDuration: 0.5
   autoFallbackToLocal: 1
 --- !u!1001 &280670461
 PrefabInstance:
@@ -1859,6 +1858,11 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 2306072158
       objectReference: {fileID: 0}
+    - target: {fileID: 2116377875968247463, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_text
+      value: To have subtitles here, create a scene in OBS with NDI Filter, Name
+        that filter StudioSuper.  Add subtitles sourse there Do the same for TVSuper
+      objectReference: {fileID: 0}
     - target: {fileID: 2157243920573488042, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -3101,6 +3105,7 @@ MonoBehaviour:
     renderer: {fileID: 245043423}
     ndiReceiver: {fileID: 696567851}
     isActive: 1
+  isStreaming: 0
 --- !u!1 &1709815565
 GameObject:
   m_ObjectHideFlags: 0
@@ -3219,6 +3224,11 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!23 &1816020970 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3155954271792668611, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+  m_PrefabInstance: {fileID: 1323068256}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1835391953
 GameObject:
   m_ObjectHideFlags: 0
@@ -3267,7 +3277,6 @@ MonoBehaviour:
   pipelineType: 1
   localNdiReceiver: {fileID: 1318600841}
   debugMode: 0
-  transitionDuration: 0.5
   autoFallbackToLocal: 1
 --- !u!1001 &1868622709
 PrefabInstance:
@@ -3289,6 +3298,18 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 413871042
       objectReference: {fileID: 0}
+    - target: {fileID: 3934522205777280311, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: studioMesh
+      value: 
+      objectReference: {fileID: 1323068259}
+    - target: {fileID: 3934522205777280311, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: studioNdiReceiver
+      value: 
+      objectReference: {fileID: 1318600841}
+    - target: {fileID: 3934522205777280311, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: studioCaptionsMesh
+      value: 
+      objectReference: {fileID: 1816020970}
     - target: {fileID: 4319059982537193871, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.27530652
@@ -3333,75 +3354,57 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 2472724996
       objectReference: {fileID: 0}
-    - target: {fileID: 4912850221033801519, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
+    - target: {fileID: 4945359111955572032, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: receiver
+      value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 4912850221033801519, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
+    - target: {fileID: 4959503458873414260, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 73b82adaea3f06a47a962845e5d57ea5, type: 2}
+    - target: {fileID: 5539592166377501810, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: ndiReceiver
+      value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 4912850221033801519, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4912850221033801519, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
+    - target: {fileID: 5906573380141972552, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: _ndiReceiver
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6241398712388870803, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_Name
       value: StudioRoom
       objectReference: {fileID: 0}
-    - target: {fileID: 6461294345318120461, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
+    - target: {fileID: 7459237668363263098, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: ndiReceiver
+      value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 6461294345318120461, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
+    - target: {fileID: 8050094742434642556, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 73b82adaea3f06a47a962845e5d57ea5, type: 2}
+    - target: {fileID: 8053963853365284168, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: receiver
+      value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 6461294345318120461, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
+    - target: {fileID: 8447387603463515674, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: studioMesh
+      value: 
+      objectReference: {fileID: 1323068259}
+    - target: {fileID: 8447387603463515674, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: studioNdiReceiver
+      value: 
+      objectReference: {fileID: 1318600841}
+    - target: {fileID: 8447387603463515674, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: studioCaptionsMesh
+      value: 
+      objectReference: {fileID: 1816020970}
+    - target: {fileID: 8835008772500165696, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: _ndiReceiver
+      value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 6461294345318120461, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8019204107486998311, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8019204107486998311, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8019204107486998311, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8019204107486998311, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8272897438862005253, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8272897438862005253, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8272897438862005253, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8272897438862005253, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4945359111955572032, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+    - {fileID: 8053963853365284168, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

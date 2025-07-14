@@ -1136,7 +1136,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3138122336838169739, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 97627115
+      value: 413871042
       objectReference: {fileID: 0}
     - target: {fileID: 3338596097310210775, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: field of view
@@ -1388,43 +1388,57 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7770834879525922967, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+      propertyPath: _ndiReceiver
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8423503487788117761, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8561138034375909549, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+      propertyPath: ndiReceiver
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 9119404409839825311, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+      propertyPath: receiver
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 9119404409839825311, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
       propertyPath: pipelineType
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 2520727831782678167, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+    - {fileID: 1240007277614837636, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+    - {fileID: 2969868682403333129, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2969868682403333129, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 4812949418126378210, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 5726183965356720454}
+      addedObject: {fileID: 3934522205777280311}
   m_SourcePrefab: {fileID: 100100000, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
---- !u!1 &4070369340384082142 stripped
+--- !u!1 &6017032798816581685 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: 2969868682403333129, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+  m_CorrespondingSourceObject: {fileID: 4812949418126378210, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
   m_PrefabInstance: {fileID: 1246314630176750807}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &5726183965356720454
+--- !u!114 &3934522205777280311
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4070369340384082142}
+  m_GameObject: {fileID: 6017032798816581685}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d957a1dcb169d64cb8cbc796003d375, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ff345b6c47524c4187492d4351eab38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isStudioScreen: 1
-  isPreviewSreen: 0
-  isProgrammScreen: 0
-  sourceName: 
+  studioMesh: {fileID: 0}
+  studioCaptionsMesh: {fileID: 0}
+  studioNdiReceiver: {fileID: 0}
 --- !u!4 &8352160441921739837 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7107552288421322986, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
@@ -1570,7 +1584,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3138122336838169739, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2155539417
+      value: 2472724996
       objectReference: {fileID: 0}
     - target: {fileID: 3338596097310210775, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: field of view
@@ -1942,7 +1956,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3138122336838169739, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 347387483
+      value: 2778774916
       objectReference: {fileID: 0}
     - target: {fileID: 3338596097310210775, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: orthographic
@@ -2232,48 +2246,62 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7770834879525922967, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+      propertyPath: _ndiReceiver
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8423503487788117761, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8561138034375909549, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+      propertyPath: ndiReceiver
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 9119404409839825311, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+      propertyPath: receiver
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 9119404409839825311, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
       propertyPath: pipelineType
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 2520727831782678167, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+    - {fileID: 1240007277614837636, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+    - {fileID: 2969868682403333129, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2969868682403333129, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 4812949418126378210, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3964350411280676986}
+      addedObject: {fileID: 8447387603463515674}
   m_SourcePrefab: {fileID: 100100000, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
---- !u!1 &1376069329670181078 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2969868682403333129, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
-  m_PrefabInstance: {fileID: 4192798576809104607}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &3964350411280676986
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1376069329670181078}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d957a1dcb169d64cb8cbc796003d375, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isStudioScreen: 1
-  isPreviewSreen: 0
-  isProgrammScreen: 0
-  sourceName: 
 --- !u!4 &6380695985519490101 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7107552288421322986, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
   m_PrefabInstance: {fileID: 4192798576809104607}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8711324978125000765 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4812949418126378210, guid: 4ba0d5d0fd0f9414f920e823a6dfbde8, type: 3}
+  m_PrefabInstance: {fileID: 4192798576809104607}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8447387603463515674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8711324978125000765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ff345b6c47524c4187492d4351eab38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  studioMesh: {fileID: 0}
+  studioCaptionsMesh: {fileID: 0}
+  studioNdiReceiver: {fileID: 0}
 --- !u!1001 &4195090430991363966
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2340,7 +2368,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3138122336838169739, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 657869264
+      value: 3984186853
       objectReference: {fileID: 0}
     - target: {fileID: 3338596097310210775, guid: 1b618e685ae089a4b9307b27439c2d1a, type: 3}
       propertyPath: far clip plane
