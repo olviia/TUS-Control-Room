@@ -29,25 +29,27 @@ public class NDIAudioInterceptor : MonoBehaviour
     void OnAudioFilterRead(float[] data, int channels)
     {
         if (!isInitialized || audioStreamer == null) return;
-        
+    
         // DEBUG: Check if we're getting NDI audio data
         bool hasAudio = false;
+        float maxSample = 0f;
         for (int i = 0; i < Mathf.Min(10, data.Length); i++)
         {
-            if (Mathf.Abs(data[i]) > 0.001f)
+            float sample = Mathf.Abs(data[i]);
+            if (sample > 0.001f)
             {
                 hasAudio = true;
-                break;
             }
+            maxSample = Mathf.Max(maxSample, sample);
         }
-    
+
         // Log every ~2 seconds (assuming 48kHz, 1024 samples per call = ~96 calls per 2 seconds)
         debugCounter++;
         if (debugCounter % 96 == 0)
         {
-            Debug.Log($"[🎵NDI-{pipelineType}] Audio data: {data.Length} samples, {channels} channels, hasAudio: {hasAudio}");
+            Debug.Log($"aaa_[🎵NDI-{pipelineType}] Audio data: {data.Length} samples, {channels} channels, hasAudio: {hasAudio}, maxLevel: {maxSample:F4}");
         }
-        
+    
         // Apply volume control to NDI audio (this controls what you hear locally)
         if (volumeMultiplier < 1.0f)
         {
@@ -56,9 +58,13 @@ public class NDIAudioInterceptor : MonoBehaviour
                 data[i] *= volumeMultiplier;
             }
         }
-        
-        // Send audio data to WebRTC streamer
-        audioStreamer.OnNDIAudioData(data, channels);
+    
+        // CRITICAL FIX: Only send audio data if we actually have meaningful audio
+        if (hasAudio && maxSample > 0.001f)
+        {
+            // Send audio data to WebRTC streamer
+            audioStreamer.OnNDIAudioData(data, channels);
+        }
     }
     
     /// <summary>

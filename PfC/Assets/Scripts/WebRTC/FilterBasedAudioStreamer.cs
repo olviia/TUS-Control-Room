@@ -121,6 +121,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         
         SetupNDIAudioInterception();
         CreateSendingAudioTrack();
+
+        DebugAudioFlow();
         
         OnAudioStreamStateChanged?.Invoke(pipelineType, true, sessionId);
         Debug.Log($"[🎵Filter-{pipelineType}] Started audio streaming for session: {sessionId} (attempt: {connectionAttemptCount})");
@@ -153,6 +155,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         isReceiving = true;
         
         CreateReceivingAudioSource();
+        DebugAudioFlow(); // Debug when preparing to receive
+
         
         OnAudioStreamStateChanged?.Invoke(pipelineType, false, sessionId);
         Debug.Log($"[🎵Filter-{pipelineType}] Prepared for audio receiving: {sessionId} (attempt: {connectionAttemptCount})");
@@ -283,6 +287,9 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         
             ndiInterceptor.Initialize(pipelineType, this);
             isCapturingAudio = true;
+            
+            TestNDIAudioSource(); // Test NDI audio immediately after setup
+
         
             Debug.Log($"[🎵Filter-{pipelineType}] NDI audio interception setup complete on: {ndiAudioSourceComponent.name}");
         }
@@ -299,17 +306,25 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     {
         if (!isStreaming || sendingAudioTrack == null) return;
     
-        // DEBUG: Check audio data
+        // DEBUG: Check audio data quality
         bool hasAudio = audioData.Any(sample => Mathf.Abs(sample) > 0.001f);
-        
+        float maxLevel = audioData.Max(sample => Mathf.Abs(sample));
+        // Only log when we have significant audio changes
+        if (hasAudio && maxLevel > 0.01f)
+        {
+            Debug.Log($"aaa_[🎵Filter-{pipelineType}] Sending to WebRTC: {audioData.Length} samples, hasAudio: {hasAudio}, maxLevel: {maxLevel:F4}");
+        }
+        int actualSampleRate = AudioSettings.outputSampleRate;
+
         // Feed audio data to WebRTC 
         try
         {
-            sendingAudioTrack.SetData(audioData, channels, 48000);
+            sendingAudioTrack.SetData(audioData, channels, actualSampleRate);
         }
         catch (Exception e)
         {
-            Debug.LogError($"[🎵Filter-{pipelineType}] Error feeding audio to WebRTC: {e.Message}");
+            Debug.LogError($"aaa_[🎵Filter-{pipelineType}] Data length: {audioData.Length}, Channels: {channels}, SampleRate: {actualSampleRate}");
+            Debug.LogError($"aaa_[🎵Filter-{pipelineType}] Error feeding audio to WebRTC: {e.Message}");
         }
     }
     #endregion
@@ -570,4 +585,100 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     public int ConnectionAttemptCount => connectionAttemptCount;
     
     #endregion
+    
+    
+    // <summary>
+/// Enhanced debug method to check audio flow
+/// </summary>
+public void DebugAudioFlow()
+{
+    Debug.Log($"aaa_[🎵Filter-{pipelineType}] === AUDIO FLOW DEBUG ===");
+    Debug.Log($"aaa_Unity Audio Settings:");
+    Debug.Log($"aaa_  - Output Sample Rate: {AudioSettings.outputSampleRate}");
+    Debug.Log($"aaa_  - DSP Buffer Size: {AudioSettings.GetConfiguration().dspBufferSize}");
+    Debug.Log($"aaa_  - Speaker Mode: {AudioSettings.GetConfiguration().speakerMode}");
+    
+    Debug.Log($"aaa_Streaming State:");
+    Debug.Log($"aaa_  - Is Streaming: {isStreaming}");
+    Debug.Log($"aaa_  - Is Receiving: {isReceiving}");
+    Debug.Log($"aaa_  - Session ID: {currentSessionId}");
+    
+    if (sendingAudioTrack != null)
+    {
+        Debug.Log($"aaa_Sending Audio Track:");
+        Debug.Log($"aaa_  - Track ID: {sendingAudioTrack.Id}");
+        Debug.Log($"aaa_  - Track Kind: {sendingAudioTrack.Kind}");
+        Debug.Log($"aaa_  - Track Enabled: {sendingAudioTrack.Enabled}");
+    }
+    
+    if (receivingAudioSource != null)
+    {
+        Debug.Log($"aaa_Receiving Audio Source:");
+        Debug.Log($"aaa_  - Is Playing: {receivingAudioSource.isPlaying}");
+        Debug.Log($"aaa_  - Volume: {receivingAudioSource.volume}");
+        Debug.Log($"aaa_  - Mute: {receivingAudioSource.mute}");
+        Debug.Log($"aaa_  - Clip: {(receivingAudioSource.clip != null ? receivingAudioSource.clip.name : "null")}");
+    }
+    
+    if (ndiAudioSource != null)
+    {
+        var ndiAudioComponent = ndiAudioSource.GetComponentInChildren<AudioSource>();
+        if (ndiAudioComponent != null)
+        {
+            Debug.Log($"aaa_NDI Audio Source:");
+            Debug.Log($"aaa_  - Is Playing: {ndiAudioComponent.isPlaying}");
+            Debug.Log($"aaa_  - Volume: {ndiAudioComponent.volume}");
+            Debug.Log($"aaa_  - Has Clip: {ndiAudioComponent.clip != null}");
+        }
+    }
+    
+    // Check AudioListener
+    var audioListener = FindObjectOfType<AudioListener>();
+    if (audioListener != null)
+    {
+        Debug.Log($"aaa_Audio Listener:");
+        Debug.Log($"aaa_  - Enabled: {audioListener.enabled}");
+        Debug.Log($"aaa_  - Volume: {AudioListener.volume}");
+        Debug.Log($"aaa_  - Pause: {AudioListener.pause}");
+    }
+}
+// <summary>
+    /// Test if NDI is actually producing audio
+    /// </summary>
+    [ContextMenu("Test NDI Audio Source")]
+    public void TestNDIAudioSource()
+    {
+        if (ndiAudioSource == null)
+        {
+            Debug.LogError("aaa_No NDI audio source assigned!");
+            return;
+        }
+
+        var ndiAudioComponent = ndiAudioSource.GetComponentInChildren<AudioSource>();
+        if (ndiAudioComponent == null)
+        {
+            Debug.LogError("aaa_NDI hasn't created an AudioSource yet!");
+            return;
+        }
+
+        Debug.Log($"aaa_[🎵Test] NDI AudioSource found: {ndiAudioComponent.name}");
+        Debug.Log($"aaa_[🎵Test] Is Playing: {ndiAudioComponent.isPlaying}");
+        Debug.Log($"aaa_[🎵Test] Volume: {ndiAudioComponent.volume}");
+        Debug.Log($"aaa_[🎵Test] Has Clip: {ndiAudioComponent.clip != null}");
+
+        if (ndiAudioComponent.clip != null)
+        {
+            Debug.Log($"aaa_[🎵Test] Clip Sample Rate: {ndiAudioComponent.clip.frequency}");
+            Debug.Log($"aaa_[🎵Test] Clip Channels: {ndiAudioComponent.clip.channels}");
+            Debug.Log($"aaa_[🎵Test] Clip Length: {ndiAudioComponent.clip.length}s");
+        }
+
+        // Check if interceptor exists
+        var interceptor = ndiAudioComponent.GetComponent<NDIAudioInterceptor>();
+        Debug.Log($"aaa_[🎵Test] Has Interceptor: {interceptor != null}");
+        if (interceptor != null)
+        {
+            Debug.Log($"aaa_[🎵Test] Interceptor Enabled: {interceptor.enabled}");
+        }
+    }
 }
