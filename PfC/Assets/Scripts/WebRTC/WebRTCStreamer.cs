@@ -5,6 +5,7 @@ using System.Collections;
 using BroadcastPipeline;
 using Unity.Netcode;
 using System;
+using System.Linq;
 using UnityEngine.Rendering;
 
 public enum StreamerState
@@ -184,6 +185,7 @@ public class WebRTCStreamer : MonoBehaviour
         if (audioStreamer != null)
         {
             Debug.Log($"[📡{instanceId}] Ensuring audio streamer is ready for receiving");
+            audioStreamer.ForceCleanupForReconnection();
             audioStreamer.PrepareAudioReceiving(sessionId);
         }
         SetupReceivingConnection();
@@ -328,8 +330,11 @@ public class WebRTCStreamer : MonoBehaviour
         peerConnection.OnTrack = OnTrackReceived;
         peerConnection.OnConnectionStateChange = OnConnectionStateChange;
         peerConnection.OnIceConnectionChange = OnIceConnectionChange;
+        
+        peerConnection.OnNegotiationNeeded = OnNegotiationNeeded;
 
-        // CRITICAL FIX: Always create MediaStream for receiving, regardless of offerer status
+
+        // Always create MediaStream for receiving, regardless of offerer status
         // This ensures audio tracks can be properly handled on reconnection
         if (receiveMediaStream != null)
         {
@@ -341,6 +346,47 @@ public class WebRTCStreamer : MonoBehaviour
         receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
 
         Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE with fresh MediaStream");
+    }
+    /// <summary>
+    /// Handle negotiation needed events properly
+    /// </summary>
+    private void OnNegotiationNeeded()
+    {
+        Debug.Log($"[📡{instanceId}] OnNegotiationNeeded called - state: {currentState}, isOfferer: {isOfferer}");
+    
+        // Only handle negotiation if we're the offerer and in the right state
+        if (isOfferer && (currentState == StreamerState.Connecting || currentState == StreamerState.Streaming))
+        {
+            Debug.Log($"[📡{instanceId}] Starting renegotiation as offerer");
+            StartCoroutine(HandleRenegotiation());
+        }
+    }
+    /// <summary>
+    /// Handle renegotiation for track changes
+    /// </summary>
+    private IEnumerator HandleRenegotiation()
+    {
+        // Small delay to ensure all tracks are properly added
+        yield return new WaitForEndOfFrame();
+    
+        Debug.Log($"[📡{instanceId}] Creating offer for renegotiation");
+    
+        var offerOp = peerConnection.CreateOffer();
+        yield return offerOp;
+    
+        if (offerOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Renegotiation offer creation failed: {offerOp.Error}");
+            yield break;
+        }
+    
+        yield return StartCoroutine(SetLocalDescription(offerOp.Desc));
+    
+        if (signaling != null)
+        {
+            signaling.SendOffer(pipelineType, offerOp.Desc, currentSessionId);
+            Debug.Log($"[📡{instanceId}] Renegotiation offer sent");
+        }
     }
     
     private void OnMediaStreamTrackAdded(MediaStreamTrackEvent e)
@@ -358,10 +404,12 @@ public class WebRTCStreamer : MonoBehaviour
                 if (audioStreamer.CurrentSessionId != currentSessionId)
                 {
                     Debug.Log($"[📡{instanceId}] Preparing audio streamer for session: {currentSessionId}");
+                    audioStreamer.ForceCleanupForReconnection();
                     audioStreamer.PrepareAudioReceiving(currentSessionId);
                 }
             
                 audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
+                Debug.Log($"[📡{instanceId}] Audio track delegated successfully - should hear audio now!");
             }
             else
             {
@@ -383,20 +431,35 @@ public class WebRTCStreamer : MonoBehaviour
             SetState(StreamerState.Failed);
             return;
         }
-        
+        Debug.Log($"[📡{instanceId}] Adding tracks to connection for session: {currentSessionId}");
+
+        var existingSenders = peerConnection.GetSenders();
+        foreach (var sender in existingSenders)
+        {
+            if (sender.Track != null)
+            {
+                Debug.Log($"[📡{instanceId}] Removing existing {sender.Track.Kind} track before adding new ones");
+                peerConnection.RemoveTrack(sender);
+            }
+        }
+    
         // Add video track
-        peerConnection.AddTrack(videoTrack);
-        
-        // Add audio track via audio streamer
+        var videoSender = peerConnection.AddTrack(videoTrack);
+        Debug.Log($"[📡{instanceId}] Video track added to connection");
+    
+        // CRITICAL: Add audio track with proper session coordination
         if (audioStreamer != null)
         {
             Debug.Log($"[📡{instanceId}] Starting audio streaming for session: {currentSessionId}");
-
+        
+            // Ensure clean slate for audio
+            audioStreamer.ForceCleanupForReconnection();
+        
             audioTrack = audioStreamer.StartAudioStreaming(currentSessionId);
             if (audioTrack != null)
             {
-                peerConnection.AddTrack(audioTrack);
-                Debug.Log($"[📡{instanceId}] Audio track added via audio streamer");
+                var audioSender = peerConnection.AddTrack(audioTrack);
+                Debug.Log($"[📡{instanceId}] Audio track added to connection successfully");
             }
             else
             {
@@ -407,8 +470,10 @@ public class WebRTCStreamer : MonoBehaviour
         {
             Debug.LogWarning($"[📡{instanceId}] No audio streamer - streaming video only");
         }
-        
-        Debug.Log($"[📡{instanceId}] Tracks added to connection");
+    
+        // Log final track count
+        var finalSenders = peerConnection.GetSenders();
+        Debug.Log($"[📡{instanceId}] Connection now has {finalSenders} tracks total");
     }
     
     #endregion
@@ -720,7 +785,7 @@ public class WebRTCStreamer : MonoBehaviour
             receiveMediaStream.AddTrack(e.Track);
         }
     
-        if (e.Track is VideoStreamTrack videoStreamTrack)
+        if (e.Track is VideoStreamTrack)
         {
             // Video-specific handling
             SetState(StreamerState.Receiving);
@@ -869,7 +934,7 @@ public class WebRTCStreamer : MonoBehaviour
             audioStreamer.ForceCleanupForReconnection();
         }
         ClosePeerConnection();
-        yield return null;
+        yield return new WaitForEndOfFrame();
         
         if (string.IsNullOrEmpty(currentSessionId)) yield break;
         
@@ -1070,5 +1135,63 @@ public class WebRTCStreamer : MonoBehaviour
         }
     }
     
+    #endregion
+    
+    #region Debug Methods for Troubleshooting
+
+    /// <summary>
+    /// Debug the current connection state and tracks
+    /// </summary>
+    [ContextMenu("Debug Connection State")]
+    public void DebugConnectionState()
+    {
+        Debug.Log($"[📡{instanceId}] === CONNECTION STATE DEBUG ===");
+        Debug.Log($"Current State: {currentState}");
+        Debug.Log($"Session ID: {currentSessionId}");
+        Debug.Log($"Is Offerer: {isOfferer}");
+        Debug.Log($"Retry Count: {retryCount}");
+    
+        if (peerConnection != null)
+        {
+            Debug.Log($"PeerConnection State: {peerConnection.ConnectionState}");
+            Debug.Log($"ICE Connection State: {peerConnection.IceConnectionState}");
+        
+            var senders = peerConnection.GetSenders();
+            Debug.Log($"Sending {senders.ToArray().Length} tracks:");
+            foreach (var sender in senders)
+            {
+                if (sender.Track != null)
+                {
+                    Debug.Log($"  - {sender.Track.Kind} track: {sender.Track.Id}");
+                }
+            }
+        
+            var receivers = peerConnection.GetReceivers();
+            Debug.Log($"Receiving {receivers.ToArray().Length} tracks:");
+            foreach (var receiver in receivers)
+            {
+                if (receiver.Track != null)
+                {
+                    Debug.Log($"  - {receiver.Track.Kind} track: {receiver.Track.Id}");
+                }
+            }
+        }
+    
+        if (receiveMediaStream != null)
+        {
+            var tracks = receiveMediaStream.GetTracks().ToArray();
+            Debug.Log($"MediaStream has {tracks.Length} tracks:");
+            foreach (var track in tracks)
+            {
+                Debug.Log($"  - {track.Kind} track: {track.Id}");
+            }
+        }
+    
+        if (audioStreamer != null)
+        {
+            audioStreamer.DebugAudioState();
+        }
+    }
+
     #endregion
 }
