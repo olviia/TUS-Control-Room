@@ -140,22 +140,9 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     /// </summary>
     public void HandleIncomingAudioTrack(AudioStreamTrack audioTrack)
     {
-        if (receivingAudioSource == null)
-        {
-            Debug.LogError($"[🎵Filter-{pipelineType}] No receiving AudioSource prepared");
-            return;
-        }
-        
-        // Set up WebRTC filter to handle incoming audio
-        if (webrtcFilter != null)
-        {
-            webrtcFilter.SetIncomingAudioTrack(audioTrack);
-        }
-        
-        Debug.Log($"[🎵Filter-{pipelineType}] Incoming audio track connected to filter");
-        
-        // Verify audio setup
-        StartCoroutine(VerifyAudioSetup());
+        receivingAudioSource.SetTrack(audioTrack);
+        receivingAudioSource.loop = true;
+        receivingAudioSource.Play();
     }
     
     /// <summary>

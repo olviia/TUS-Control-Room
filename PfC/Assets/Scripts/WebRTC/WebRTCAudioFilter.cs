@@ -78,11 +78,7 @@ public class WebRTCAudioFilter : MonoBehaviour
         //     data[i] = webrtcAudioData[i] * volumeMultiplier;
         // }
         
-        // Debug every few seconds to show it's working
-        if (Time.frameCount % (AudioSettings.outputSampleRate / 10) == 0)
-        {
-            Debug.Log($"[🎵WebRTC-{pipelineType}] Processing audio filter with volume {volumeMultiplier:F2}");
-        }
+
     }
     
     void OnDestroy()
