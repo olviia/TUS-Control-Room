@@ -12,6 +12,8 @@ public class AudioSwitcherOnLive : MonoBehaviour
     [SerializeField] private NdiReceiver ndiReceiver;
     [SerializeField] private WebRTCRenderer incomingAudioWebRtcRenderer;
 
+    private Coroutine ndiTurnOnCoroutine;
+
     
     // Call this method from your UI button
     public void ToggleAudioMode()
@@ -25,8 +27,8 @@ public class AudioSwitcherOnLive : MonoBehaviour
         else if (ndiReceiver != null)
         {
             // change ndi volume
-            float newVolume = GetNdiAudioVolume() > 0 ? 0f : 1f;
-            ControlNdiAudioVolume(newVolume);
+            float newVolume = ndiReceiver.GetComponentInChildren<AudioSource>().volume > 0 ? 0f : 1f;
+            ndiReceiver.GetComponentInChildren<AudioSource>().volume = newVolume;
         }
     }
 
@@ -39,40 +41,24 @@ public class AudioSwitcherOnLive : MonoBehaviour
 
     private void CheckAndTurnOnNdi(PipelineType pipeline, StreamerState state, string sessionId)
     {
+        ndiTurnOnCoroutine= StartCoroutine(NdiTurnOn(pipeline));
+
+    }
+
+    private IEnumerator NdiTurnOn(PipelineType pipeline)
+    {
+        if (ndiReceiver == null) yield return new WaitForEndOfFrame();
+        
         if (pipeline == PipelineType.StudioLive || PipelineType.TVLive == pipeline)
         {
             SetReceiveAudioField(true);
             SetCreateVirtualSpeakersField(true);
-            ControlNdiAudioVolume(0f);
+            ndiReceiver.GetComponentInChildren<AudioSource>().volume = 0f;
+            
+            WebRTCStreamer.OnStateChanged -= CheckAndTurnOnNdi;
         }
     }
-    
-    private float ControlNdiAudioVolume(float volume)
-    {
-        if (ndiReceiver != null)
-        {
-            var audioSource = ndiReceiver.GetComponentInChildren<AudioSource>();
-            if (audioSource != null)
-            {
-                audioSource.volume = volume;
-            }
-        }
-        return volume;
-    }
-    private float GetNdiAudioVolume()
-    {
-        if (ndiReceiver != null)
-        {
-            var audioSource = ndiReceiver.GetComponentInChildren<AudioSource>();
-            if (audioSource != null)
-            {
-                
-                return audioSource.volume;
-            }
-        }
 
-        return -100f;
-    }
     // Helper method to set the _createVirtualSpeakers field via reflection
     // (since it's not exposed as a public property)
     private void SetCreateVirtualSpeakersField(bool value)

@@ -7,7 +7,7 @@ using System;
 using Unity.Collections;
 
 /// <summary>
-/// Simplified WebRTC Audio Streamer that uses existing NDI AudioSource
+/// WebRTC Audio Streamer that uses existing NDI AudioSource
 /// This approach leverages the existing NDI audio pipeline instead of raw data manipulation
 /// </summary>
 public class WebRTCAudioStreamer : MonoBehaviour
@@ -57,7 +57,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
     void Start()
     {
         InitializeAudioSystems();
-        Debug.Log($"[🎵Simple-{pipelineType}] Simple audio streamer initialized");
+        Debug.Log($"[🎵Audio-{pipelineType}] Audio streamer initialized");
     }
     
     void OnDestroy()
@@ -101,13 +101,13 @@ public class WebRTCAudioStreamer : MonoBehaviour
     {
         if (isStreaming)
         {
-            Debug.LogWarning($"[🎵Simple-{pipelineType}] Already streaming audio");
+            Debug.LogWarning($"[🎵Audio-{pipelineType}] Already streaming audio");
             return sendingAudioTrack;
         }
         
         if (ndiAudioSourceComponent == null)
         {
-            Debug.LogError($"[🎵Simple-{pipelineType}] No NDI AudioSource available for streaming");
+            Debug.LogError($"[🎵Audio-{pipelineType}] No NDI AudioSource available for streaming");
             return null;
         }
         
@@ -117,7 +117,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
         CreateSendingAudioTrack();
         
         OnAudioStreamStateChanged?.Invoke(pipelineType, true, sessionId);
-        Debug.Log($"[🎵Simple-{pipelineType}] Started audio streaming for session: {sessionId}");
+        Debug.Log($"[🎵Audio-{pipelineType}] Started audio streaming for session: {sessionId}");
         
         return sendingAudioTrack;
     }
@@ -129,7 +129,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
     {
         if (isReceiving)
         {
-            Debug.LogWarning($"[🎵Simple-{pipelineType}] Already receiving audio");
+            Debug.LogWarning($"[🎵Audio-{pipelineType}] Already receiving audio");
             return receivingAudioSource;
         }
         
@@ -139,7 +139,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
         CreateReceivingAudioSource();
         
         OnAudioStreamStateChanged?.Invoke(pipelineType, false, sessionId);
-        Debug.Log($"[🎵Simple-{pipelineType}] Prepared for audio receiving: {sessionId}");
+        Debug.Log($"[🎵Audio-{pipelineType}] Prepared for audio receiving: {sessionId}");
         
         return receivingAudioSource;
     }
@@ -151,7 +151,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
     {
         if (receivingAudioSource == null)
         {
-            Debug.LogError($"[🎵Simple-{pipelineType}] No receiving AudioSource prepared");
+            Debug.LogError($"[🎵Audio-{pipelineType}] No receiving AudioSource prepared");
             return;
         }
         
@@ -160,7 +160,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
         receivingAudioSource.loop = true;
         receivingAudioSource.Play();
         
-        Debug.Log($"[🎵Simple-{pipelineType}] Incoming audio track connected");
+        Debug.Log($"[🎵Audio-{pipelineType}] Incoming audio track connected");
         
         // Verify audio setup after a short delay
         StartCoroutine(VerifyAudioSetup());
@@ -173,7 +173,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
     {
         StopAllAudioOperations();
         OnAudioStreamStateChanged?.Invoke(pipelineType, false, string.Empty);
-        Debug.Log($"[🎵Simple-{pipelineType}] Audio operations stopped");
+        Debug.Log($"[🎵Audio-{pipelineType}] Audio operations stopped");
     }
     
     #endregion
@@ -184,7 +184,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
     {
         if (ndiAudioSourceComponent == null)
         {
-            Debug.LogError($"[🎵Simple-{pipelineType}] No NDI AudioSource for streaming");
+            Debug.LogError($"[🎵Audio-{pipelineType}] No NDI AudioSource for streaming");
             return;
         }
         
@@ -197,7 +197,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
             ndiAudioSourceComponent.Play();
         }
         
-        Debug.Log($"[🎵Simple-{pipelineType}] Sending audio track created from NDI AudioSource");
+        Debug.Log($"[🎵Audio-{pipelineType}] Sending audio track created from NDI AudioSource");
     }
     
     private void CreateReceivingAudioSource()
@@ -205,7 +205,21 @@ public class WebRTCAudioStreamer : MonoBehaviour
         if (receivingAudioGameObject == null)
         {
             receivingAudioGameObject = new GameObject($"WebRTC_Audio_Receiver_{pipelineType}");
-            receivingAudioGameObject.transform.SetParent(audioSourcePosition, false);
+            
+            // IMPORTANT: Set position BEFORE setting parent to avoid transform issues
+            if (audioSourcePosition != null)
+            {
+                receivingAudioGameObject.transform.position = audioSourcePosition.position;
+                receivingAudioGameObject.transform.rotation = audioSourcePosition.rotation;
+                // Set parent with worldPositionStays = true to maintain position
+                receivingAudioGameObject.transform.SetParent(audioSourcePosition, true);
+            }
+            else
+            {
+                receivingAudioGameObject.transform.SetParent(transform, false);
+                Debug.LogWarning($"[🎵Audio-{pipelineType}] No audioSourcePosition set - using default position");
+            }
+            
             receivingAudioGameObject.hideFlags = HideFlags.DontSave;
             
             receivingAudioSource = receivingAudioGameObject.AddComponent<AudioSource>();
@@ -228,7 +242,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
         }
         
         receivingAudioGameObject.SetActive(true);
-        Debug.Log($"[🎵Simple-{pipelineType}] Receiving audio source created at {audioSourcePosition.position}");
+        Debug.Log($"[🎵Audio-{pipelineType}] Receiving audio source created at {receivingAudioGameObject.transform.position} (target: {audioSourcePosition?.position})");
     }
     
     #endregion
@@ -241,7 +255,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
         
         if (receivingAudioSource != null)
         {
-            Debug.Log($"[🎵Simple-{pipelineType}] Audio Verification:");
+            Debug.Log($"[🎵Audio-{pipelineType}] Audio Verification:");
             Debug.Log($"  - Playing: {receivingAudioSource.isPlaying}");
             Debug.Log($"  - Volume: {receivingAudioSource.volume}");
             Debug.Log($"  - Clip: {receivingAudioSource.clip}");
@@ -261,7 +275,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
         // Also verify sending audio source
         if (ndiAudioSourceComponent != null)
         {
-            Debug.Log($"[🎵Simple-{pipelineType}] NDI Audio Source Verification:");
+            Debug.Log($"[🎵Audio-{pipelineType}] NDI Audio Source Verification:");
             Debug.Log($"  - Playing: {ndiAudioSourceComponent.isPlaying}");
             Debug.Log($"  - Volume: {ndiAudioSourceComponent.volume}");
             Debug.Log($"  - Clip: {ndiAudioSourceComponent.clip}");
@@ -271,7 +285,7 @@ public class WebRTCAudioStreamer : MonoBehaviour
     
     public void DebugAudioState()
     {
-        Debug.Log($"[🎵Simple-{pipelineType}] Current State:");
+        Debug.Log($"[🎵Audio-{pipelineType}] Current State:");
         Debug.Log($"  - Streaming: {isStreaming}");
         Debug.Log($"  - Receiving: {isReceiving}");
         Debug.Log($"  - Session: {currentSessionId}");
