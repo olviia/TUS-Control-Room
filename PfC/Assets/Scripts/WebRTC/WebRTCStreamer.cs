@@ -400,13 +400,23 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void TryAddAudioTrack()
     {
-        // Create AudioStreamTrack WITHOUT AudioSource for dynamic data feeding
-        audioTrack = new AudioStreamTrack();
+        // Find NDI's existing AudioSource (the Passthrough Audio Source)
+        var ndiAudioSource = ndiReceiverSource.GetComponentInChildren<AudioSource>();
         
-        // Add track directly to peer connection
-        peerConnection.AddTrack(audioTrack);
-        
-        Debug.Log($"[📡{instanceId}] Audio track created for continuous NDI streaming");
+        if (ndiAudioSource != null)
+        {
+            Debug.Log($"[📡{instanceId}] Found NDI AudioSource: {ndiAudioSource.name}");
+            
+            // Create WebRTC track directly from NDI's AudioSource
+            audioTrack = new AudioStreamTrack(ndiAudioSource);
+            peerConnection.AddTrack(audioTrack);
+            
+            Debug.Log($"[📡{instanceId}] Audio track created from NDI AudioSource");
+        }
+        else
+        {
+            Debug.LogError($"[📡{instanceId}] No AudioSource found on NDI receiver");
+        }
     }
     // This method feeds NDI audio data to the AudioSource
     // This callback feeds NDI audio to the AudioSource
@@ -476,7 +486,6 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator UpdateTextureFromNdi()
     {
-        StartAudioStreaming();
         while (IsStreamingOrConnecting())
         {
             var ndiTexture = ndiReceiverSource?.GetTexture();
@@ -499,24 +508,9 @@ public class WebRTCStreamer : MonoBehaviour
                     Graphics.Blit( compositeRT, webRtcTexture);
                           
             }
-            // Audio processing 
-            if (audioTrack != null && isStreamingAudio)
-            {
-                if (ndiReceiverSource?.GetAudioData(out float[] samples, out int channels, out int sampleRate) == true)
-                {
-                    try
-                    {
-                        audioTrack.SetData(samples, channels, sampleRate);
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogError($"[📡{instanceId}] Failed to set audio data: {e.Message}");
-                    }
-                }
-            }
+            
             yield return new WaitForEndOfFrame();
         }
-        StopAudioStreaming();
     }
     
     private void StartAudioStreaming()
