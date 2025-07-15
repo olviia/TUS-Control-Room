@@ -213,6 +213,8 @@ public class WebRTCStreamer : MonoBehaviour
     /// </summary>
     public void StopSession()
     {
+        Debug.Log($"[📡{instanceId}] StopSession() called! Stack trace:");
+        Debug.Log(System.Environment.StackTrace);
         StartCoroutine(EndCurrentSession());
     }
     

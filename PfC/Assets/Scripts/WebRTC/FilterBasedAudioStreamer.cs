@@ -68,11 +68,12 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     void Start()
     {
         InitializeAudioSystems();
-        Debug.Log($"[🎵Filter-{pipelineType}] Filter-based audio streamer initialized");
+        WebRTCStreamer.OnStateChanged += HandleStreamerStateChange;
     }
     
     void OnDestroy()
     {
+        WebRTCStreamer.OnStateChanged -= HandleStreamerStateChange;
         StopAllAudioOperations();
         DisposeAudioComponents();
     }
@@ -236,6 +237,35 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
     #region WebRTC Audio Management
     
+    private void HandleStreamerStateChange(PipelineType pipeline, StreamerState state, string sessionId)
+    {
+        // Only handle events for our pipeline
+        if (pipeline != this.pipelineType) return;
+    
+        Debug.Log($"[🎵Filter-{pipelineType}] Streamer state changed: {state}, session: {sessionId}");
+    
+        switch (state)
+        {
+            case StreamerState.Streaming:
+                // Restart audio if we're not already streaming
+                if (!isStreaming && !string.IsNullOrEmpty(sessionId))
+                {
+                    Debug.Log($"[🎵Filter-{pipelineType}] Auto-restarting audio for reconnection");
+                    StartAudioStreaming(sessionId);
+                }
+                break;
+            
+            case StreamerState.Failed:
+            case StreamerState.Idle:
+                // Stop audio when connection fails
+                if (isStreaming)
+                {
+                    Debug.Log($"[🎵Filter-{pipelineType}] Auto-stopping audio due to connection failure");
+                    StopAudioOperations();
+                }
+                break;
+        }
+    }
     private void CreateSendingAudioTrack()
     {
         // Create a dummy AudioSource for WebRTC AudioStreamTrack
