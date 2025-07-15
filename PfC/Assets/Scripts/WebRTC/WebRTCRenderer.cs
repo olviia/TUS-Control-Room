@@ -157,6 +157,29 @@ public class WebRTCRenderer : MonoBehaviour
         remoteAudioGameObject.SetActive(true);
         isPlayingRemoteAudio = true;
         
+        StartCoroutine(ForceAudioRefresh());
+
+    }
+    
+    private IEnumerator ForceAudioRefresh()
+    {
+        yield return new WaitForSeconds(0.1f);
+        
+        if (remoteAudioSource != null)
+        {
+            // Force audio system to recognize this AudioSource
+            bool wasPlaying = remoteAudioSource.isPlaying;
+            
+            remoteAudioSource.Stop();
+            yield return null; // Wait one frame
+            
+            if (wasPlaying)
+            {
+                remoteAudioSource.Play();
+            }
+            
+            Debug.Log($"[🖥️Renderer] Audio system refreshed - Playing: {remoteAudioSource.isPlaying}");
+        }
     }
     
     public void RefreshAudioSettings()

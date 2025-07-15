@@ -373,6 +373,7 @@ public class WebRTCStreamer : MonoBehaviour
                 remoteAudioSource.loop = true;
                 remoteAudioSource.Play();
             
+                StartCoroutine(DebugAudioStatus());
                 Debug.Log($"[📡{instanceId}] Audio track connected to remote AudioSource");
             }
             else
@@ -382,7 +383,31 @@ public class WebRTCStreamer : MonoBehaviour
         }
     }
     
-    
+    // Debug audio status after connection
+    private IEnumerator DebugAudioStatus()
+    {
+        yield return new WaitForSeconds(1f);
+        
+        var audioSource = targetRenderer?.GetRemoteAudioSource();
+        if (audioSource != null)
+        {
+            Debug.Log($"[📡{instanceId}] Audio Status Check:");
+            Debug.Log($"  - Playing: {audioSource.isPlaying}");
+            Debug.Log($"  - Volume: {audioSource.volume}");
+            Debug.Log($"  - Clip: {audioSource.clip}");
+            Debug.Log($"  - Output: {audioSource.outputAudioMixerGroup}");
+            Debug.Log($"  - Mute: {audioSource.mute}");
+            Debug.Log($"  - Priority: {audioSource.priority}");
+            
+            // Check if there's an AudioListener in the scene
+            var audioListener = FindObjectOfType<AudioListener>();
+            Debug.Log($"  - AudioListener found: {audioListener != null}");
+            if (audioListener != null)
+            {
+                Debug.Log($"  - AudioListener enabled: {audioListener.enabled}");
+            }
+        }
+    }
     private void AddTracksToConnection()
     {
         if (peerConnection == null || videoTrack == null) 

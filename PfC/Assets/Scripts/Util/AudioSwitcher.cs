@@ -9,18 +9,11 @@ using UnityEngine.UI;
 public class AudioSwitcher : MonoBehaviour
 {
     [SerializeField] private NdiReceiver ndiReceiver;
-    [SerializeField] private WebRTCRenderer incomingAudioWebRtcRenderer;
 
     // Call this method from your UI button
     public void ToggleAudioMode()
     {
-        if (incomingAudioWebRtcRenderer != null && incomingAudioWebRtcRenderer.isShowingRemoteStream)
-        {
-            float newVolume = incomingAudioWebRtcRenderer.AudioVolume > 0 ? 0f : 1f;
-            incomingAudioWebRtcRenderer.AudioVolume = newVolume;
-
-        }
-        else if (ndiReceiver != null)
+         if (ndiReceiver != null)
         {
             // Cycle through modes: Automatic -> Virtual Speakers -> None -> Automatic
             currentMode = (AudioMode)(((int)currentMode + 1) % 2);
@@ -111,9 +104,5 @@ public class AudioSwitcher : MonoBehaviour
     }
 #endregion
 
-#region WebRTC Control
 
-
-
-#endregion
 }
