@@ -1288,14 +1288,25 @@ namespace Klak.Ndi
 				{
 					var frame = _audioFramesBuffer[0];
             
-					// Get all channel data as interleaved array
-					var allChannelsArray = frame.GetAllChannelsArray();
-					if (allChannelsArray.IsCreated && allChannelsArray.Length > 0)
+					try
 					{
-						audioData = allChannelsArray.ToArray();
-						channels = frame.noChannels;
-						sampleRate = frame.sampleRate;
-						return true;
+						// Get interleaved audio data
+						var channelArray = frame.GetAllChannelsArray();
+						if (channelArray.IsCreated && channelArray.Length > 0)
+						{
+							// Convert to managed array for WebRTC
+							audioData = new float[channelArray.Length];
+							channelArray.CopyTo(audioData);
+                    
+							channels = frame.noChannels;
+							sampleRate = frame.sampleRate;
+                    
+							return true;
+						}
+					}
+					catch (System.Exception e)
+					{
+						Debug.LogError($"[NDI] Error getting audio data: {e.Message}");
 					}
 				}
 			}

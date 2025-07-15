@@ -103,28 +103,28 @@ public class WebRTCRenderer : MonoBehaviour
     /// Prepare spatial audio GameObject for remote stream
     /// </summary>
     private void PrepareRemoteAudio()
-    {
-        // Disable local NDI audio
-        SetLocalAudioActive(false);
+    {        SetLocalAudioActive(false);
     
-        // Create or reuse remote audio GameObject
         if (remoteAudioGameObject == null)
         {
             remoteAudioGameObject = new GameObject($"RemoteAudio_{pipelineType}");
             remoteAudioGameObject.transform.SetParent(audioSourcePosition, false);
         
             remoteAudioSource = remoteAudioGameObject.AddComponent<AudioSource>();
+            
+            // Configure for 3D spatial audio
             remoteAudioSource.spatialBlend = spatialBlend;
-            remoteAudioSource.volume = audioVolume;
+            remoteAudioSource.volume = audioVolume; // This was 0! 
             remoteAudioSource.minDistance = minDistance;
             remoteAudioSource.maxDistance = maxDistance;
             remoteAudioSource.rolloffMode = AudioRolloffMode.Linear;
-        
-            // IMPORTANT: Set these for WebRTC audio reception
+            
+            // WebRTC specific settings
             remoteAudioSource.playOnAwake = false;
-            remoteAudioSource.clip = null; // WebRTC will handle the audio data
-        
-            Debug.Log($"[🖥️Renderer] Remote audio prepared at {audioSourcePosition.position}");
+            remoteAudioSource.clip = null; // WebRTC manages the audio data
+            remoteAudioSource.loop = true; // REQUIRED for WebRTC
+            
+            Debug.Log($"[🖥️Renderer] Remote audio created at {audioSourcePosition.position} with volume {audioVolume}");
         }
     
         remoteAudioGameObject.SetActive(true);

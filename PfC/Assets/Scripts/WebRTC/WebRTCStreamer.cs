@@ -53,10 +53,12 @@ public class WebRTCStreamer : MonoBehaviour
     private int retryCount = 0;
     private bool isOfferer = false;
     private bool isRemoteDescriptionSet = false;
+    private bool isStreamingAudio = false;
     
     // Coroutines
     private Coroutine connectionTimeoutCoroutine;
     private Coroutine textureUpdateCoroutine;
+    private Coroutine audioStreamingCoroutine;
     
     // ICE candidate buffering
     private System.Collections.Generic.List<RTCIceCandidate> pendingIceCandidates = new System.Collections.Generic.List<RTCIceCandidate>();
@@ -354,7 +356,7 @@ public class WebRTCStreamer : MonoBehaviour
     }
     private void OnMediaStreamTrackAdded(MediaStreamTrackEvent e)
     {
-        Debug.Log($"[📡{instanceId}] MediaStream track added: {e.Track.Kind}");
+        Debug.Log($"[📡{instanceId}] MediaStream audio track added: {e.Track.Kind}");
     
         if (e.Track is AudioStreamTrack audioTrack)
         {
@@ -396,55 +398,17 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void TryAddAudioTrack()
     {
-        // Create a silent AudioSource that will feed WebRTC
-        var audioSourceGO = new GameObject($"WebRTC_AudioSource_{instanceId}");
-        audioSourceGO.transform.SetParent(transform, false);
-    
-        var audioSource = audioSourceGO.AddComponent<AudioSource>();
-        audioSource.volume = 0f; // Silent on sender side
-        audioSource.spatialBlend = 0f; // 2D for transmission
-        audioSource.loop = true;
-    
-        // Create a streaming audio clip that gets data from NDI
-        var sampleRate = AudioSettings.outputSampleRate;
-        var channels = 2; // Start with stereo, adjust based on NDI
-        var clip = AudioClip.Create("NDI_Audio_Feed", sampleRate, channels, sampleRate, true, OnAudioRead);
-    
-        audioSource.clip = clip;
-        audioSource.Play();
-    
-        // Create WebRTC track from this AudioSource
-        audioTrack = new AudioStreamTrack(audioSource);
+        // Create AudioStreamTrack WITHOUT AudioSource for dynamic data feeding
+        audioTrack = new AudioStreamTrack();
+        
+        // Add track directly to peer connection
         peerConnection.AddTrack(audioTrack);
-    
-        Debug.Log($"[📡{instanceId}] Audio track added from NDI-fed AudioSource");
+        
+        Debug.Log($"[📡{instanceId}] Audio track created for continuous NDI streaming");
     }
     // This method feeds NDI audio data to the AudioSource
     // This callback feeds NDI audio to the AudioSource
-    private void OnAudioRead(float[] data)
-    {
-        // Get fresh audio data from NDI
-        if (ndiReceiverSource?.GetAudioData(out float[] samples, out int channels, out int sampleRate) == true)
-        {
-            // Handle channel conversion if needed
-            if (samples.Length >= data.Length)
-            {
-                Array.Copy(samples, data, data.Length);
-            }
-            else
-            {
-                // Pad with silence if not enough data
-                Array.Copy(samples, data, samples.Length);
-                for (int i = samples.Length; i < data.Length; i++)
-                    data[i] = 0f;
-            }
-        }
-        else
-        {
-            // No NDI audio - fill with silence
-            Array.Fill(data, 0f);
-        }
-    }
+    
     
     #endregion
     
@@ -510,6 +474,7 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator UpdateTextureFromNdi()
     {
+        StartAudioStreaming();
         while (IsStreamingOrConnecting())
         {
             var ndiTexture = ndiReceiverSource?.GetTexture();
@@ -532,10 +497,40 @@ public class WebRTCStreamer : MonoBehaviour
                     Graphics.Blit( compositeRT, webRtcTexture);
                           
             }
+            // Audio processing 
+            if (audioTrack != null && isStreamingAudio)
+            {
+                if (ndiReceiverSource?.GetAudioData(out float[] samples, out int channels, out int sampleRate) == true)
+                {
+                    try
+                    {
+                        audioTrack.SetData(samples, channels, sampleRate);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError($"[📡{instanceId}] Failed to set audio data: {e.Message}");
+                    }
+                }
+            }
             yield return new WaitForEndOfFrame();
         }
+        StopAudioStreaming();
     }
     
+    private void StartAudioStreaming()
+    {
+        if (audioTrack == null || isStreamingAudio) return;
+        
+        isStreamingAudio = true;
+        Debug.Log($"[📡{instanceId}] Started NDI audio streaming");
+    }
+    
+    private void StopAudioStreaming()
+    {
+        isStreamingAudio = false;
+        Debug.Log($"[📡{instanceId}] Stopped NDI audio streaming");
+    }
+
 
     private bool IsStreamingOrConnecting()
     {
@@ -904,28 +899,22 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator RetryConnection()
     {
-        if (peerConnection != null)
-        {
-            UnsubscribeFromVideoEvents();
-            peerConnection.Close();
-            peerConnection.Dispose();
-            peerConnection = null;
-        }
-    
-        // Clean up MediaStream
-        if (receiveMediaStream != null)
-        {
-            receiveMediaStream.Dispose();
-            receiveMediaStream = null;
-        }
-    
-        // Reset state
-        isRemoteDescriptionSet = false;
-        pendingIceCandidates.Clear();
-        pendingOffer = null;
-        pendingOfferClient = 0;
+        ClosePeerConnection(); // This now includes MediaStream cleanup
+        yield return null;
         
-        yield return new WaitForEndOfFrame();
+        if (string.IsNullOrEmpty(currentSessionId)) yield break;
+        
+        if (isOfferer)
+        {
+            SetupStreamingConnection();
+            StartCoroutine(CreateOffer());
+        }
+        else
+        {
+            SetupReceivingConnection();
+        }
+        
+        StartConnectionTimeout();
     }
     
     #endregion
@@ -990,6 +979,13 @@ public class WebRTCStreamer : MonoBehaviour
             peerConnection.Close();
             peerConnection.Dispose();
             peerConnection = null;
+        }
+        
+        // Clean up MediaStream (THIS WAS MISSING)
+        if (receiveMediaStream != null)
+        {
+            receiveMediaStream.Dispose();
+            receiveMediaStream = null;
         }
         
         // Reset state

@@ -21,7 +21,7 @@ public class AudioSwitcher : MonoBehaviour
             else
                 incomingAudioWebRtcRenderer.audioVolume = 0f;
         }
-        else
+        else if (ndiReceiver != null)
         {
             // Cycle through modes: Automatic -> Virtual Speakers -> None -> Automatic
             currentMode = (AudioMode)(((int)currentMode + 1) % 2);
@@ -47,11 +47,6 @@ public class AudioSwitcher : MonoBehaviour
 
     private void Start()
     {
-        if (ndiReceiver == null)
-        {
-            Debug.LogError("NdiReceiver reference not set in AudioModeToggle component");
-            return;
-        }
     }
 
 
