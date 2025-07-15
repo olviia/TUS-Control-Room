@@ -9,6 +9,30 @@ using UnityEngine.UI;
 public class AudioSwitcher : MonoBehaviour
 {
     [SerializeField] private NdiReceiver ndiReceiver;
+    [SerializeField] private WebRTCRenderer incomingAudioWebRtcRenderer;
+
+    // Call this method from your UI button
+    public void ToggleAudioMode()
+    {
+        if (incomingAudioWebRtcRenderer != null && incomingAudioWebRtcRenderer.isShowingRemoteStream)
+        {
+            if(incomingAudioWebRtcRenderer.audioVolume == 0f )
+                incomingAudioWebRtcRenderer.audioVolume = 1f;
+            else
+                incomingAudioWebRtcRenderer.audioVolume = 0f;
+        }
+        else
+        {
+            // Cycle through modes: Automatic -> Virtual Speakers -> None -> Automatic
+            currentMode = (AudioMode)(((int)currentMode + 1) % 2);
+
+            ApplyAudioMode();
+        }
+    }
+
+    #region NDI Control
+
+    
 
     // Enum to represent the different audio modes
     public enum AudioMode
@@ -28,17 +52,9 @@ public class AudioSwitcher : MonoBehaviour
             Debug.LogError("NdiReceiver reference not set in AudioModeToggle component");
             return;
         }
-
     }
 
-    // Call this method from your UI button
-    public void ToggleAudioMode()
-    {
-        // Cycle through modes: Automatic -> Virtual Speakers -> None -> Automatic
-        currentMode = (AudioMode)(((int)currentMode + 1) % 2);
 
-        ApplyAudioMode();
-    }
 
     // Set a specific mode directly
     public void SetAudioMode(AudioMode mode)
@@ -99,4 +115,11 @@ public class AudioSwitcher : MonoBehaviour
         else
             Debug.LogError("Could not find _receiveAudio field in NdiReceiver");
     }
+#endregion
+
+#region WebRTC Control
+
+
+
+#endregion
 }

@@ -331,6 +331,7 @@ GameObject:
   - component: {fileID: 573326358071411493}
   - component: {fileID: 8264680249754946318}
   - component: {fileID: 3284011482770332005}
+  - component: {fileID: 8891809438685470773}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -437,6 +438,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7695528691ea771498e96d5f317ff1c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &8891809438685470773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1200108305043269988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d53c27fe5e22ae44bbdf765f23ec77e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ndiReceiver: {fileID: 6511933118459099774}
 --- !u!1 &1625369110202975734
 GameObject:
   m_ObjectHideFlags: 0
@@ -2016,7 +2030,6 @@ GameObject:
   - component: {fileID: 2862656528052265208}
   - component: {fileID: 6511933118459099774}
   - component: {fileID: 1189128349459990246}
-  - component: {fileID: 8272316634018090}
   m_Layer: 0
   m_Name: NDI Receiver
   m_TagString: Untagged
@@ -2077,19 +2090,6 @@ MonoBehaviour:
     nearDistance: 0.1
     farDistance: 10
   _connection: {fileID: 11400000, guid: cc40d2a995770e54facc367498abf4b2, type: 2}
---- !u!114 &8272316634018090
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8888896266591037839}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d53c27fe5e22ae44bbdf765f23ec77e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ndiReceiver: {fileID: 6511933118459099774}
 --- !u!1001 &7859330385504368700
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1279,7 +1279,7 @@ namespace Klak.Ndi
 			channels = 0;
 			sampleRate = 0;
     
-			if (!_receiveAudio || _audioFramesBuffer.Count == 0)
+			if (!_receiveAudio)
 				return false;
         
 			lock (audioBufferLock)
@@ -1287,10 +1287,16 @@ namespace Klak.Ndi
 				if (_audioFramesBuffer.Count > 0)
 				{
 					var frame = _audioFramesBuffer[0];
-					audioData = frame.GetAllChannelsArray().ToArray(); // Convert to managed array
-					channels = frame.noChannels;
-					sampleRate = frame.sampleRate;
-					return true;
+            
+					// Get all channel data as interleaved array
+					var allChannelsArray = frame.GetAllChannelsArray();
+					if (allChannelsArray.IsCreated && allChannelsArray.Length > 0)
+					{
+						audioData = allChannelsArray.ToArray();
+						channels = frame.noChannels;
+						sampleRate = frame.sampleRate;
+						return true;
+					}
 				}
 			}
 			return false;

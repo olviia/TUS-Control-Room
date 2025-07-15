@@ -39,6 +39,7 @@ public class WebRTCStreamer : MonoBehaviour
     private VideoStreamTrack videoTrack;
     private AudioStreamTrack audioTrack;
     private RenderTexture webRtcTexture;
+    private MediaStream receiveMediaStream;
     
     //blending captions and media source
     private RenderTexture compositeRT;
@@ -324,9 +325,9 @@ public class WebRTCStreamer : MonoBehaviour
     private void CreatePeerConnection()
     {
         Debug.Log($"[📡{instanceId}] CreatePeerConnection START");
-        
+    
         ClosePeerConnection();
-        
+    
         var config = new RTCConfiguration
         {
             iceServers = new RTCIceServer[]
@@ -335,15 +336,48 @@ public class WebRTCStreamer : MonoBehaviour
                 new RTCIceServer { urls = new string[] { "stun:stun1.l.google.com:19302" } }
             }
         };
-        
+    
         peerConnection = new RTCPeerConnection(ref config);
         peerConnection.OnIceCandidate = OnIceCandidate;
         peerConnection.OnTrack = OnTrackReceived;
         peerConnection.OnConnectionStateChange = OnConnectionStateChange;
         peerConnection.OnIceConnectionChange = OnIceConnectionChange;
-        
+    
+        // CREATE MEDIA STREAM FOR RECEIVING AUDIO - THIS WAS MISSING!
+        if (!isOfferer) // Only create for receivers
+        {
+            receiveMediaStream = new MediaStream();
+            receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
+        }
+    
         Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE (Host: {NetworkManager.Singleton?.IsHost})");
     }
+    private void OnMediaStreamTrackAdded(MediaStreamTrackEvent e)
+    {
+        Debug.Log($"[📡{instanceId}] MediaStream track added: {e.Track.Kind}");
+    
+        if (e.Track is AudioStreamTrack audioTrack)
+        {
+            Debug.Log($"[📡{instanceId}] Audio track received in MediaStream");
+        
+            // Get the remote AudioSource from renderer
+            var remoteAudioSource = targetRenderer?.GetRemoteAudioSource();
+            if (remoteAudioSource != null)
+            {
+                // Use Unity WebRTC's SetTrack extension method
+                remoteAudioSource.SetTrack(audioTrack);
+                remoteAudioSource.loop = true;
+                remoteAudioSource.Play();
+            
+                Debug.Log($"[📡{instanceId}] Audio track connected to remote AudioSource");
+            }
+            else
+            {
+                Debug.LogError($"[📡{instanceId}] No remote AudioSource available for audio track");
+            }
+        }
+    }
+    
     
     private void AddTracksToConnection()
     {
@@ -567,6 +601,7 @@ public class WebRTCStreamer : MonoBehaviour
     }
     
     #endregion
+
     
     #region Event Handlers - Signaling
     
@@ -723,14 +758,26 @@ public class WebRTCStreamer : MonoBehaviour
     private void OnTrackReceived(RTCTrackEvent e)
     {
         Debug.Log($"[📡{instanceId}] Track received: {e.Track.Kind}");
-        
+    
         if (e.Track is VideoStreamTrack videoStreamTrack)
         {
             videoStreamTrack.OnVideoReceived += OnVideoReceived;
-            
-            // Set to receiving state immediately when track arrives
             SetState(StreamerState.Receiving);
             ClearConnectionTimeout();
+        }
+        else if (e.Track.Kind == TrackKind.Audio)
+        {
+            Debug.Log($"[📡{instanceId}] Audio track received - adding to MediaStream");
+        
+            // Add audio track to MediaStream - this triggers OnAddTrack
+            if (receiveMediaStream != null)
+            {
+                receiveMediaStream.AddTrack(e.Track);
+            }
+            else
+            {
+                Debug.LogError($"[📡{instanceId}] No receive MediaStream available for audio track");
+            }
         }
     }
     
@@ -857,24 +904,28 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator RetryConnection()
     {
-        Debug.Log($"[📡{instanceId}] Retrying connection");
-        
-        ClosePeerConnection();
-        yield return null;
-        
-        if (string.IsNullOrEmpty(currentSessionId)) yield break;
-        
-        if (isOfferer)
+        if (peerConnection != null)
         {
-            SetupStreamingConnection();
-            StartCoroutine(CreateOffer());
+            UnsubscribeFromVideoEvents();
+            peerConnection.Close();
+            peerConnection.Dispose();
+            peerConnection = null;
         }
-        else
+    
+        // Clean up MediaStream
+        if (receiveMediaStream != null)
         {
-            SetupReceivingConnection();
+            receiveMediaStream.Dispose();
+            receiveMediaStream = null;
         }
+    
+        // Reset state
+        isRemoteDescriptionSet = false;
+        pendingIceCandidates.Clear();
+        pendingOffer = null;
+        pendingOfferClient = 0;
         
-        StartConnectionTimeout();
+        yield return new WaitForEndOfFrame();
     }
     
     #endregion

@@ -18,7 +18,7 @@ public class WebRTCRenderer : MonoBehaviour
     
     [Header("Audio Settings")]
     [SerializeField] private Transform audioSourcePosition; // Where to place 3D audio
-    [SerializeField] private float audioVolume = 1.0f;
+    [SerializeField] public float audioVolume = 0f;
     [SerializeField] private float spatialBlend = 1.0f; // 1.0 = full 3D
     [SerializeField] private float minDistance = 1f;
     [SerializeField] private float maxDistance = 10f;
@@ -28,7 +28,7 @@ public class WebRTCRenderer : MonoBehaviour
     private bool isPlayingRemoteAudio = false;
     
     private Material originalMaterial;
-    private bool isShowingRemoteStream = false;
+    public bool isShowingRemoteStream = false;
     private string currentDisplaySession = string.Empty;
     private MaterialPropertyBlock propertyBlock;
     
@@ -106,25 +106,30 @@ public class WebRTCRenderer : MonoBehaviour
     {
         // Disable local NDI audio
         SetLocalAudioActive(false);
-        
+    
         // Create or reuse remote audio GameObject
         if (remoteAudioGameObject == null)
         {
             remoteAudioGameObject = new GameObject($"RemoteAudio_{pipelineType}");
             remoteAudioGameObject.transform.SetParent(audioSourcePosition, false);
-            
+        
             remoteAudioSource = remoteAudioGameObject.AddComponent<AudioSource>();
             remoteAudioSource.spatialBlend = spatialBlend;
             remoteAudioSource.volume = audioVolume;
             remoteAudioSource.minDistance = minDistance;
             remoteAudioSource.maxDistance = maxDistance;
             remoteAudioSource.rolloffMode = AudioRolloffMode.Linear;
-        }
         
+            // IMPORTANT: Set these for WebRTC audio reception
+            remoteAudioSource.playOnAwake = false;
+            remoteAudioSource.clip = null; // WebRTC will handle the audio data
+        
+            Debug.Log($"[🖥️Renderer] Remote audio prepared at {audioSourcePosition.position}");
+        }
+    
         remoteAudioGameObject.SetActive(true);
         isPlayingRemoteAudio = true;
         
-        Debug.Log($"[🖥️Renderer] Remote audio prepared at {audioSourcePosition.position}");
     }
     /// <summary>
     /// Handle incoming WebRTC audio track
@@ -139,6 +144,17 @@ public class WebRTCRenderer : MonoBehaviour
         Debug.Log($"[🖥️Renderer] Remote audio track received - positioned AudioSource ready");
 
     }
+    
+    public AudioSource GetRemoteAudioSource()
+    {
+        if (remoteAudioSource == null)
+        {
+            PrepareRemoteAudio();
+        }
+        return remoteAudioSource;
+    }
+    
+
     
     /// <summary>
     /// Instant texture switching using property blocks only
