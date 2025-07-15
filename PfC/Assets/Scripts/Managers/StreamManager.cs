@@ -15,6 +15,10 @@ public class StreamSource
     public NdiReceiver ndiReceiverSource;
     public NdiReceiver ndiReceiverCaptions;
     public bool isActive = true;
+    
+    [Header("Audio Settings")]
+    public bool enableAudio = true;
+    public Transform audioPosition; // Where to position 3D audio for this pipeline
 }
 
 public class StreamSession
@@ -26,18 +30,23 @@ public class StreamSession
 }
 
 /// <summary>
-/// Manages all streaming pipelines from single configuration
-/// Creates and controls WebRTC streamers for each configured pipeline
+/// Enhanced StreamManager with integrated audio streaming support
+/// Creates and controls WebRTC streamers with audio for each configured pipeline
 /// </summary>
 public class StreamManager : MonoBehaviour
 {
     [Header("Stream Configuration")]
     public List<StreamSource> streamSources = new List<StreamSource>();
     
+    [Header("Audio Settings")]
+    public bool globalAudioEnabled = true;
+    
     private Dictionary<PipelineType, WebRTCStreamer> streamers = new Dictionary<PipelineType, WebRTCStreamer>();
+    private Dictionary<PipelineType, WebRTCAudioStreamer> audioStreamers = new Dictionary<PipelineType, WebRTCAudioStreamer>();
     private Dictionary<PipelineType, StreamSession> activeSessions = new Dictionary<PipelineType, StreamSession>();
 
     public bool isStreaming;
+    
     #region Unity Lifecycle
     
     private void Start()
@@ -45,7 +54,7 @@ public class StreamManager : MonoBehaviour
         ConnectToEvents();
         StartCoroutine(CreateStreamers());
         
-        Debug.Log($"[🎯StreamManager] Managing {GetActiveSources().Length} pipelines");
+        Debug.Log($"[🎯StreamManager] Managing {GetActiveSources().Length} pipelines with audio support");
     }
     
     private void OnDestroy()
@@ -62,12 +71,16 @@ public class StreamManager : MonoBehaviour
     {
         NetworkStreamCoordinator.OnStreamControlChanged += HandleStreamControlChange;
         WebRTCStreamer.OnStateChanged += HandleStreamerStateChange;
+        
+        // Connect to audio events
+        WebRTCAudioStreamer.OnAudioStreamStateChanged += HandleAudioStateChange;
     }
     
     private void DisconnectFromEvents()
     {
         NetworkStreamCoordinator.OnStreamControlChanged -= HandleStreamControlChange;
         WebRTCStreamer.OnStateChanged -= HandleStreamerStateChange;
+        WebRTCAudioStreamer.OnAudioStreamStateChanged -= HandleAudioStateChange;
     }
     
     private IEnumerator CreateStreamers()
@@ -81,35 +94,83 @@ public class StreamManager : MonoBehaviour
         
         ConfigureCoordinator();
         
-        Debug.Log($"[🎯StreamManager] Created {streamers.Count} streamers");
+        Debug.Log($"[🎯StreamManager] Created {streamers.Count} streamers with {audioStreamers.Count} audio streamers");
     }
     
     private void CreateStreamerForSource(StreamSource source)
     {
+        // Create the main streamer GameObject
         var streamerObject = new GameObject($"Streamer_{source.pipelineType}");
         streamerObject.transform.SetParent(transform);
         
+        // Create WebRTC Streamer
         var streamer = streamerObject.AddComponent<WebRTCStreamer>();
         streamer.pipelineType = source.pipelineType;
         streamer.targetRenderer = source.renderer;
         streamer.ndiReceiverSource = source.ndiReceiverSource;
         streamer.ndiReceiverCaptions = source.ndiReceiverCaptions;
         
-        ConfigureRenderer(source);
+        // Create Audio Streamer if audio is enabled
+        WebRTCAudioStreamer audioStreamer = null;
+        if (globalAudioEnabled && source.enableAudio)
+        {
+            audioStreamer = CreateAudioStreamerForSource(streamerObject, source);
+            
+            // Link streamer and audio streamer
+            streamer.audioStreamer = audioStreamer;
+        }
         
+        // Configure renderer with audio streamer reference
+        ConfigureRenderer(source, audioStreamer);
+        
+        // Store references
         streamers[source.pipelineType] = streamer;
+        if (audioStreamer != null)
+        {
+            audioStreamers[source.pipelineType] = audioStreamer;
+        }
         activeSessions[source.pipelineType] = null;
         
-        Debug.Log($"[🎯StreamManager] Created streamer for {source.pipelineType}");
+        Debug.Log($"[🎯StreamManager] Created streamer for {source.pipelineType} {(audioStreamer != null ? "with audio" : "video only")}");
     }
     
-    private void ConfigureRenderer(StreamSource source)
+    private WebRTCAudioStreamer CreateAudioStreamerForSource(GameObject parent, StreamSource source)
+    {
+        var audioStreamer = parent.AddComponent<WebRTCAudioStreamer>();
+        
+        // Configure audio streamer
+        audioStreamer.pipelineType = source.pipelineType;
+        audioStreamer.ndiAudioSource = source.ndiReceiverSource; // Use same NDI receiver for audio
+        
+        // Set audio position - use source's audioPosition or renderer's transform as fallback
+        if (source.audioPosition != null)
+        {
+            audioStreamer.audioSourcePosition = source.audioPosition;
+        }
+        else if (source.renderer != null)
+        {
+            audioStreamer.audioSourcePosition = source.renderer.transform;
+        }
+        else
+        {
+            audioStreamer.audioSourcePosition = parent.transform;
+        }
+        
+        Debug.Log($"[🎯StreamManager] Created audio streamer for {source.pipelineType} at position {audioStreamer.audioSourcePosition.name}");
+        
+        return audioStreamer;
+    }
+    
+    private void ConfigureRenderer(StreamSource source, WebRTCAudioStreamer audioStreamer)
     {
         if (source.renderer != null && source.ndiReceiverSource != null && source.ndiReceiverCaptions != null)
         {
             source.renderer.localNdiReceiver = source.ndiReceiverSource;
             source.renderer.localNdiReceiverCaptions = source.ndiReceiverCaptions;
             source.renderer.pipelineType = source.pipelineType;
+            
+            // Link audio streamer to renderer
+            source.renderer.audioStreamer = audioStreamer;
         }
     }
     
@@ -150,6 +211,7 @@ public class StreamManager : MonoBehaviour
         if (activeSessions[pipeline] != null)
         {
             GetStreamerForPipeline(pipeline)?.StopSession();
+            GetAudioStreamerForPipeline(pipeline)?.StopAudioOperations();
             activeSessions[pipeline] = null;
         }
     }
@@ -185,6 +247,7 @@ public class StreamManager : MonoBehaviour
     {
         var sourceObject = FindSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
+        var audioStreamer = GetAudioStreamerForPipeline(pipeline);
         isStreaming = true;
         
         if (sourceObject?.receiver == null || streamer == null)
@@ -194,30 +257,44 @@ public class StreamManager : MonoBehaviour
             return;
         }
         
+        // Update NDI source for both video and audio
         streamer.ndiReceiverSource = sourceObject.receiver;
+        if (audioStreamer != null)
+        {
+            audioStreamer.ndiAudioSource = sourceObject.receiver;
+        }
+        
         streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
         
-        Debug.Log($"[🎯StreamManager] Started streaming {assignment.streamSourceName} for {pipeline}");
+        Debug.Log($"[🎯StreamManager] Started streaming {assignment.streamSourceName} for {pipeline} {(audioStreamer != null ? "with audio" : "video only")}");
     }
     
     private void StartReceiving(PipelineType pipeline, string sessionId)
     {
         isStreaming = false;
         var streamer = GetStreamerForPipeline(pipeline);
+        var audioStreamer = GetAudioStreamerForPipeline(pipeline);
+        
         if (streamer == null)
         {
             Debug.LogError($"[🎯StreamManager] No streamer for {pipeline}");
             return;
         }
         
+        // Prepare audio receiving if audio streamer exists
+        if (audioStreamer != null)
+        {
+            audioStreamer.PrepareAudioReceiving(sessionId);
+        }
+        
         streamer.StartReceiving(sessionId);
-        Debug.Log($"[🎯StreamManager] Started receiving {pipeline}");
+        Debug.Log($"[🎯StreamManager] Started receiving {pipeline} {(audioStreamer != null ? "with audio" : "video only")}");
     }
     
     #endregion
     
-    #region Streamer State Events
+    #region Event Handlers
     
     private void HandleStreamerStateChange(PipelineType pipeline, StreamerState state, string sessionId)
     {
@@ -241,6 +318,14 @@ public class StreamManager : MonoBehaviour
                 }
                 break;
         }
+    }
+    
+    private void HandleAudioStateChange(PipelineType pipeline, bool isStreaming, string sessionId)
+    {
+        Debug.Log($"[🎯StreamManager] Audio state changed for {pipeline}: streaming={isStreaming}, session={sessionId}");
+        
+        // You can add additional audio state handling here if needed
+        // For example, UI updates, audio visualization, etc.
     }
     
     private void UpdateSessionState(PipelineType pipeline, StreamerState state)
@@ -288,6 +373,11 @@ public class StreamManager : MonoBehaviour
         return streamers.GetValueOrDefault(pipeline);
     }
     
+    private WebRTCAudioStreamer GetAudioStreamerForPipeline(PipelineType pipeline)
+    {
+        return audioStreamers.GetValueOrDefault(pipeline);
+    }
+    
     #endregion
     
     #region Public Interface
@@ -310,11 +400,28 @@ public class StreamManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Check if pipeline has audio enabled
+    /// </summary>
+    public bool HasAudioEnabled(PipelineType pipeline)
+    {
+        return audioStreamers.ContainsKey(pipeline);
+    }
+    
+    /// <summary>
+    /// Get audio streamer for external volume control
+    /// </summary>
+    public WebRTCAudioStreamer GetAudioStreamer(PipelineType pipeline)
+    {
+        return GetAudioStreamerForPipeline(pipeline);
+    }
+    
+    /// <summary>
     /// Force stop stream and return to local content
     /// </summary>
     public void ForceStopStream(PipelineType pipeline)
     {
         GetStreamerForPipeline(pipeline)?.StopSession();
+        GetAudioStreamerForPipeline(pipeline)?.StopAudioOperations();
         GetSourceForPipeline(pipeline)?.renderer?.ShowLocalNDI();
         ClearSession(pipeline);
     }
@@ -327,6 +434,39 @@ public class StreamManager : MonoBehaviour
         return activeSessions.GetValueOrDefault(pipeline);
     }
     
+    /// <summary>
+    /// Debug audio state for specific pipeline
+    /// </summary>
+    public void DebugAudioState(PipelineType pipeline)
+    {
+        var audioStreamer = GetAudioStreamerForPipeline(pipeline);
+        if (audioStreamer != null)
+        {
+            audioStreamer.DebugAudioState();
+        }
+        else
+        {
+            Debug.Log($"[🎯StreamManager] No audio streamer for {pipeline}");
+        }
+    }
+    
+    /// <summary>
+    /// Debug all audio states
+    /// </summary>
+    [ContextMenu("Debug All Audio States")]
+    public void DebugAllAudioStates()
+    {
+        Debug.Log($"[🎯StreamManager] === AUDIO DEBUG INFO ===");
+        Debug.Log($"Global Audio Enabled: {globalAudioEnabled}");
+        Debug.Log($"Audio Streamers: {audioStreamers.Count}");
+        
+        foreach (var kvp in audioStreamers)
+        {
+            Debug.Log($"--- {kvp.Key} ---");
+            kvp.Value.DebugAudioState();
+        }
+    }
+    
     #endregion
     
     #region Cleanup
@@ -337,7 +477,14 @@ public class StreamManager : MonoBehaviour
         {
             streamer?.StopSession();
         }
+        
+        foreach (var audioStreamer in audioStreamers.Values)
+        {
+            audioStreamer?.StopAudioOperations();
+        }
+        
         streamers.Clear();
+        audioStreamers.Clear();
         activeSessions.Clear();
     }
     

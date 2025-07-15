@@ -3332,12 +3332,17 @@ MonoBehaviour:
     ndiReceiverSource: {fileID: 1318600841}
     ndiReceiverCaptions: {fileID: 825912305}
     isActive: 1
+    enableAudio: 1
+    audioPosition: {fileID: 1181413701}
   - sourceName: tv-live
     pipelineType: 3
     renderer: {fileID: 245043423}
     ndiReceiverSource: {fileID: 696567851}
     ndiReceiverCaptions: {fileID: 1033888033}
     isActive: 1
+    enableAudio: 1
+    audioPosition: {fileID: 1577834564}
+  globalAudioEnabled: 1
   isStreaming: 0
 --- !u!1 &1709815565
 GameObject:
