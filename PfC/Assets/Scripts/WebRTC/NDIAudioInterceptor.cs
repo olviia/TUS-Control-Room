@@ -12,6 +12,8 @@ public class NDIAudioInterceptor : MonoBehaviour
     private bool isInitialized = false;
     private float volumeMultiplier = 1.0f;
     
+    private int debugCounter = 0;
+    
     public void Initialize(PipelineType pipeline, FilterBasedAudioStreamer streamer)
     {
         pipelineType = pipeline;
@@ -27,6 +29,24 @@ public class NDIAudioInterceptor : MonoBehaviour
     void OnAudioFilterRead(float[] data, int channels)
     {
         if (!isInitialized || audioStreamer == null) return;
+        
+        // DEBUG: Check if we're getting NDI audio data
+        bool hasAudio = false;
+        for (int i = 0; i < Mathf.Min(10, data.Length); i++)
+        {
+            if (Mathf.Abs(data[i]) > 0.001f)
+            {
+                hasAudio = true;
+                break;
+            }
+        }
+    
+        // Log every ~2 seconds (assuming 48kHz, 1024 samples per call = ~96 calls per 2 seconds)
+        debugCounter++;
+        if (debugCounter % 96 == 0)
+        {
+            Debug.Log($"[🎵NDI-{pipelineType}] Audio data: {data.Length} samples, {channels} channels, hasAudio: {hasAudio}");
+        }
         
         // Apply volume control to NDI audio (this controls what you hear locally)
         if (volumeMultiplier < 1.0f)

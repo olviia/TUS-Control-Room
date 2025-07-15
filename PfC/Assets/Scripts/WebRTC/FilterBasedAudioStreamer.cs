@@ -4,6 +4,7 @@ using Klak.Ndi;
 using System.Collections;
 using BroadcastPipeline;
 using System;
+using System.Linq;
 using Unity.Collections;
 
 /// <summary>
@@ -195,6 +196,10 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     {
         if (!isStreaming || sendingAudioTrack == null) return;
     
+        // DEBUG: Check audio data
+        bool hasAudio = audioData.Any(sample => Mathf.Abs(sample) > 0.001f);
+        Debug.Log($"[🎵Filter-{pipelineType}] Sending to WebRTC: {audioData.Length} samples, hasAudio: {hasAudio}");
+
         // Feed audio data to WebRTC 
         try
         {
