@@ -8,8 +8,8 @@ using System.Linq;
 using Unity.Collections;
 
 /// <summary>
-/// WebRTC Audio Streamer using OnAudioFilterRead approach
-/// Properly intercepts NDI audio filters and controls WebRTC audio at filter level
+/// Enhanced WebRTC Audio Streamer with proper reconnection handling
+/// Fixes audio track lifecycle management during reconnections
 /// </summary>
 public class FilterBasedAudioStreamer : MonoBehaviour
 {
@@ -42,6 +42,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     private bool isStreaming = false;
     private bool isReceiving = false;
     private string currentSessionId = string.Empty;
+    private int connectionAttemptCount = 0; // Track reconnection attempts
     
     // Events
     public static event Action<PipelineType, bool, string> OnAudioStreamStateChanged;
@@ -86,6 +87,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     {
         if (audioSourcePosition == null)
             audioSourcePosition = transform;
+            
+        connectionAttemptCount = 0;
     }
     
     #endregion
@@ -93,61 +96,94 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     #region Public Interface
     
     /// <summary>
-    /// Start streaming audio for WebRTC transmission
+    /// Start streaming audio for WebRTC transmission with reconnection support
     /// </summary>
     public AudioStreamTrack StartAudioStreaming(string sessionId)
     {
-        if (isStreaming)
+        Debug.Log($"[🎵Filter-{pipelineType}] StartAudioStreaming called for session: {sessionId}");
+        
+        // CRITICAL: Clean up previous audio track if reconnecting
+        if (isStreaming && currentSessionId != sessionId)
         {
-            Debug.LogWarning($"[🎵Filter-{pipelineType}] Already streaming audio");
+            Debug.Log($"[🎵Filter-{pipelineType}] Reconnection detected - cleaning up previous audio");
+            ForceCleanupAudioStreaming();
+        }
+        
+        if (isStreaming && currentSessionId == sessionId)
+        {
+            Debug.LogWarning($"[🎵Filter-{pipelineType}] Already streaming audio for this session");
             return sendingAudioTrack;
         }
         
         currentSessionId = sessionId;
+        connectionAttemptCount++;
         isStreaming = true;
         
         SetupNDIAudioInterception();
         CreateSendingAudioTrack();
         
         OnAudioStreamStateChanged?.Invoke(pipelineType, true, sessionId);
-        Debug.Log($"[🎵Filter-{pipelineType}] Started audio streaming for session: {sessionId}");
+        Debug.Log($"[🎵Filter-{pipelineType}] Started audio streaming for session: {sessionId} (attempt: {connectionAttemptCount})");
         
         return sendingAudioTrack;
     }
     
     /// <summary>
-    /// Prepare to receive remote audio
+    /// Prepare to receive remote audio with proper cleanup
     /// </summary>
     public AudioSource PrepareAudioReceiving(string sessionId)
     {
-        if (isReceiving)
+        Debug.Log($"[🎵Filter-{pipelineType}] PrepareAudioReceiving called for session: {sessionId}");
+        
+        // CRITICAL: Clean up previous receiving setup if reconnecting
+        if (isReceiving && currentSessionId != sessionId)
         {
-            Debug.LogWarning($"[🎵Filter-{pipelineType}] Already receiving audio");
+            Debug.Log($"[🎵Filter-{pipelineType}] Reconnection detected - cleaning up previous receiving");
+            ForceCleanupAudioReceiving();
+        }
+        
+        if (isReceiving && currentSessionId == sessionId)
+        {
+            Debug.LogWarning($"[🎵Filter-{pipelineType}] Already receiving audio for this session");
             return receivingAudioSource;
         }
         
         currentSessionId = sessionId;
+        connectionAttemptCount++;
         isReceiving = true;
         
         CreateReceivingAudioSource();
         
         OnAudioStreamStateChanged?.Invoke(pipelineType, false, sessionId);
-        Debug.Log($"[🎵Filter-{pipelineType}] Prepared for audio receiving: {sessionId}");
+        Debug.Log($"[🎵Filter-{pipelineType}] Prepared for audio receiving: {sessionId} (attempt: {connectionAttemptCount})");
         
         return receivingAudioSource;
     }
     
     /// <summary>
-    /// Handle incoming WebRTC audio track
+    /// Handle incoming WebRTC audio track with improved reconnection logic
     /// </summary>
     public void HandleIncomingAudioTrack(AudioStreamTrack audioTrack)
     {
-        Debug.Log($"[🎵Filter-{pipelineType}] HandleIncomingAudioTrack called!");
+        Debug.Log($"[🎵Filter-{pipelineType}] HandleIncomingAudioTrack called! Session: {currentSessionId}, Attempt: {connectionAttemptCount}");
     
         if (receivingAudioSource == null)
         {
-            Debug.LogError($"[🎵Filter-{pipelineType}] No receiving AudioSource prepared");
-            return;
+            Debug.LogError($"[🎵Filter-{pipelineType}] No receiving AudioSource prepared - recreating");
+            CreateReceivingAudioSource();
+            
+            if (receivingAudioSource == null)
+            {
+                Debug.LogError($"[🎵Filter-{pipelineType}] Failed to create receiving AudioSource");
+                return;
+            }
+        }
+        
+        // CRITICAL: Stop previous audio before setting new track
+        if (receivingAudioSource.isPlaying)
+        {
+            receivingAudioSource.Stop();
+            Debug.Log($"[🎵Filter-{pipelineType}] Stopped previous audio before reconnection");
         }
     
         // Use the simple SetTrack approach for receiving
@@ -161,13 +197,29 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     }
     
     /// <summary>
-    /// Stop current audio operations
+    /// Stop current audio operations with improved cleanup
     /// </summary>
     public void StopAudioOperations()
     {
+        Debug.Log($"[🎵Filter-{pipelineType}] StopAudioOperations called for session: {currentSessionId}");
+        
         StopAllAudioOperations();
         OnAudioStreamStateChanged?.Invoke(pipelineType, false, string.Empty);
         Debug.Log($"[🎵Filter-{pipelineType}] Audio operations stopped");
+    }
+    
+    /// <summary>
+    /// Force cleanup for reconnection scenarios
+    /// </summary>
+    public void ForceCleanupForReconnection()
+    {
+        Debug.Log($"[🎵Filter-{pipelineType}] Force cleanup for reconnection");
+        
+        ForceCleanupAudioStreaming();
+        ForceCleanupAudioReceiving();
+        
+        connectionAttemptCount = 0;
+        currentSessionId = string.Empty;
     }
     
     #endregion
@@ -182,9 +234,24 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             return;
         }
     
+        // Clean up existing interceptor if reconnecting
+        CleanupNDIInterceptor();
+    
         // Start coroutine to wait for NDI AudioSource to be created
         StartCoroutine(WaitForNDIAudioSource());
     }
+    
+    private void CleanupNDIInterceptor()
+    {
+        if (ndiInterceptor != null)
+        {
+            Debug.Log($"[🎵Filter-{pipelineType}] Cleaning up existing NDI interceptor");
+            DestroyImmediate(ndiInterceptor);
+            ndiInterceptor = null;
+        }
+        isCapturingAudio = false;
+    }
+    
     private IEnumerator WaitForNDIAudioSource()
     {
         Debug.Log($"[🎵Filter-{pipelineType}] Waiting for NDI to create AudioSource...");
@@ -234,8 +301,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
         // DEBUG: Check audio data
         bool hasAudio = audioData.Any(sample => Mathf.Abs(sample) > 0.001f);
-        Debug.Log($"[🎵Filter-{pipelineType}] Sending to WebRTC: {audioData.Length} samples, hasAudio: {hasAudio}");
-
+        
         // Feed audio data to WebRTC 
         try
         {
@@ -259,8 +325,13 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
         switch (state)
         {
+            case StreamerState.Connecting:
+                // Prepare for potential reconnection
+                Debug.Log($"[🎵Filter-{pipelineType}] Connection starting - preparing audio");
+                break;
+                
             case StreamerState.Streaming:
-                // Restart audio if we're not already streaming
+                // Restart audio if we're not already streaming for this session
                 if (!isStreaming && !string.IsNullOrEmpty(sessionId))
                 {
                     Debug.Log($"[🎵Filter-{pipelineType}] Auto-restarting audio for reconnection");
@@ -270,85 +341,90 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             
             case StreamerState.Failed:
             case StreamerState.Idle:
-                // Stop audio when connection fails
-                if (isStreaming)
+                // Stop audio when connection fails or goes idle
+                if (isStreaming || isReceiving)
                 {
-                    Debug.Log($"[🎵Filter-{pipelineType}] Auto-stopping audio due to connection failure");
+                    Debug.Log($"[🎵Filter-{pipelineType}] Auto-stopping audio due to connection failure/idle");
                     StopAudioOperations();
                 }
                 break;
+                
+            case StreamerState.Disconnecting:
+                // Prepare for cleanup
+                Debug.Log($"[🎵Filter-{pipelineType}] Connection disconnecting - preparing cleanup");
+                break;
         }
     }
+    
     private void CreateSendingAudioTrack()
     {
+        // Clean up existing sending audio first
+        CleanupSendingAudio();
+        
         // Create a dummy AudioSource for WebRTC AudioStreamTrack
-        if (sendingAudioSource == null)
-        {
-            var audioGO = new GameObject($"WebRTC_Audio_Sender_{pipelineType}");
-            audioGO.transform.SetParent(transform, false);
-            audioGO.hideFlags = HideFlags.DontSave;
-            
-            sendingAudioSource = audioGO.AddComponent<AudioSource>();
-            sendingAudioSource.volume = 0f; // We don't want local playback
-            sendingAudioSource.spatialBlend = 0f;
-            sendingAudioSource.loop = true;
-            sendingAudioSource.playOnAwake = false;
-            
-            // Create dummy clip
-            var dummyClip = AudioClip.Create("WebRTC_Dummy", AudioSettings.outputSampleRate, 2, AudioSettings.outputSampleRate, false);
-            sendingAudioSource.clip = dummyClip;
-        }
+        var audioGO = new GameObject($"WebRTC_Audio_Sender_{pipelineType}_{connectionAttemptCount}");
+        audioGO.transform.SetParent(transform, false);
+        audioGO.hideFlags = HideFlags.DontSave;
+        
+        sendingAudioSource = audioGO.AddComponent<AudioSource>();
+        sendingAudioSource.volume = 0f; // We don't want local playback
+        sendingAudioSource.spatialBlend = 0f;
+        sendingAudioSource.loop = true;
+        sendingAudioSource.playOnAwake = false;
+        
+        // Create dummy clip
+        var dummyClip = AudioClip.Create("WebRTC_Dummy", AudioSettings.outputSampleRate, 2, AudioSettings.outputSampleRate, false);
+        sendingAudioSource.clip = dummyClip;
         
         // Create WebRTC AudioStreamTrack
         sendingAudioTrack = new AudioStreamTrack(sendingAudioSource);
         sendingAudioSource.Play();
         
-        Debug.Log($"[🎵Filter-{pipelineType}] Sending audio track created");
+        Debug.Log($"[🎵Filter-{pipelineType}] Sending audio track created (attempt: {connectionAttemptCount})");
     }
     
     private void CreateReceivingAudioSource()
     {
-        if (receivingAudioGameObject == null)
+        // Clean up existing receiving audio first
+        CleanupReceivingAudio();
+        
+        receivingAudioGameObject = new GameObject($"WebRTC_Audio_Receiver_{pipelineType}_{connectionAttemptCount}");
+        receivingAudioGameObject.hideFlags = HideFlags.DontSave;
+        
+        // Position the audio source correctly
+        if (audioSourcePosition != null)
         {
-            receivingAudioGameObject = new GameObject($"WebRTC_Audio_Receiver_{pipelineType}");
-            receivingAudioGameObject.hideFlags = HideFlags.DontSave;
-            
-            // Position the audio source correctly
-            if (audioSourcePosition != null)
-            {
-                receivingAudioGameObject.transform.position = audioSourcePosition.position;
-                receivingAudioGameObject.transform.rotation = audioSourcePosition.rotation;
-
-            }
-            else
-            {
-                receivingAudioGameObject.transform.position = transform.position;
-            }
-            
-            receivingAudioSource = receivingAudioGameObject.AddComponent<AudioSource>();
-            
-            // Configure for 3D spatial audio
-            receivingAudioSource.spatialBlend = spatialBlend;
-            receivingAudioSource.volume = 1.0f; // Volume controlled by filter
-            receivingAudioSource.minDistance = minDistance;
-            receivingAudioSource.maxDistance = maxDistance;
-            receivingAudioSource.rolloffMode = AudioRolloffMode.Linear;
-            receivingAudioSource.playOnAwake = false;
-            receivingAudioSource.loop = true;
-            
-            // Add WebRTC audio filter
-            webrtcFilter = receivingAudioGameObject.AddComponent<WebRTCAudioFilter>();
-            webrtcFilter.Initialize(pipelineType, _audioVolume);
-            
-            // Create dummy clip to trigger OnAudioFilterRead
-            var dummyClip = AudioClip.Create("WebRTC_Receiver_Dummy", AudioSettings.outputSampleRate, 2, AudioSettings.outputSampleRate, true, OnDummyAudioRead);
-            receivingAudioSource.clip = dummyClip;
+            receivingAudioGameObject.transform.position = audioSourcePosition.position;
+            receivingAudioGameObject.transform.rotation = audioSourcePosition.rotation;
         }
+        else
+        {
+            receivingAudioGameObject.transform.position = transform.position;
+        }
+        
+        receivingAudioSource = receivingAudioGameObject.AddComponent<AudioSource>();
+        
+        // Configure for 3D spatial audio
+        receivingAudioSource.spatialBlend = spatialBlend;
+        receivingAudioSource.volume = 1.0f; // Volume controlled by filter
+        receivingAudioSource.minDistance = minDistance;
+        receivingAudioSource.maxDistance = maxDistance;
+        receivingAudioSource.rolloffMode = AudioRolloffMode.Linear;
+        receivingAudioSource.playOnAwake = false;
+        receivingAudioSource.loop = true;
+        
+        // Add WebRTC audio filter
+        webrtcFilter = receivingAudioGameObject.AddComponent<WebRTCAudioFilter>();
+        webrtcFilter.Initialize(pipelineType, _audioVolume);
+        
+        // Create dummy clip to trigger OnAudioFilterRead
+        var dummyClip = AudioClip.Create("WebRTC_Receiver_Dummy", AudioSettings.outputSampleRate, 2, AudioSettings.outputSampleRate, true, OnDummyAudioRead);
+        receivingAudioSource.clip = dummyClip;
         
         receivingAudioGameObject.SetActive(true);
         receivingAudioSource.Play(); // Start playing to trigger OnAudioFilterRead
         
-        Debug.Log($"[🎵Filter-{pipelineType}] Receiving audio source created at {receivingAudioGameObject.transform.position}");
+        Debug.Log($"[🎵Filter-{pipelineType}] Receiving audio source created at {receivingAudioGameObject.transform.position} (attempt: {connectionAttemptCount})");
     }
     
     /// <summary>
@@ -362,13 +438,69 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
     #endregion
     
+    #region Cleanup Methods
+    
+    private void ForceCleanupAudioStreaming()
+    {
+        isStreaming = false;
+        isCapturingAudio = false;
+        CleanupNDIInterceptor();
+        CleanupSendingAudio();
+        Debug.Log($"[🎵Filter-{pipelineType}] Force cleanup audio streaming completed");
+    }
+    
+    private void ForceCleanupAudioReceiving()
+    {
+        isReceiving = false;
+        CleanupReceivingAudio();
+        Debug.Log($"[🎵Filter-{pipelineType}] Force cleanup audio receiving completed");
+    }
+    
+    private void CleanupSendingAudio()
+    {
+        if (sendingAudioTrack != null)
+        {
+            sendingAudioTrack.Dispose();
+            sendingAudioTrack = null;
+        }
+        
+        if (sendingAudioSource != null && sendingAudioSource.gameObject != null)
+        {
+            DestroyImmediate(sendingAudioSource.gameObject);
+            sendingAudioSource = null;
+        }
+    }
+    
+    private void CleanupReceivingAudio()
+    {
+        if (receivingAudioSource != null)
+        {
+            receivingAudioSource.Stop();
+        }
+        
+        if (webrtcFilter != null)
+        {
+            DestroyImmediate(webrtcFilter);
+            webrtcFilter = null;
+        }
+        
+        if (receivingAudioGameObject != null)
+        {
+            DestroyImmediate(receivingAudioGameObject);
+            receivingAudioGameObject = null;
+            receivingAudioSource = null;
+        }
+    }
+    
+    #endregion
+    
     #region Audio Verification and Debugging
     
     private IEnumerator VerifyAudioSetup()
     {
         yield return new WaitForSeconds(1f);
         
-        Debug.Log($"[🎵Filter-{pipelineType}] Audio Verification:");
+        Debug.Log($"[🎵Filter-{pipelineType}] Audio Verification (Attempt: {connectionAttemptCount}):");
         
         if (receivingAudioSource != null)
         {
@@ -399,6 +531,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         Debug.Log($"  - Receiving: {isReceiving}");
         Debug.Log($"  - Capturing: {isCapturingAudio}");
         Debug.Log($"  - Session: {currentSessionId}");
+        Debug.Log($"  - Connection Attempts: {connectionAttemptCount}");
         Debug.Log($"  - Volume: {_audioVolume}");
         
         if (ndiInterceptor != null)
@@ -413,42 +546,17 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
     private void StopAllAudioOperations()
     {
-        isStreaming = false;
-        isReceiving = false;
-        isCapturingAudio = false;
-        
-        if (receivingAudioSource != null)
-        {
-            receivingAudioSource.Stop();
-        }
-        
-        if (sendingAudioSource != null)
-        {
-            sendingAudioSource.Stop();
-        }
-        
+        ForceCleanupAudioStreaming();
+        ForceCleanupAudioReceiving();
         currentSessionId = string.Empty;
+        connectionAttemptCount = 0;
     }
     
     private void DisposeAudioComponents()
     {
-        // Dispose WebRTC audio track
-        if (sendingAudioTrack != null)
-        {
-            sendingAudioTrack.Dispose();
-            sendingAudioTrack = null;
-        }
-        
-        // Cleanup GameObjects
-        if (sendingAudioSource != null && sendingAudioSource.gameObject != null)
-        {
-            DestroyImmediate(sendingAudioSource.gameObject);
-        }
-        
-        if (receivingAudioGameObject != null)
-        {
-            DestroyImmediate(receivingAudioGameObject);
-        }
+        CleanupSendingAudio();
+        CleanupReceivingAudio();
+        CleanupNDIInterceptor();
     }
     
     #endregion
@@ -459,6 +567,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     public bool IsReceiving => isReceiving;
     public string CurrentSessionId => currentSessionId;
     public AudioSource ReceivingAudioSource => receivingAudioSource;
+    public int ConnectionAttemptCount => connectionAttemptCount;
     
     #endregion
 }

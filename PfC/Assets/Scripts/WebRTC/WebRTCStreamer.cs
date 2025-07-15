@@ -180,15 +180,14 @@ public class WebRTCStreamer : MonoBehaviour
         
         PrepareForNewSessionSync(sessionId);
         isOfferer = false;
-        SetupReceivingConnection();
         
-        // Prepare audio receiving
         if (audioStreamer != null)
         {
+            Debug.Log($"[📡{instanceId}] Ensuring audio streamer is ready for receiving");
             audioStreamer.PrepareAudioReceiving(sessionId);
         }
-        
-        Debug.Log($"[📡{instanceId}] Receiver ready immediately for: {sessionId}");
+        SetupReceivingConnection();
+        Debug.Log($"[📡{instanceId}] Receiver ready with audio coordination for: {sessionId}");
         StartConnectionTimeout();
     }
     
@@ -240,6 +239,11 @@ public class WebRTCStreamer : MonoBehaviour
             SetState(StreamerState.Failed);
             yield break;
         }
+        if (audioStreamer != null)
+        {
+            Debug.Log($"[📡{instanceId}] Preparing audio streamer for sending before WebRTC setup");
+            // Don't call StartAudioStreaming yet - will be called in AddTracksToConnection
+        }
         
         SetupStreamingConnection();
         StartConnectionTimeout();
@@ -254,6 +258,12 @@ public class WebRTCStreamer : MonoBehaviour
         
         SetState(StreamerState.Disconnecting);
         
+        if (audioStreamer != null)
+        {
+            Debug.Log($"[📡{instanceId}] Coordinating audio cleanup before session end");
+            audioStreamer.StopAudioOperations();
+        }
+        
         StopAllOperations();
         CleanupCurrentSession();
         ResetSessionState();
@@ -267,6 +277,11 @@ public class WebRTCStreamer : MonoBehaviour
     private IEnumerator ForceCompleteRestart()
     {
         Debug.LogWarning($"[📡{instanceId}] Force restart");
+        
+        if (audioStreamer != null)
+        {
+            audioStreamer.ForceCleanupForReconnection();
+        }
         
         StopAllOperations();
         DisposeWebRtcObjects();
@@ -296,9 +311,9 @@ public class WebRTCStreamer : MonoBehaviour
     private void CreatePeerConnection()
     {
         Debug.Log($"[📡{instanceId}] CreatePeerConnection START");
-    
+
         ClosePeerConnection();
-    
+
         var config = new RTCConfiguration
         {
             iceServers = new RTCIceServer[]
@@ -307,42 +322,56 @@ public class WebRTCStreamer : MonoBehaviour
                 new RTCIceServer { urls = new string[] { "stun:stun1.l.google.com:19302" } }
             }
         };
-    
+
         peerConnection = new RTCPeerConnection(ref config);
         peerConnection.OnIceCandidate = OnIceCandidate;
         peerConnection.OnTrack = OnTrackReceived;
         peerConnection.OnConnectionStateChange = OnConnectionStateChange;
         peerConnection.OnIceConnectionChange = OnIceConnectionChange;
-    
-        // Create MediaStream for receiving audio
-        if (!isOfferer)
+
+        // CRITICAL FIX: Always create MediaStream for receiving, regardless of offerer status
+        // This ensures audio tracks can be properly handled on reconnection
+        if (receiveMediaStream != null)
         {
-            receiveMediaStream = new MediaStream();
-            receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
+            receiveMediaStream.Dispose();
+            receiveMediaStream = null;
         }
     
-        Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE");
+        receiveMediaStream = new MediaStream();
+        receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
+
+        Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE with fresh MediaStream");
     }
     
     private void OnMediaStreamTrackAdded(MediaStreamTrackEvent e)
     {
-        Debug.Log($"[📡{instanceId}] MediaStream track added: {e.Track.Kind}");
-    
+        Debug.Log($"[📡{instanceId}] MediaStream track added: {e.Track.Kind}, Session: {currentSessionId}");
+
         if (e.Track is AudioStreamTrack audioStreamTrack)
         {
-            Debug.Log($"[📡{instanceId}] Audio track received in MediaStream");
-            
-            // Delegate audio handling to audio streamer
+            Debug.Log($"[📡{instanceId}] Audio track received in MediaStream - delegating to audio streamer");
+        
+            // CRITICAL: Always ensure audio streamer is prepared before handling track
             if (audioStreamer != null)
             {
-                Debug.Log($"[📡{instanceId}] Audio streamer found, calling HandleIncomingAudioTrack");
-
+                // Ensure audio streamer is ready for this session
+                if (audioStreamer.CurrentSessionId != currentSessionId)
+                {
+                    Debug.Log($"[📡{instanceId}] Preparing audio streamer for session: {currentSessionId}");
+                    audioStreamer.PrepareAudioReceiving(currentSessionId);
+                }
+            
                 audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
             }
             else
             {
                 Debug.LogError($"[📡{instanceId}] No audio streamer available for incoming audio track");
             }
+        }
+        else if (e.Track is VideoStreamTrack videoStreamTrack)
+        {
+            Debug.Log($"[📡{instanceId}] Video track received in MediaStream");
+            videoStreamTrack.OnVideoReceived += OnVideoReceived;
         }
     }
     
@@ -361,6 +390,8 @@ public class WebRTCStreamer : MonoBehaviour
         // Add audio track via audio streamer
         if (audioStreamer != null)
         {
+            Debug.Log($"[📡{instanceId}] Starting audio streaming for session: {currentSessionId}");
+
             audioTrack = audioStreamer.StartAudioStreaming(currentSessionId);
             if (audioTrack != null)
             {
@@ -671,26 +702,29 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void OnTrackReceived(RTCTrackEvent e)
     {
-        Debug.Log($"[📡{instanceId}] Track received: {e.Track.Kind}");
+        Debug.Log($"[📡{instanceId}] Track received: {e.Track.Kind}, Session: {currentSessionId}");
+
+        // CRITICAL FIX: Always add tracks to MediaStream to trigger OnAddTrack
+        if (receiveMediaStream != null)
+        {
+            receiveMediaStream.AddTrack(e.Track);
+            Debug.Log($"[📡{instanceId}] Track added to MediaStream for proper handling");
+        }
+        else
+        {
+            Debug.LogError($"[📡{instanceId}] No MediaStream available to handle track");
+        
+            // Fallback: Create MediaStream if missing (shouldn't happen but safety net)
+            receiveMediaStream = new MediaStream();
+            receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
+            receiveMediaStream.AddTrack(e.Track);
+        }
     
         if (e.Track is VideoStreamTrack videoStreamTrack)
         {
-            videoStreamTrack.OnVideoReceived += OnVideoReceived;
+            // Video-specific handling
             SetState(StreamerState.Receiving);
             ClearConnectionTimeout();
-        }
-        else if (e.Track.Kind == TrackKind.Audio)
-        {
-            Debug.Log($"[📡{instanceId}] Audio track received - adding to MediaStream");
-        
-            if (receiveMediaStream != null)
-            {
-                receiveMediaStream.AddTrack(e.Track);
-            }
-            else
-            {
-                Debug.LogError($"[📡{instanceId}] No receive MediaStream available for audio track");
-            }
         }
     }
     
@@ -726,6 +760,8 @@ public class WebRTCStreamer : MonoBehaviour
                 SetState(isOfferer ? StreamerState.Streaming : StreamerState.Receiving);
                 ClearConnectionTimeout();
                 retryCount = 0;
+                StartCoroutine(VerifyAudioAfterConnection());
+
                 break;
                 
             case RTCPeerConnectionState.Failed:
@@ -733,6 +769,22 @@ public class WebRTCStreamer : MonoBehaviour
                 if (currentState != StreamerState.Disconnecting)
                     HandleConnectionFailure();
                 break;
+        }
+    }
+    private IEnumerator VerifyAudioAfterConnection()
+    {
+        yield return new WaitForSeconds(0.5f); // Give audio time to establish
+    
+        if (audioStreamer != null)
+        {
+            Debug.Log($"[📡{instanceId}] Verifying audio state after connection:");
+            audioStreamer.DebugAudioState();
+        
+            // If receiving and no audio is detected, try to refresh audio preparation
+            if (!isOfferer && audioStreamer.IsReceiving && !string.IsNullOrEmpty(currentSessionId))
+            {
+                // Additional verification logic could go here
+            }
         }
     }
     
@@ -777,6 +829,12 @@ public class WebRTCStreamer : MonoBehaviour
         
         ClearConnectionTimeout();
         
+        if (audioStreamer != null)
+        {
+            Debug.Log($"[📡{instanceId}] Notifying audio streamer of connection failure");
+            // Audio streamer will handle this through the state change event
+        }
+        
         int maxRetries = GetAdaptiveMaxRetries();
         
         if (retryCount < maxRetries)
@@ -804,6 +862,12 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator RetryConnection()
     {
+        Debug.Log($"[📡{instanceId}] Retrying connection with audio coordination");
+    
+        if (audioStreamer != null)
+        {
+            audioStreamer.ForceCleanupForReconnection();
+        }
         ClosePeerConnection();
         yield return null;
         
@@ -816,6 +880,10 @@ public class WebRTCStreamer : MonoBehaviour
         }
         else
         {
+            if (audioStreamer != null)
+            {
+                audioStreamer.PrepareAudioReceiving(currentSessionId);
+            }
             SetupReceivingConnection();
         }
         
@@ -896,6 +964,8 @@ public class WebRTCStreamer : MonoBehaviour
         {
             receiveMediaStream.Dispose();
             receiveMediaStream = null;
+            Debug.Log($"[📡{instanceId}] MediaStream disposed to prevent audio track leaks");
+
         }
         
         isRemoteDescriptionSet = false;
