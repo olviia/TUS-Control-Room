@@ -16,10 +16,12 @@ public class AudioSwitcher : MonoBehaviour
     {
         if (incomingAudioWebRtcRenderer != null && incomingAudioWebRtcRenderer.isShowingRemoteStream)
         {
-            if(incomingAudioWebRtcRenderer.audioVolume == 0f )
-                incomingAudioWebRtcRenderer.audioVolume = 1f;
+            if(incomingAudioWebRtcRenderer.AudioVolume == 0f )
+                incomingAudioWebRtcRenderer.AudioVolume = 1f;
             else
-                incomingAudioWebRtcRenderer.audioVolume = 0f;
+                incomingAudioWebRtcRenderer.AudioVolume = 0f;
+            
+            incomingAudioWebRtcRenderer.RefreshAudioSettings();
         }
         else if (ndiReceiver != null)
         {

@@ -361,6 +361,8 @@ public class WebRTCStreamer : MonoBehaviour
         if (e.Track is AudioStreamTrack audioTrack)
         {
             Debug.Log($"[📡{instanceId}] Audio track received in MediaStream");
+            
+            targetRenderer?.PrepareRemoteAudio();
         
             // Get the remote AudioSource from renderer
             var remoteAudioSource = targetRenderer?.GetRemoteAudioSource();

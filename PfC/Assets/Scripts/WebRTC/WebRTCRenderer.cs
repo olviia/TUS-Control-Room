@@ -17,11 +17,12 @@ public class WebRTCRenderer : MonoBehaviour
     [SerializeField] private bool autoFallbackToLocal = true;
     
     [Header("Audio Settings")]
-    [SerializeField] private Transform audioSourcePosition; // Where to place 3D audio
-    [SerializeField] public float audioVolume = 0f;
-    [SerializeField] private float spatialBlend = 1.0f; // 1.0 = full 3D
+    [SerializeField] private Transform audioSourcePosition;
+    [SerializeField] private float _audioVolume = 0f; // Private field
+    [SerializeField] private float spatialBlend = 1.0f;
     [SerializeField] private float minDistance = 1f;
     [SerializeField] private float maxDistance = 10f;
+
     // Audio components
     private GameObject remoteAudioGameObject;
     private AudioSource remoteAudioSource;
@@ -34,6 +35,22 @@ public class WebRTCRenderer : MonoBehaviour
     
     // Events
     public static event System.Action<PipelineType, bool, string> OnDisplayModeChanged;
+    
+    public float AudioVolume
+    {
+        get => _audioVolume;
+        set
+        {
+            _audioVolume = Mathf.Clamp01(value);
+            
+            // Update existing AudioSource immediately
+            if (remoteAudioSource != null)
+            {
+                remoteAudioSource.volume = _audioVolume;
+                Debug.Log($"[🖥️Renderer] Audio volume updated to {_audioVolume:F2} for {pipelineType}");
+            }
+        }
+    }
     
     void Start()
     {
@@ -102,8 +119,9 @@ public class WebRTCRenderer : MonoBehaviour
     /// <summary>
     /// Prepare spatial audio GameObject for remote stream
     /// </summary>
-    private void PrepareRemoteAudio()
-    {        SetLocalAudioActive(false);
+    public void PrepareRemoteAudio()
+    {   
+        SetLocalAudioActive(false);
     
         if (remoteAudioGameObject == null)
         {
@@ -112,24 +130,52 @@ public class WebRTCRenderer : MonoBehaviour
         
             remoteAudioSource = remoteAudioGameObject.AddComponent<AudioSource>();
             
+            // CRITICAL: Force Unity to use the main audio output
+            remoteAudioSource.outputAudioMixerGroup = null; // Use default output
+            
             // Configure for 3D spatial audio
             remoteAudioSource.spatialBlend = spatialBlend;
-            remoteAudioSource.volume = audioVolume; // This was 0! 
+            remoteAudioSource.volume = _audioVolume; // Use private field
             remoteAudioSource.minDistance = minDistance;
             remoteAudioSource.maxDistance = maxDistance;
             remoteAudioSource.rolloffMode = AudioRolloffMode.Linear;
             
             // WebRTC specific settings
             remoteAudioSource.playOnAwake = false;
-            remoteAudioSource.clip = null; // WebRTC manages the audio data
-            remoteAudioSource.loop = true; // REQUIRED for WebRTC
+            remoteAudioSource.clip = null;
+            remoteAudioSource.loop = true;
             
-            Debug.Log($"[🖥️Renderer] Remote audio created at {audioSourcePosition.position} with volume {audioVolume}");
+            // IMPORTANT: Ensure AudioSource is on the main mixer
+            remoteAudioSource.priority = 128; // Default priority
+            remoteAudioSource.bypassEffects = false;
+            remoteAudioSource.bypassListenerEffects = false;
+            remoteAudioSource.bypassReverbZones = false;
+            
+            Debug.Log($"[🖥️Renderer] Remote audio created at {audioSourcePosition.position} with volume {_audioVolume}");
         }
     
         remoteAudioGameObject.SetActive(true);
         isPlayingRemoteAudio = true;
         
+    }
+    
+    public void RefreshAudioSettings()
+    {
+        if (remoteAudioSource != null)
+        {
+            // Force refresh audio settings
+            bool wasPlaying = remoteAudioSource.isPlaying;
+            
+            remoteAudioSource.Stop();
+            remoteAudioSource.outputAudioMixerGroup = null; // Ensure default output
+            
+            if (wasPlaying)
+            {
+                remoteAudioSource.Play();
+            }
+            
+            Debug.Log($"[🖥️Renderer] Audio settings refreshed for {pipelineType}");
+        }
     }
     /// <summary>
     /// Handle incoming WebRTC audio track
