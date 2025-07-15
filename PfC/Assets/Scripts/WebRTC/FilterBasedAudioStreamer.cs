@@ -245,7 +245,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         CleanupNDIInterceptor();
     
         // Start coroutine to wait for NDI AudioSource to be created
-        StartCoroutine(WaitForNDIAudioSource());
+        StartCoroutine(ContinuousNDIMonitoring());
     }
     
     private void CleanupNDIInterceptor()
@@ -333,6 +333,48 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     #endregion
     
     #region WebRTC Audio Management
+    
+    private IEnumerator ContinuousNDIMonitoring()
+{
+    while (isStreaming) // Keep monitoring as long as we're supposed to be streaming
+    {
+        if (ndiAudioSource != null)
+        {
+            var currentAudioSource = ndiAudioSource.GetComponentInChildren<AudioSource>();
+            
+            if (currentAudioSource == null)
+            {
+                if (ndiInterceptor != null)
+                {
+                    Debug.Log($"aaa_[🎵Filter-{pipelineType}] NDI AudioSource removed - cleaning up interceptor");
+                    CleanupNDIInterceptor();
+                }
+            }
+            else
+            {
+                // AudioSource exists, check if we have interceptor on it
+                var interceptorOnThisSource = currentAudioSource.GetComponent<NDIAudioInterceptor>();
+                
+                if (interceptorOnThisSource == null)
+                {
+                    Debug.Log($"aaa_[🎵Filter-{pipelineType}] New NDI AudioSource detected - adding interceptor");
+                    
+                    // Add interceptor to new AudioSource
+                    ndiInterceptor = currentAudioSource.gameObject.AddComponent<NDIAudioInterceptor>();
+                    ndiInterceptor.Initialize(pipelineType, this);
+                    isCapturingAudio = true;
+                }
+                else if (interceptorOnThisSource != ndiInterceptor)
+                {
+                    Debug.Log($"aaa_[🎵Filter-{pipelineType}] NDI AudioSource changed - updating reference");
+                    ndiInterceptor = interceptorOnThisSource;
+                }
+            }
+        }
+        
+        yield return new WaitForSeconds(0.5f); // Check twice per second
+    }
+}
     
     private void HandleStreamerStateChange(PipelineType pipeline, StreamerState state, string sessionId)
     {
