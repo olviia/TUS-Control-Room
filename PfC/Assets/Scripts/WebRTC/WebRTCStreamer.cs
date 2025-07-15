@@ -335,6 +335,8 @@ public class WebRTCStreamer : MonoBehaviour
             // Delegate audio handling to audio streamer
             if (audioStreamer != null)
             {
+                Debug.Log($"[📡{instanceId}] Audio streamer found, calling HandleIncomingAudioTrack");
+
                 audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
             }
             else

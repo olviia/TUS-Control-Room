@@ -142,9 +142,22 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     /// </summary>
     public void HandleIncomingAudioTrack(AudioStreamTrack audioTrack)
     {
+        Debug.Log($"[🎵Filter-{pipelineType}] HandleIncomingAudioTrack called!");
+    
+        if (receivingAudioSource == null)
+        {
+            Debug.LogError($"[🎵Filter-{pipelineType}] No receiving AudioSource prepared");
+            return;
+        }
+    
+        // Use the simple SetTrack approach for receiving
         receivingAudioSource.SetTrack(audioTrack);
         receivingAudioSource.loop = true;
         receivingAudioSource.Play();
+    
+        Debug.Log($"[🎵Filter-{pipelineType}] Audio track connected to AudioSource, playing: {receivingAudioSource.isPlaying}");
+    
+        StartCoroutine(VerifyAudioSetup());
     }
     
     /// <summary>
