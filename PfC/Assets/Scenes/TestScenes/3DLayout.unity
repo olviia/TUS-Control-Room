@@ -316,6 +316,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1577834564}
+  - {fileID: 1926420421}
   m_Father: {fileID: 1672500621}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &245043423
@@ -334,13 +335,9 @@ MonoBehaviour:
   pipelineType: 3
   localNdiReceiver: {fileID: 696567851}
   localNdiReceiverCaptions: {fileID: 1033888033}
+  audioStreamer: {fileID: 1926420422}
   debugMode: 0
   autoFallbackToLocal: 1
-  audioSourcePosition: {fileID: 1577834564}
-  _audioVolume: 0
-  spatialBlend: 1
-  minDistance: 1
-  maxDistance: 10
   isShowingRemoteStream: 0
 --- !u!1001 &280670461
 PrefabInstance:
@@ -1189,6 +1186,57 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
+--- !u!1 &1155243139
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1155243141}
+  - component: {fileID: 1155243140}
+  m_Layer: 0
+  m_Name: StudioWebRtcAudioStreamer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1155243140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1155243139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3adacd6d795ab87458a2f4f3c4afdc1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pipelineType: 1
+  ndiAudioSource: {fileID: 1318600841}
+  audioSourcePosition: {fileID: 1181413701}
+  spatialBlend: 1
+  minDistance: 1
+  maxDistance: 10
+  _audioVolume: 1
+--- !u!4 &1155243141
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1155243139}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1835391954}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1178608580
 GameObject:
   m_ObjectHideFlags: 0
@@ -3464,6 +3512,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1181413701}
+  - {fileID: 1155243141}
   m_Father: {fileID: 1672500621}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1835391955
@@ -3482,13 +3531,9 @@ MonoBehaviour:
   pipelineType: 1
   localNdiReceiver: {fileID: 1318600841}
   localNdiReceiverCaptions: {fileID: 825912305}
+  audioStreamer: {fileID: 1155243140}
   debugMode: 0
   autoFallbackToLocal: 1
-  audioSourcePosition: {fileID: 1181413701}
-  _audioVolume: 0
-  spatialBlend: 1
-  minDistance: 1
-  maxDistance: 10
   isShowingRemoteStream: 0
 --- !u!1001 &1868622709
 PrefabInstance:
@@ -3626,6 +3671,57 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
   m_PrefabInstance: {fileID: 342053257}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1926420420
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1926420421}
+  - component: {fileID: 1926420422}
+  m_Layer: 0
+  m_Name: TVWebRtcAudioStreamer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1926420421
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926420420}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 245043422}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1926420422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926420420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3adacd6d795ab87458a2f4f3c4afdc1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pipelineType: 3
+  ndiAudioSource: {fileID: 696567851}
+  audioSourcePosition: {fileID: 1577834564}
+  spatialBlend: 1
+  minDistance: 1
+  maxDistance: 10
+  _audioVolume: 1
 --- !u!1 &2075736760
 GameObject:
   m_ObjectHideFlags: 0

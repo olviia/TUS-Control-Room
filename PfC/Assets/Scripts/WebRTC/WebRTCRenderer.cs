@@ -4,6 +4,10 @@ using BroadcastPipeline;
 using Klak.Ndi;
 using System.Collections;
 
+/// <summary>
+/// Updated WebRTC Renderer with separated audio handling
+/// Now focuses purely on video rendering while audio is handled by WebRTCAudioStreamer
+/// </summary>
 public class WebRTCRenderer : MonoBehaviour
 {
     [Header("Shared Renderer")]
@@ -12,22 +16,14 @@ public class WebRTCRenderer : MonoBehaviour
     public NdiReceiver localNdiReceiver;
     public NdiReceiver localNdiReceiverCaptions;
     
+    [Header("Audio Component")]
+    public WebRTCAudioStreamer audioStreamer; // Reference to the audio streamer
+    
     [Header("Display Settings")]
     [SerializeField] private bool debugMode = false;
     [SerializeField] private bool autoFallbackToLocal = true;
     
-    [Header("Audio Settings")]
-    [SerializeField] private Transform audioSourcePosition;
-    [SerializeField] private float _audioVolume = 0f; // Private field
-    [SerializeField] private float spatialBlend = 1.0f;
-    [SerializeField] private float minDistance = 1f;
-    [SerializeField] private float maxDistance = 10f;
-
-    // Audio components
-    private GameObject remoteAudioGameObject;
-    private AudioSource remoteAudioSource;
-    private bool isPlayingRemoteAudio = false;
-    
+    // Video rendering components
     private Material originalMaterial;
     public bool isShowingRemoteStream = false;
     private string currentDisplaySession = string.Empty;
@@ -36,21 +32,7 @@ public class WebRTCRenderer : MonoBehaviour
     // Events
     public static event System.Action<PipelineType, bool, string> OnDisplayModeChanged;
     
-    public float AudioVolume
-    {
-        get => _audioVolume;
-        set
-        {
-            _audioVolume = Mathf.Clamp01(value);
-            
-            // Update existing AudioSource immediately
-            if (remoteAudioSource != null)
-            {
-                remoteAudioSource.volume = _audioVolume;
-                Debug.Log($"[🖥️Renderer] Audio volume updated to {_audioVolume:F2} for {pipelineType}");
-            }
-        }
-    }
+    #region Unity Lifecycle
     
     void Start()
     {
@@ -59,6 +41,15 @@ public class WebRTCRenderer : MonoBehaviour
         
         Debug.Log($"[🖥️Renderer] Initialized for {pipelineType}");
     }
+    
+    void OnDestroy()
+    {
+        Debug.Log($"[🖥️Renderer] Destroyed for {pipelineType}");
+    }
+    
+    #endregion
+    
+    #region Initialization
     
     private void ValidateComponents()
     {
@@ -72,6 +63,11 @@ public class WebRTCRenderer : MonoBehaviour
         {
             Debug.LogWarning($"[🖥️Renderer] No local NDI receiver assigned for {pipelineType}");
         }
+        
+        if (audioStreamer == null)
+        {
+            Debug.LogWarning($"[🖥️Renderer] No audio streamer assigned for {pipelineType}");
+        }
     }
     
     private void InitializeRenderer()
@@ -81,11 +77,13 @@ public class WebRTCRenderer : MonoBehaviour
             originalMaterial = sharedRenderer.material;
             propertyBlock = new MaterialPropertyBlock();
         }
-        if (audioSourcePosition == null)
-            audioSourcePosition = transform;
         
         ShowLocalNDI();
     }
+    
+    #endregion
+    
+    #region Video Display Management
     
     /// <summary>
     /// Show remote stream - OPTIMIZED for instant switching
@@ -106,9 +104,6 @@ public class WebRTCRenderer : MonoBehaviour
         // Disable local NDI immediately
         SetNdiReceiverActive(false);
         
-        // Audio switching - prepare for remote audio
-        PrepareRemoteAudio();
-        
         // Update state
         isShowingRemoteStream = true;
         currentDisplaySession = sessionId;
@@ -116,129 +111,51 @@ public class WebRTCRenderer : MonoBehaviour
         
         Debug.Log($"[🖥️Renderer] Remote texture applied INSTANTLY for {pipelineType}");
     }
+    
     /// <summary>
-    /// Prepare spatial audio GameObject for remote stream
-    /// </summary>
-    public void PrepareRemoteAudio()
-    {   
-        SetLocalAudioActive(false);
-    
-        if (remoteAudioGameObject == null)
-        {
-            remoteAudioGameObject = new GameObject($"RemoteAudio_{pipelineType}");
-            remoteAudioGameObject.transform.SetParent(audioSourcePosition, false);
-        
-            remoteAudioSource = remoteAudioGameObject.AddComponent<AudioSource>();
-            
-            // CRITICAL: Force Unity to use the main audio output
-            remoteAudioSource.outputAudioMixerGroup = null; // Use default output
-            
-            // Configure for 3D spatial audio
-            remoteAudioSource.spatialBlend = spatialBlend;
-            remoteAudioSource.volume = _audioVolume; // Use private field
-            remoteAudioSource.minDistance = minDistance;
-            remoteAudioSource.maxDistance = maxDistance;
-            remoteAudioSource.rolloffMode = AudioRolloffMode.Linear;
-            
-            // WebRTC specific settings
-            remoteAudioSource.playOnAwake = false;
-            remoteAudioSource.clip = null;
-            remoteAudioSource.loop = true;
-            
-            // IMPORTANT: Ensure AudioSource is on the main mixer
-            remoteAudioSource.priority = 128; // Default priority
-            remoteAudioSource.bypassEffects = false;
-            remoteAudioSource.bypassListenerEffects = false;
-            remoteAudioSource.bypassReverbZones = false;
-            
-            Debug.Log($"[🖥️Renderer] Remote audio created at {audioSourcePosition.position} with volume {_audioVolume}");
-        }
-    
-        remoteAudioGameObject.SetActive(true);
-        isPlayingRemoteAudio = true;
-        
-        StartCoroutine(ForceAudioRefresh());
-
-    }
-    
-    private IEnumerator ForceAudioRefresh()
-    {
-        yield return new WaitForSeconds(0.1f);
-        
-        if (remoteAudioSource != null)
-        {
-            // Force audio system to recognize this AudioSource
-            bool wasPlaying = remoteAudioSource.isPlaying;
-            
-            remoteAudioSource.Stop();
-            yield return null; // Wait one frame
-            
-            if (wasPlaying)
-            {
-                remoteAudioSource.Play();
-            }
-            
-            Debug.Log($"[🖥️Renderer] Audio system refreshed - Playing: {remoteAudioSource.isPlaying}");
-        }
-    }
-    
-    public void RefreshAudioSettings()
-    {
-        if (remoteAudioSource != null)
-        {
-            // Force refresh audio settings
-            bool wasPlaying = remoteAudioSource.isPlaying;
-            
-            remoteAudioSource.Stop();
-            remoteAudioSource.outputAudioMixerGroup = null; // Ensure default output
-            
-            if (wasPlaying)
-            {
-                remoteAudioSource.Play();
-            }
-            
-            Debug.Log($"[🖥️Renderer] Audio settings refreshed for {pipelineType}");
-        }
-    }
-    /// <summary>
-    /// Handle incoming WebRTC audio track
+    /// Handle incoming WebRTC audio track - delegate to audio streamer
     /// </summary>
     public void HandleRemoteAudioTrack(AudioStreamTrack audioTrack)
     {
-        if (remoteAudioSource == null)
+        if (audioStreamer != null)
         {
-            PrepareRemoteAudio();
+            audioStreamer.HandleIncomingAudioTrack(audioTrack);
+            Debug.Log($"[🖥️Renderer] Audio track delegated to audio streamer");
         }
-    
-        Debug.Log($"[🖥️Renderer] Remote audio track received - positioned AudioSource ready");
-
-    }
-    
-    public AudioSource GetRemoteAudioSource()
-    {
-        if (remoteAudioSource == null)
+        else
         {
-            PrepareRemoteAudio();
+            Debug.LogError($"[🖥️Renderer] No audio streamer available for audio track");
         }
-        return remoteAudioSource;
     }
-    
-
     
     /// <summary>
-    /// Instant texture switching using property blocks only
+    /// Get audio source for WebRTC audio connection
     /// </summary>
-    private void SetTextureInstant(Texture texture)
+    public AudioSource GetRemoteAudioSource()
     {
-        // Use property block for instant switching - no material changes
-        sharedRenderer.GetPropertyBlock(propertyBlock);
+        if (audioStreamer != null)
+        {
+            return audioStreamer.ReceivingAudioSource;
+        }
         
-        // Set texture through property block (fastest method)
-        propertyBlock.SetTexture("_BaseMap", texture);
-        propertyBlock.SetTexture("_MainTex", texture); // Fallback for different shaders
-        
-        // Apply immediately
-        sharedRenderer.SetPropertyBlock(propertyBlock);
+        Debug.LogError($"[🖥️Renderer] No audio streamer available");
+        return null;
+    }
+    
+    /// <summary>
+    /// Prepare for receiving remote audio
+    /// </summary>
+    public void PrepareRemoteAudio(string sessionId = "")
+    {
+        if (audioStreamer != null)
+        {
+            audioStreamer.PrepareAudioReceiving(sessionId);
+            Debug.Log($"[🖥️Renderer] Remote audio preparation delegated to audio streamer");
+        }
+        else
+        {
+            Debug.LogError($"[🖥️Renderer] No audio streamer available for remote audio preparation");
+        }
     }
     
     /// <summary>
@@ -258,8 +175,13 @@ public class WebRTCRenderer : MonoBehaviour
         propertyBlock.Clear(); // Remove all overrides
         sharedRenderer.SetPropertyBlock(propertyBlock);
         
-        // Audio switching
-        SetRemoteAudioActive(false);
+        // Stop remote audio
+        if (audioStreamer != null)
+        {
+            audioStreamer.StopAudioOperations();
+        }
+        
+        // Enable local audio
         SetLocalAudioActive(true);
         
         // Update state
@@ -268,34 +190,6 @@ public class WebRTCRenderer : MonoBehaviour
         OnDisplayModeChanged?.Invoke(pipelineType, false, string.Empty);
         
         Debug.Log($"[🖥️Renderer] Local NDI restored INSTANTLY for {pipelineType}");
-    }
-    /// <summary>
-    /// Control local NDI audio
-    /// </summary>
-    private void SetLocalAudioActive(bool active)
-    {
-        if (localNdiReceiver != null)
-        {
-            // You could add a method to NdiReceiver to control audio playback
-            // Or manage the AudioSource components on the NDI receiver
-            var audioSources = localNdiReceiver.GetComponentsInChildren<AudioSource>();
-            foreach (var source in audioSources)
-            {
-                source.enabled = active;
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Control remote audio
-    /// </summary>
-    private void SetRemoteAudioActive(bool active)
-    {
-        if (remoteAudioGameObject != null)
-        {
-            remoteAudioGameObject.SetActive(active);
-            isPlayingRemoteAudio = active;
-        }
     }
     
     /// <summary>
@@ -317,7 +211,10 @@ public class WebRTCRenderer : MonoBehaviour
         
         // Audio clearing
         SetLocalAudioActive(false);
-        SetRemoteAudioActive(false);
+        if (audioStreamer != null)
+        {
+            audioStreamer.StopAudioOperations();
+        }
         
         isShowingRemoteStream = false;
         currentDisplaySession = string.Empty;
@@ -343,6 +240,41 @@ public class WebRTCRenderer : MonoBehaviour
         }
     }
     
+    #endregion
+    
+    #region Private Helper Methods
+    
+    /// <summary>
+    /// Instant texture switching using property blocks only
+    /// </summary>
+    private void SetTextureInstant(Texture texture)
+    {
+        // Use property block for instant switching - no material changes
+        sharedRenderer.GetPropertyBlock(propertyBlock);
+        
+        // Set texture through property block (fastest method)
+        propertyBlock.SetTexture("_BaseMap", texture);
+        propertyBlock.SetTexture("_MainTex", texture); // Fallback for different shaders
+        
+        // Apply immediately
+        sharedRenderer.SetPropertyBlock(propertyBlock);
+    }
+    
+    /// <summary>
+    /// Control local NDI audio
+    /// </summary>
+    private void SetLocalAudioActive(bool active)
+    {
+        if (localNdiReceiver != null)
+        {
+            var audioSources = localNdiReceiver.GetComponentsInChildren<AudioSource>();
+            foreach (var source in audioSources)
+            {
+                source.enabled = active;
+            }
+        }
+    }
+    
     /// <summary>
     /// Set NDI receiver active state
     /// </summary>
@@ -351,7 +283,10 @@ public class WebRTCRenderer : MonoBehaviour
         if (localNdiReceiver != null)
         {
             localNdiReceiver.gameObject.SetActive(active);
-            localNdiReceiverCaptions.gameObject.SetActive(active);
+            if (localNdiReceiverCaptions != null)
+            {
+                localNdiReceiverCaptions.gameObject.SetActive(active);
+            }
             
             if (debugMode)
                 Debug.Log($"[🖥️Renderer] NDI receiver {(active ? "enabled" : "disabled")} for {pipelineType}");
@@ -361,6 +296,8 @@ public class WebRTCRenderer : MonoBehaviour
             Debug.LogWarning($"[🖥️Renderer] No local NDI receiver assigned for {pipelineType}");
         }
     }
+    
+    #endregion
     
     #region Public Properties
     
@@ -381,17 +318,20 @@ public class WebRTCRenderer : MonoBehaviour
     {
         return sharedRenderer?.material?.mainTexture;
     }
-
-    #endregion
     
-    #region Cleanup
-    
-    void OnDestroy()
+    // Audio-related properties (delegated to audio streamer)
+    public float AudioVolume
     {
-        // No materials to cleanup since we're not creating them anymore
-        Debug.Log($"[🖥️Renderer] Destroyed for {pipelineType}");
+        get => audioStreamer?.AudioVolume ?? 0f;
+        set
+        {
+            if (audioStreamer != null)
+                audioStreamer.AudioVolume = value;
+        }
     }
-
+    
+    public bool IsReceivingAudio => audioStreamer?.IsReceiving ?? false;
+    
     #endregion
     
     #region Debug Methods
@@ -408,6 +348,19 @@ public class WebRTCRenderer : MonoBehaviour
         ClearDisplay();
     }
     
+    [ContextMenu("Debug Audio State")]
+    public void DebugAudioState()
+    {
+        if (audioStreamer != null)
+        {
+            audioStreamer.DebugAudioState();
+        }
+        else
+        {
+            Debug.Log($"[🖥️Renderer] No audio streamer assigned for {pipelineType}");
+        }
+    }
+    
     void OnValidate()
     {
         if (sharedRenderer == null)
@@ -419,7 +372,12 @@ public class WebRTCRenderer : MonoBehaviour
         {
             localNdiReceiver = GetComponentInChildren<NdiReceiver>();
         }
+        
+        if (audioStreamer == null)
+        {
+            audioStreamer = GetComponent<WebRTCAudioStreamer>();
+        }
     }
-
+    
     #endregion
 }

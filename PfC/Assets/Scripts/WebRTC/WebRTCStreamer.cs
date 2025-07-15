@@ -13,8 +13,8 @@ public enum StreamerState
 }
 
 /// <summary>
-/// WebRTC streamer for single pipeline
-/// Handles streaming and receiving video/audio between clients
+/// Updated WebRTC streamer with separated audio handling
+/// Integrates with WebRTCAudioStreamer for proper audio streaming
 /// </summary>
 public class WebRTCStreamer : MonoBehaviour
 {
@@ -26,22 +26,23 @@ public class WebRTCStreamer : MonoBehaviour
     public NdiReceiver ndiReceiverSource;
     public NdiReceiver ndiReceiverCaptions;
     public WebRTCRenderer targetRenderer;
+    public WebRTCAudioStreamer audioStreamer; // New audio streamer reference
     
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1920;
     [SerializeField] private int textureHeight = 1080;
-    [SerializeField] private float connectionTimeout = 5f; // Conservative for slow networks
-    [SerializeField] private bool enableOptimisticStates = true; // Can be disabled for slow networks
+    [SerializeField] private float connectionTimeout = 5f;
+    [SerializeField] private bool enableOptimisticStates = true;
     [SerializeField] private int maxRetryAttempts = 3;
     
     // WebRTC objects
     private RTCPeerConnection peerConnection;
     private VideoStreamTrack videoTrack;
-    private AudioStreamTrack audioTrack;
+    private AudioStreamTrack audioTrack; // Now managed by audio streamer
     private RenderTexture webRtcTexture;
     private MediaStream receiveMediaStream;
     
-    //blending captions and media source
+    // Blending captions and media source
     private RenderTexture compositeRT;
     private Material blendMaterial;
     
@@ -53,12 +54,10 @@ public class WebRTCStreamer : MonoBehaviour
     private int retryCount = 0;
     private bool isOfferer = false;
     private bool isRemoteDescriptionSet = false;
-    private bool isStreamingAudio = false;
     
     // Coroutines
     private Coroutine connectionTimeoutCoroutine;
     private Coroutine textureUpdateCoroutine;
-    private Coroutine audioStreamingCoroutine;
     
     // ICE candidate buffering
     private System.Collections.Generic.List<RTCIceCandidate> pendingIceCandidates = new System.Collections.Generic.List<RTCIceCandidate>();
@@ -79,6 +78,7 @@ public class WebRTCStreamer : MonoBehaviour
         ConnectToSignaling();
         SetState(StreamerState.Idle);
         blendMaterial = new Material(Shader.Find("Custom/BlendTwoTextures"));
+        ValidateAudioStreamer();
     }
     
     void OnDestroy()
@@ -96,7 +96,19 @@ public class WebRTCStreamer : MonoBehaviour
     private void CreateInstanceId()
     {
         instanceId = $"{pipelineType}_{System.Guid.NewGuid().ToString("N")[..8]}";
-        Debug.Log($"[📡{instanceId}] Created");
+        Debug.Log($"[📡{instanceId}] Created with audio streaming support");
+    }
+    
+    private void ValidateAudioStreamer()
+    {
+        if (audioStreamer == null)
+        {
+            Debug.LogError($"[📡{instanceId}] No WebRTCAudioStreamer assigned - audio will not work");
+        }
+        else
+        {
+            Debug.Log($"[📡{instanceId}] Audio streamer validated and ready");
+        }
     }
     
     private void RegisterWithEngine()
@@ -166,14 +178,17 @@ public class WebRTCStreamer : MonoBehaviour
     {
         Debug.Log($"[📡{instanceId}] StartReceiving called for: {sessionId}");
         
-        // Do all the synchronous setup immediately
         PrepareForNewSessionSync(sessionId);
         isOfferer = false;
         SetupReceivingConnection();
         
-        Debug.Log($"[📡{instanceId}] Receiver ready immediately for: {sessionId}");
+        // Prepare audio receiving
+        if (audioStreamer != null)
+        {
+            audioStreamer.PrepareAudioReceiving(sessionId);
+        }
         
-        // Only use coroutine for timeout management
+        Debug.Log($"[📡{instanceId}] Receiver ready immediately for: {sessionId}");
         StartConnectionTimeout();
     }
     
@@ -202,7 +217,7 @@ public class WebRTCStreamer : MonoBehaviour
     }
     
     /// <summary>
-    /// Force complete system restart - use only when normal stop fails
+    /// Force complete system restart
     /// </summary>
     public void ForceRestart()
     {
@@ -224,59 +239,11 @@ public class WebRTCStreamer : MonoBehaviour
             yield break;
         }
         
-        // Setup everything in parallel
         SetupStreamingConnection();
-        
-        // Start operations immediately
         StartConnectionTimeout();
         StartCoroutine(CreateOffer());
         
         Debug.Log($"[📡{instanceId}] Streaming session initiated immediately");
-    }
-    
-    private IEnumerator BeginReceivingSession(string sessionId)
-    {
-        yield return StartCoroutine(PrepareForNewSession(sessionId));
-        
-        isOfferer = false;
-        
-        // Create peer connection and ensure it's ready
-        SetupReceivingConnection();
-        
-        // Wait one frame to ensure peer connection is fully initialized
-        yield return null;
-        
-        if (peerConnection == null)
-        {
-            Debug.LogError($"[📡{instanceId}] Failed to create peer connection for receiving");
-            SetState(StreamerState.Failed);
-            yield break;
-        }
-        
-        // Process any offer that arrived while we were setting up
-        ProcessPendingOffer();
-        
-        StartConnectionTimeout();
-        
-        Debug.Log($"[📡{instanceId}] Ready to receive - peer connection confirmed ready");
-    }
-    
-    private IEnumerator PrepareForNewSession(string sessionId)
-    {
-        Debug.Log($"[📡{instanceId}] PrepareForNewSession START");
-        
-        if (currentState != StreamerState.Idle)
-        {
-            Debug.Log($"[📡{instanceId}] Cleaning up previous session...");
-            CleanupCurrentSession();
-            yield return null; // This might be the delay!
-        }
-        
-        currentSessionId = sessionId;
-        SetState(StreamerState.Connecting);
-        retryCount = 0;
-        
-        Debug.Log($"[📡{instanceId}] PrepareForNewSession COMPLETE for: {sessionId}");
     }
     
     private IEnumerator EndCurrentSession()
@@ -345,69 +312,36 @@ public class WebRTCStreamer : MonoBehaviour
         peerConnection.OnConnectionStateChange = OnConnectionStateChange;
         peerConnection.OnIceConnectionChange = OnIceConnectionChange;
     
-        // CREATE MEDIA STREAM FOR RECEIVING AUDIO - THIS WAS MISSING!
-        if (!isOfferer) // Only create for receivers
+        // Create MediaStream for receiving audio
+        if (!isOfferer)
         {
             receiveMediaStream = new MediaStream();
             receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
         }
     
-        Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE (Host: {NetworkManager.Singleton?.IsHost})");
+        Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE");
     }
+    
     private void OnMediaStreamTrackAdded(MediaStreamTrackEvent e)
     {
-        Debug.Log($"[📡{instanceId}] MediaStream audio track added: {e.Track.Kind}");
+        Debug.Log($"[📡{instanceId}] MediaStream track added: {e.Track.Kind}");
     
-        if (e.Track is AudioStreamTrack audioTrack)
+        if (e.Track is AudioStreamTrack audioStreamTrack)
         {
             Debug.Log($"[📡{instanceId}] Audio track received in MediaStream");
             
-            targetRenderer?.PrepareRemoteAudio();
-        
-            // Get the remote AudioSource from renderer
-            var remoteAudioSource = targetRenderer?.GetRemoteAudioSource();
-            if (remoteAudioSource != null)
+            // Delegate audio handling to audio streamer
+            if (audioStreamer != null)
             {
-                // Use Unity WebRTC's SetTrack extension method
-                remoteAudioSource.SetTrack(audioTrack);
-                remoteAudioSource.loop = true;
-                remoteAudioSource.Play();
-            
-                StartCoroutine(DebugAudioStatus());
-                Debug.Log($"[📡{instanceId}] Audio track connected to remote AudioSource");
+                audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
             }
             else
             {
-                Debug.LogError($"[📡{instanceId}] No remote AudioSource available for audio track");
+                Debug.LogError($"[📡{instanceId}] No audio streamer available for incoming audio track");
             }
         }
     }
     
-    // Debug audio status after connection
-    private IEnumerator DebugAudioStatus()
-    {
-        yield return new WaitForSeconds(1f);
-        
-        var audioSource = targetRenderer?.GetRemoteAudioSource();
-        if (audioSource != null)
-        {
-            Debug.Log($"[📡{instanceId}] Audio Status Check:");
-            Debug.Log($"  - Playing: {audioSource.isPlaying}");
-            Debug.Log($"  - Volume: {audioSource.volume}");
-            Debug.Log($"  - Clip: {audioSource.clip}");
-            Debug.Log($"  - Output: {audioSource.outputAudioMixerGroup}");
-            Debug.Log($"  - Mute: {audioSource.mute}");
-            Debug.Log($"  - Priority: {audioSource.priority}");
-            
-            // Check if there's an AudioListener in the scene
-            var audioListener = FindObjectOfType<AudioListener>();
-            Debug.Log($"  - AudioListener found: {audioListener != null}");
-            if (audioListener != null)
-            {
-                Debug.Log($"  - AudioListener enabled: {audioListener.enabled}");
-            }
-        }
-    }
     private void AddTracksToConnection()
     {
         if (peerConnection == null || videoTrack == null) 
@@ -417,35 +351,30 @@ public class WebRTCStreamer : MonoBehaviour
             return;
         }
         
+        // Add video track
         peerConnection.AddTrack(videoTrack);
-        TryAddAudioTrack();
         
-        Debug.Log($"[📡{instanceId}] Tracks added to connection");
-    }
-    
-    private void TryAddAudioTrack()
-    {
-        // Find NDI's existing AudioSource (the Passthrough Audio Source)
-        var ndiAudioSource = ndiReceiverSource.GetComponentInChildren<AudioSource>();
-        
-        if (ndiAudioSource != null)
+        // Add audio track via audio streamer
+        if (audioStreamer != null)
         {
-            Debug.Log($"[📡{instanceId}] Found NDI AudioSource: {ndiAudioSource.name}");
-            
-            // Create WebRTC track directly from NDI's AudioSource
-            audioTrack = new AudioStreamTrack(ndiAudioSource);
-            peerConnection.AddTrack(audioTrack);
-            
-            Debug.Log($"[📡{instanceId}] Audio track created from NDI AudioSource");
+            audioTrack = audioStreamer.StartAudioStreaming(currentSessionId);
+            if (audioTrack != null)
+            {
+                peerConnection.AddTrack(audioTrack);
+                Debug.Log($"[📡{instanceId}] Audio track added via audio streamer");
+            }
+            else
+            {
+                Debug.LogError($"[📡{instanceId}] Failed to create audio track via audio streamer");
+            }
         }
         else
         {
-            Debug.LogError($"[📡{instanceId}] No AudioSource found on NDI receiver");
+            Debug.LogWarning($"[📡{instanceId}] No audio streamer - streaming video only");
         }
+        
+        Debug.Log($"[📡{instanceId}] Tracks added to connection");
     }
-    // This method feeds NDI audio data to the AudioSource
-    // This callback feeds NDI audio to the AudioSource
-    
     
     #endregion
     
@@ -466,7 +395,7 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void ActivateNdiReceiver(NdiReceiver ndiReceiver)
     {
-        if (!ndiReceiver.gameObject.activeInHierarchy)
+        if (ndiReceiver != null && !ndiReceiver.gameObject.activeInHierarchy)
         {
             ndiReceiver.gameObject.SetActive(true);
             Debug.Log($"[📡{instanceId}] NDI receiver activated");
@@ -516,42 +445,24 @@ public class WebRTCStreamer : MonoBehaviour
             var ndiTexture = ndiReceiverSource?.GetTexture();
             var ndiTextureCaptions = ndiReceiverCaptions?.GetTexture();
             
-            if (compositeRT == null)
+            if (compositeRT == null && ndiTexture != null)
             {
                 compositeRT = new RenderTexture(ndiTexture.width, ndiTexture.height, depth: 0);
                 compositeRT.Create();
             }
             
-            if (ndiTexture != null && webRtcTexture != null && ndiTextureCaptions!=null )
+            if (ndiTexture != null && webRtcTexture != null && ndiTextureCaptions != null)
             {
-                // Graphics.Blit(ndiTexture, webRtcTexture);
+                blendMaterial.SetTexture("_MainTex", ndiTexture);
+                blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
 
-                    blendMaterial.SetTexture("_MainTex", ndiTexture);
-                    blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
-
-                    Graphics.Blit(null, compositeRT, blendMaterial);
-                    Graphics.Blit( compositeRT, webRtcTexture);
-                          
+                Graphics.Blit(null, compositeRT, blendMaterial);
+                Graphics.Blit(compositeRT, webRtcTexture);
             }
             
             yield return new WaitForEndOfFrame();
         }
     }
-    
-    private void StartAudioStreaming()
-    {
-        if (audioTrack == null || isStreamingAudio) return;
-        
-        isStreamingAudio = true;
-        Debug.Log($"[📡{instanceId}] Started NDI audio streaming");
-    }
-    
-    private void StopAudioStreaming()
-    {
-        isStreamingAudio = false;
-        Debug.Log($"[📡{instanceId}] Stopped NDI audio streaming");
-    }
-
 
     private bool IsStreamingOrConnecting()
     {
@@ -564,7 +475,6 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator CreateOffer()
     {
-        // Ensure everything is ready before creating offer
         yield return null;
         
         var offerOp = peerConnection.CreateOffer();
@@ -578,14 +488,10 @@ public class WebRTCStreamer : MonoBehaviour
         }
         
         yield return StartCoroutine(SetLocalDescription(offerOp.Desc));
-        
-        // Send offer immediately after setting local description
         signaling.SendOffer(pipelineType, offerOp.Desc, currentSessionId);
         
         Debug.Log($"[📡{instanceId}] Offer sent");
     }
-    
-
     
     private IEnumerator SetLocalDescription(RTCSessionDescription desc)
     {
@@ -617,7 +523,6 @@ public class WebRTCStreamer : MonoBehaviour
     }
     
     #endregion
-
     
     #region Event Handlers - Signaling
     
@@ -627,7 +532,6 @@ public class WebRTCStreamer : MonoBehaviour
         
         Debug.Log($"[📡{instanceId}] Processing offer from client {fromClient}");
         
-        // Check if peer connection is ready
         if (peerConnection == null)
         {
             Debug.LogWarning($"[📡{instanceId}] Offer arrived before peer connection ready - buffering");
@@ -636,7 +540,6 @@ public class WebRTCStreamer : MonoBehaviour
             return;
         }
         
-        // Process offer immediately
         StartCoroutine(ProcessOfferImmediately(offer, fromClient));
     }
     
@@ -654,25 +557,21 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator ProcessOfferImmediately(RTCSessionDescription offer, ulong fromClient)
     {
-        // Ensure peer connection is ready
         if (peerConnection == null)
         {
             Debug.LogError($"[📡{instanceId}] No peer connection for offer");
             yield break;
         }
         
-        // Set remote description first (this must succeed)
         Debug.Log($"[📡{instanceId}] Setting remote description...");
         yield return StartCoroutine(SetRemoteDescription(offer));
         
-        // Only proceed if remote description was set successfully
         if (!isRemoteDescriptionSet)
         {
             Debug.LogError($"[📡{instanceId}] Failed to set remote description");
             yield break;
         }
         
-        // Create answer immediately
         Debug.Log($"[📡{instanceId}] Creating answer...");
         yield return StartCoroutine(CreateAnswerImmediate(fromClient));
     }
@@ -689,10 +588,8 @@ public class WebRTCStreamer : MonoBehaviour
             yield break;
         }
         
-        // Set local description
         yield return StartCoroutine(SetLocalDescription(answerOp.Desc));
         
-        // Send answer
         signaling.SendAnswer(pipelineType, answerOp.Desc, toClient, currentSessionId);
         connectedClientId = toClient;
         
@@ -705,7 +602,6 @@ public class WebRTCStreamer : MonoBehaviour
         
         Debug.Log($"[📡{instanceId}] Processing answer from client {fromClient}");
         
-        // Only set optimistic state if enabled (good for fast networks)
         if (enableOptimisticStates)
         {
             SetState(StreamerState.Streaming);
@@ -721,7 +617,6 @@ public class WebRTCStreamer : MonoBehaviour
         
         if (peerConnection == null) return;
         
-        // Buffer candidates if remote description not set yet
         if (!isRemoteDescriptionSet)
         {
             pendingIceCandidates.Add(candidate);
@@ -729,7 +624,6 @@ public class WebRTCStreamer : MonoBehaviour
             return;
         }
         
-        // Add candidate immediately if ready
         AddIceCandidate(candidate);
     }
     
@@ -785,7 +679,6 @@ public class WebRTCStreamer : MonoBehaviour
         {
             Debug.Log($"[📡{instanceId}] Audio track received - adding to MediaStream");
         
-            // Add audio track to MediaStream - this triggers OnAddTrack
             if (receiveMediaStream != null)
             {
                 receiveMediaStream.AddTrack(e.Track);
@@ -801,12 +694,9 @@ public class WebRTCStreamer : MonoBehaviour
     {
         Debug.Log($"[📡{instanceId}] Video received: {texture.width}x{texture.height}");
         targetRenderer?.ShowRemoteStream(texture, currentSessionId);
-        
-        // Consider this the moment we're fully connected
         SetState(StreamerState.Receiving);
     }
     
-    // Network quality tracking
     private float lastConnectionTime = 0f;
     
     private void OnConnectionStateChange(RTCPeerConnectionState state)
@@ -818,7 +708,6 @@ public class WebRTCStreamer : MonoBehaviour
             case RTCPeerConnectionState.Connecting:
                 lastConnectionTime = Time.time;
                 
-                // Only show optimistic state for fast networks
                 if (enableOptimisticStates && isOfferer)
                 {
                     SetState(StreamerState.Streaming);
@@ -827,11 +716,9 @@ public class WebRTCStreamer : MonoBehaviour
                 break;
                 
             case RTCPeerConnectionState.Connected:
-                // Measure connection speed and adapt
                 float connectionDuration = Time.time - lastConnectionTime;
                 AdaptToNetworkPerformance(connectionDuration);
                 
-                // Always set confirmed state regardless of network speed
                 SetState(isOfferer ? StreamerState.Streaming : StreamerState.Receiving);
                 ClearConnectionTimeout();
                 retryCount = 0;
@@ -849,17 +736,14 @@ public class WebRTCStreamer : MonoBehaviour
     {
         Debug.Log($"[📡{instanceId}] Connection took {connectionTime:F1}s");
         
-        // Adapt settings based on actual performance
         if (connectionTime > 3f)
         {
-            // Slow network detected - be more conservative
             connectionTimeout = 8f;
             enableOptimisticStates = false;
             Debug.Log($"[📡{instanceId}] Slow network detected - using conservative settings");
         }
         else if (connectionTime < 1f)
         {
-            // Fast network - can be more aggressive
             connectionTimeout = 3f;
             enableOptimisticStates = true;
             Debug.Log($"[📡{instanceId}] Fast network detected - using optimized settings");
@@ -889,14 +773,11 @@ public class WebRTCStreamer : MonoBehaviour
         
         ClearConnectionTimeout();
         
-        // Adaptive retry strategy based on network performance
         int maxRetries = GetAdaptiveMaxRetries();
         
         if (retryCount < maxRetries)
         {
             retryCount++;
-            
-            // Increase timeout after failures (network might be slow)
             connectionTimeout = Mathf.Min(connectionTimeout * 1.5f, 10f);
             Debug.Log($"[📡{instanceId}] Adapted timeout to {connectionTimeout}s for retry {retryCount}");
             
@@ -912,15 +793,14 @@ public class WebRTCStreamer : MonoBehaviour
     
     private int GetAdaptiveMaxRetries()
     {
-        // More retries for slower apparent networks
-        if (connectionTimeout > 7f) return 5; // Slow network detected
-        if (connectionTimeout > 4f) return 3; // Medium network
-        return 2; // Fast network (like yours)
+        if (connectionTimeout > 7f) return 5;
+        if (connectionTimeout > 4f) return 3;
+        return 2;
     }
     
     private IEnumerator RetryConnection()
     {
-        ClosePeerConnection(); // This now includes MediaStream cleanup
+        ClosePeerConnection();
         yield return null;
         
         if (string.IsNullOrEmpty(currentSessionId)) yield break;
@@ -976,6 +856,12 @@ public class WebRTCStreamer : MonoBehaviour
     {
         ClearConnectionTimeout();
         StopTextureUpdates();
+        
+        // Stop audio operations
+        if (audioStreamer != null)
+        {
+            audioStreamer.StopAudioOperations();
+        }
     }
     
     private void CleanupCurrentSession()
@@ -1002,14 +888,12 @@ public class WebRTCStreamer : MonoBehaviour
             peerConnection = null;
         }
         
-        // Clean up MediaStream (THIS WAS MISSING)
         if (receiveMediaStream != null)
         {
             receiveMediaStream.Dispose();
             receiveMediaStream = null;
         }
         
-        // Reset state
         isRemoteDescriptionSet = false;
         pendingIceCandidates.Clear();
         pendingOffer = null;
@@ -1036,6 +920,7 @@ public class WebRTCStreamer : MonoBehaviour
             videoTrack = null;
         }
         
+        // Audio track is now managed by audio streamer
         if (audioTrack != null)
         {
             audioTrack.Dispose();
@@ -1047,6 +932,13 @@ public class WebRTCStreamer : MonoBehaviour
             webRtcTexture.Release();
             DestroyImmediate(webRtcTexture);
             webRtcTexture = null;
+        }
+        
+        if (compositeRT != null)
+        {
+            compositeRT.Release();
+            DestroyImmediate(compositeRT);
+            compositeRT = null;
         }
     }
     
@@ -1072,6 +964,37 @@ public class WebRTCStreamer : MonoBehaviour
     public string CurrentSessionId => currentSessionId;
     public string InstanceId => instanceId;
     public bool IsConnected => currentState == StreamerState.Streaming || currentState == StreamerState.Receiving;
+    public bool HasAudioStreamer => audioStreamer != null;
+    
+    #endregion
+    
+    #region Debug Methods
+    
+    [ContextMenu("Debug Audio State")]
+    public void DebugAudioState()
+    {
+        if (audioStreamer != null)
+        {
+            audioStreamer.DebugAudioState();
+        }
+        else
+        {
+            Debug.Log($"[📡{instanceId}] No audio streamer assigned");
+        }
+    }
+    
+    void OnValidate()
+    {
+        if (audioStreamer == null)
+        {
+            audioStreamer = GetComponent<WebRTCAudioStreamer>();
+        }
+        
+        if (targetRenderer == null)
+        {
+            targetRenderer = GetComponent<WebRTCRenderer>();
+        }
+    }
     
     #endregion
 }
