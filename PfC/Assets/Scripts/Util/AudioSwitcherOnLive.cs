@@ -11,6 +11,7 @@ public class AudioSwitcherOnLive : MonoBehaviour
 {
     [SerializeField] private NdiReceiver ndiReceiver;
     [SerializeField] private WebRTCRenderer incomingAudioWebRtcRenderer;
+    [SerializeField] private bool playAudio;
 
     private Coroutine ndiTurnOnCoroutine;
 
@@ -25,10 +26,20 @@ public class AudioSwitcherOnLive : MonoBehaviour
 
         }
         else if (ndiReceiver != null)
-        {
+        {        
+            NDIAudioInterceptor ndiAudioInterceptor = ndiReceiver.GetComponent<NDIAudioInterceptor>();
+
             // change ndi volume
-            float newVolume = ndiReceiver.GetComponentInChildren<AudioSource>().volume > 0 ? 0f : 1f;
-            ndiReceiver.GetComponentInChildren<AudioSource>().volume = newVolume;
+            if (!playAudio)
+            {
+                ndiReceiver.GetComponentInChildren<AudioSource>().volume = 1f;
+            }
+            else
+            {
+                ndiReceiver.GetComponentInChildren<AudioSource>().volume = 0f;
+
+            }
+            playAudio = !playAudio;
         }
     }
 

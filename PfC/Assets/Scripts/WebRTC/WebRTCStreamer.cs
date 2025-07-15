@@ -26,7 +26,7 @@ public class WebRTCStreamer : MonoBehaviour
     public NdiReceiver ndiReceiverSource;
     public NdiReceiver ndiReceiverCaptions;
     public WebRTCRenderer targetRenderer;
-    public WebRTCAudioStreamer audioStreamer; // New audio streamer reference
+    public FilterBasedAudioStreamer audioStreamer; // New audio streamer reference
     
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1920;
@@ -987,7 +987,7 @@ public class WebRTCStreamer : MonoBehaviour
     {
         if (audioStreamer == null)
         {
-            audioStreamer = GetComponent<WebRTCAudioStreamer>();
+            audioStreamer = GetComponent<FilterBasedAudioStreamer>();
         }
         
         if (targetRenderer == null)

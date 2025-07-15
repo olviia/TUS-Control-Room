@@ -17,7 +17,7 @@ public class WebRTCRenderer : MonoBehaviour
     public NdiReceiver localNdiReceiverCaptions;
     
     [Header("Audio Component")]
-    public WebRTCAudioStreamer audioStreamer; // Reference to the audio streamer
+    public FilterBasedAudioStreamer audioStreamer; // Reference to the audio streamer
     
     [Header("Display Settings")]
     [SerializeField] private bool debugMode = false;
@@ -375,7 +375,7 @@ public class WebRTCRenderer : MonoBehaviour
         
         if (audioStreamer == null)
         {
-            audioStreamer = GetComponent<WebRTCAudioStreamer>();
+            audioStreamer = GetComponent<FilterBasedAudioStreamer>();
         }
     }
     
