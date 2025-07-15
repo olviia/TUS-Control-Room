@@ -167,26 +167,48 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             Debug.LogError($"[🎵Filter-{pipelineType}] No NDI audio source for interception");
             return;
         }
-        
-        // Find NDI's AudioSource
-        var ndiAudioSourceComponent = ndiAudioSource.GetComponentInChildren<AudioSource>();
-        if (ndiAudioSourceComponent == null)
+    
+        // Start coroutine to wait for NDI AudioSource to be created
+        StartCoroutine(WaitForNDIAudioSource());
+    }
+    private IEnumerator WaitForNDIAudioSource()
+    {
+        Debug.Log($"[🎵Filter-{pipelineType}] Waiting for NDI to create AudioSource...");
+    
+        AudioSource ndiAudioSourceComponent = null;
+        int attempts = 0;
+    
+        while (ndiAudioSourceComponent == null && attempts < 50) // Wait max 5 seconds
         {
-            Debug.LogError($"[🎵Filter-{pipelineType}] No AudioSource found in NDI receiver");
-            return;
-        }
+            ndiAudioSourceComponent = ndiAudioSource.GetComponentInChildren<AudioSource>();
         
-        // Add interceptor to NDI's AudioSource GameObject
-        ndiInterceptor = ndiAudioSourceComponent.gameObject.GetComponent<NDIAudioInterceptor>();
-        if (ndiInterceptor == null)
+            if (ndiAudioSourceComponent == null)
+            {
+                attempts++;
+                yield return new WaitForSeconds(0.1f); // Check every 100ms
+            }
+        }
+    
+        if (ndiAudioSourceComponent != null)
         {
-            ndiInterceptor = ndiAudioSourceComponent.gameObject.AddComponent<NDIAudioInterceptor>();
+            Debug.Log($"[🎵Filter-{pipelineType}] Found NDI AudioSource: {ndiAudioSourceComponent.name} after {attempts * 0.1f}s");
+        
+            // Add interceptor to the found AudioSource
+            ndiInterceptor = ndiAudioSourceComponent.gameObject.GetComponent<NDIAudioInterceptor>();
+            if (ndiInterceptor == null)
+            {
+                ndiInterceptor = ndiAudioSourceComponent.gameObject.AddComponent<NDIAudioInterceptor>();
+            }
+        
+            ndiInterceptor.Initialize(pipelineType, this);
+            isCapturingAudio = true;
+        
+            Debug.Log($"[🎵Filter-{pipelineType}] NDI audio interception setup complete on: {ndiAudioSourceComponent.name}");
         }
-        
-        ndiInterceptor.Initialize(pipelineType, this);
-        isCapturingAudio = true;
-        
-        Debug.Log($"[🎵Filter-{pipelineType}] NDI audio interception setup complete");
+        else
+        {
+            Debug.LogError($"[🎵Filter-{pipelineType}] Failed to find NDI AudioSource after 5 seconds");
+        }
     }
     
     /// <summary>
