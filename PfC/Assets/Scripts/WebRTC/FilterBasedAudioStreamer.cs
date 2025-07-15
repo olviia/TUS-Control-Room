@@ -31,6 +31,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     private AudioSource sendingAudioSource;
     private AudioSource receivingAudioSource;
     private GameObject receivingAudioGameObject;
+    private int cachedSampleRate = 48000; // Cache the sample rate
+
     
     // Audio Filter Management
     private NDIAudioInterceptor ndiInterceptor;
@@ -88,6 +90,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         if (audioSourcePosition == null)
             audioSourcePosition = transform;
             
+        cachedSampleRate = AudioSettings.outputSampleRate;
         connectionAttemptCount = 0;
     }
     
@@ -314,7 +317,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         {
             Debug.Log($"aaa_[🎵Filter-{pipelineType}] Sending to WebRTC: {audioData.Length} samples, hasAudio: {hasAudio}, maxLevel: {maxLevel:F4}");
         }
-        int actualSampleRate = AudioSettings.outputSampleRate;
+        int actualSampleRate = cachedSampleRate;
 
         // Feed audio data to WebRTC 
         try
