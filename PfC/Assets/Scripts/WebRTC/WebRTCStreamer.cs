@@ -296,7 +296,7 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void CreatePeerConnection()
     {
-        Debug.Log($"[📡{instanceId}] CreatePeerConnection START");
+        Debug.Log($"aaa_[📡{instanceId}] CreatePeerConnection START");
     
         ClosePeerConnection();
     
@@ -318,32 +318,41 @@ public class WebRTCStreamer : MonoBehaviour
         // Create MediaStream for receiving audio
         if (!isOfferer)
         {
+            Debug.Log($"aaa_[📡{instanceId}] Creating MediaStream for receiver (isOfferer=false)");
             receiveMediaStream = new MediaStream();
             receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
+            Debug.Log($"aaa_[📡{instanceId}] MediaStream created with OnAddTrack callback");
+        }
+        else
+        {
+            Debug.Log($"aaa_[📡{instanceId}] Skipping MediaStream creation (isOfferer=true)");
         }
     
-        Debug.Log($"[📡{instanceId}] CreatePeerConnection COMPLETE");
+        Debug.Log($"aaa_[📡{instanceId}] CreatePeerConnection COMPLETE");
     }
     
     private void OnMediaStreamTrackAdded(MediaStreamTrackEvent e)
     {
-        Debug.Log($"[📡{instanceId}] MediaStream track added: {e.Track.Kind}");
+        Debug.Log($"aaa_[📡{instanceId}] *** MEDIASTREAM TRACK ADDED *** Kind: {e.Track.Kind}, ID: {e.Track.Id}");
     
         if (e.Track is AudioStreamTrack audioStreamTrack)
         {
-            Debug.Log($"[📡{instanceId}] Audio track received in MediaStream");
+            Debug.Log($"aaa_[📡{instanceId}] *** CALLING HandleIncomingAudioTrack ***");
             
             // Delegate audio handling to audio streamer
             if (audioStreamer != null)
             {
-                Debug.Log($"[📡{instanceId}] Audio streamer found, calling HandleIncomingAudioTrack");
-
+                Debug.Log($"aaa_[📡{instanceId}] Audio streamer found, calling HandleIncomingAudioTrack");
                 audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
             }
             else
             {
-                Debug.LogError($"[📡{instanceId}] No audio streamer available for incoming audio track");
+                Debug.LogError($"aaa_[📡{instanceId}] No audio streamer available for incoming audio track");
             }
+        }
+        else
+        {
+            Debug.LogWarning($"aaa_[📡{instanceId}] Non-audio track added to MediaStream: {e.Track.Kind}");
         }
     }
     
@@ -698,26 +707,34 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void OnTrackReceived(RTCTrackEvent e)
     {
-        Debug.Log($"[📡{instanceId}] Track received: {e.Track.Kind}");
+        Debug.Log($"aaa_[📡{instanceId}] *** TRACK RECEIVED *** Kind: {e.Track.Kind}, ID: {e.Track.Id}");
     
         if (e.Track is VideoStreamTrack videoStreamTrack)
         {
+            Debug.Log($"aaa_[📡{instanceId}] Video track received and processed");
             videoStreamTrack.OnVideoReceived += OnVideoReceived;
             SetState(StreamerState.Receiving);
             ClearConnectionTimeout();
         }
-        else if (e.Track.Kind == TrackKind.Audio)
+        else if (e.Track is AudioStreamTrack audioStreamTrack)
         {
-            Debug.Log($"[📡{instanceId}] Audio track received - adding to MediaStream");
-        
+            Debug.Log($"aaa_[📡{instanceId}] *** AUDIO TRACK RECEIVED *** ID: {audioStreamTrack.Id}");
+            Debug.Log($"aaa_[📡{instanceId}] Audio track enabled: {audioStreamTrack.Enabled}");
+            Debug.Log($"aaa_[📡{instanceId}] Audio track kind: {audioStreamTrack.Kind}");
+
             if (receiveMediaStream != null)
             {
+                Debug.Log($"aaa_[📡{instanceId}] Adding audio track to MediaStream");
                 receiveMediaStream.AddTrack(e.Track);
             }
             else
             {
-                Debug.LogError($"[📡{instanceId}] No receive MediaStream available for audio track");
+                Debug.LogError($"aaa_[📡{instanceId}] No receive MediaStream available!");
             }
+        }
+        else
+        {
+            Debug.LogWarning($"aaa_[📡{instanceId}] Unknown track type received: {e.Track.GetType()}");
         }
     }
     
@@ -766,7 +783,9 @@ public class WebRTCStreamer : MonoBehaviour
                 break;
                 
             case RTCPeerConnectionState.Failed:
+                
             case RTCPeerConnectionState.Disconnected:
+                targetRenderer?.ShowLocalNDI();
                 if (currentState != StreamerState.Disconnecting)
                     HandleConnectionFailure();
                 break;

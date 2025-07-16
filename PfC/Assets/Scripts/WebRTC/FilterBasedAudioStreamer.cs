@@ -46,6 +46,23 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     private string currentSessionId = string.Empty;
     private int connectionAttemptCount = 0; // Track reconnection attempts
     
+    [ContextMenu("Test Audio Callback Manually")]
+    public void TestAudioCallbackManually()
+    {
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] *** TESTING CALLBACK MANUALLY ***");
+    
+        // Create fake audio data
+        float[] testData = new float[1024];
+        for (int i = 0; i < testData.Length; i++)
+        {
+            testData[i] = Mathf.Sin(2 * Mathf.PI * 440 * i / 48000f) * 0.1f; // 440Hz tone
+        }
+    
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Calling OnWebRTCAudioReceived manually...");
+        OnWebRTCAudioReceived(testData, 2, 48000);
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Manual test complete");
+    }
+    
     // Events
     public static event Action<PipelineType, bool, string> OnAudioStreamStateChanged;
     
@@ -174,16 +191,19 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     /// </summary>
     public void HandleIncomingAudioTrack(AudioStreamTrack audioTrack)
     {
-        Debug.Log($"[🎵Filter-{pipelineType}] HandleIncomingAudioTrack called! Session: {currentSessionId}, Attempt: {connectionAttemptCount}");
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] *** HandleIncomingAudioTrack CALLED *** Session: {currentSessionId}");
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] AudioTrack ID: {audioTrack.Id}");
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] AudioTrack Enabled: {audioTrack.Enabled}");
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] AudioTrack Kind: {audioTrack.Kind}");
     
         if (receivingAudioSource == null)
         {
-            Debug.LogError($"[🎵Filter-{pipelineType}] No receiving AudioSource prepared - recreating");
+            Debug.LogError($"aaa_[🎵Filter-{pipelineType}] No receiving AudioSource prepared - recreating");
             CreateReceivingAudioSource();
             
             if (receivingAudioSource == null)
             {
-                Debug.LogError($"[🎵Filter-{pipelineType}] Failed to create receiving AudioSource");
+                Debug.LogError($"aaa_[🎵Filter-{pipelineType}] Failed to create receiving AudioSource");
                 return;
             }
         }
@@ -192,15 +212,20 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         if (receivingAudioSource.isPlaying)
         {
             receivingAudioSource.Stop();
-            Debug.Log($"[🎵Filter-{pipelineType}] Stopped previous audio before reconnection");
+            Debug.Log($"aaa_[🎵Filter-{pipelineType}] Stopped previous audio before reconnection");
         }
     
         // Use the simple SetTrack approach for receiving
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] *** CONNECTING onReceived CALLBACK ***");
         audioTrack.onReceived += OnWebRTCAudioReceived;
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] onReceived callback connected successfully");
+        
         receivingAudioSource.loop = true;
         receivingAudioSource.Play();
+        
+        isReceiving = true;
     
-        Debug.Log($"[🎵Filter-{pipelineType}] Audio track connected to AudioSource, playing: {receivingAudioSource.isPlaying}");
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Audio setup complete - AudioSource playing: {receivingAudioSource.isPlaying}");
     
         StartCoroutine(VerifyAudioSetup());
     }
@@ -210,14 +235,27 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         Debug.Log($"aaa_[🎵Filter-{pipelineType}] Received audio chunk: {audioData.Length} samples, {channels} channels, {sampleRate}Hz");
     
         // Check audio levels
-        float maxLevel = audioData.Max(sample => Mathf.Abs(sample));
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Received audio maxLevel: {maxLevel:F4}");
+        float maxLevel = 0f;
+        bool hasAudio = false;
     
-        // Now you need to feed this chunked data to your WebRTCAudioFilter
-        // or directly to Unity's audio system
+        for (int i = 0; i < audioData.Length; i++)
+        {
+            float sample = Mathf.Abs(audioData[i]);
+            if (sample > 0.001f) hasAudio = true;
+            maxLevel = Mathf.Max(maxLevel, sample);
+        }
+    
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Audio analysis - hasAudio: {hasAudio}, maxLevel: {maxLevel:F4}");
+
+        // Send to WebRTC filter
         if (webrtcFilter != null)
         {
-            webrtcFilter.ReceiveAudioChunk(audioData, channels, sampleRate);
+            webrtcFilter.ReceiveAudioChunk(audioData, channels, sampleRate);        
+            Debug.Log($"aaa_[🎵Filter-{pipelineType}] Sent chunk to WebRTC filter successfully");
+        }
+        else
+        {
+            Debug.LogError($"aaa_[🎵Filter-{pipelineType}] No WebRTC filter available!");
         }
     }
     /// <summary>
@@ -450,13 +488,6 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             
             case StreamerState.Failed:
             case StreamerState.Idle:
-                // Stop audio when connection fails or goes idle
-                if (isStreaming || isReceiving)
-                {
-                    Debug.Log($"[🎵Filter-{pipelineType}] Auto-stopping audio due to connection failure/idle");
-                    StopAudioOperations();
-                }
-                break;
                 
             case StreamerState.Disconnecting:
                 // Prepare for cleanup
@@ -609,28 +640,41 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
         
-        Debug.Log($"[🎵Filter-{pipelineType}] Audio Verification (Attempt: {connectionAttemptCount}):");
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] === AUDIO VERIFICATION START ===");
         
         if (receivingAudioSource != null)
         {
-            Debug.Log($"  - Receiving AudioSource Playing: {receivingAudioSource.isPlaying}");
-            Debug.Log($"  - WebRTC Filter Active: {webrtcFilter != null && webrtcFilter.enabled}");
+            Debug.Log($"aaa_  - AudioSource Playing: {receivingAudioSource.isPlaying}");
+            Debug.Log($"aaa_  - AudioSource Volume: {receivingAudioSource.volume}");
+            Debug.Log($"aaa_  - AudioSource Enabled: {receivingAudioSource.enabled}");
+        }
+        else
+        {
+            Debug.LogError($"aaa_  - AudioSource is NULL!");
         }
         
         if (ndiInterceptor != null)
         {
-            Debug.Log($"  - NDI Interceptor Active: {ndiInterceptor.enabled}");
-            Debug.Log($"  - Audio Capturing: {isCapturingAudio}");
+            Debug.Log($"aaa_  - WebRTC Filter Active: {webrtcFilter.enabled}");
+            Debug.Log($"aaa_  - WebRTC Filter Component: {webrtcFilter.GetType().Name}");
+        }
+        else
+        {
+            Debug.LogError($"aaa_  - WebRTC Filter is NULL!");
         }
         
         // Check AudioListener
         var audioListener = FindObjectOfType<AudioListener>();
-        Debug.Log($"  - AudioListener found: {audioListener != null}");
+        Debug.Log($"aaa_  - AudioListener Found: {audioListener != null}");
         if (audioListener != null)
         {
-            Debug.Log($"  - AudioListener enabled: {audioListener.enabled}");
-            Debug.Log($"  - AudioListener volume: {AudioListener.volume}");
+            Debug.Log($"aaa_  - AudioListener Enabled: {audioListener.enabled}");
+            Debug.Log($"aaa_  - AudioListener Volume: {AudioListener.volume}");
         }
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] === IMPORTANT ===");
+        Debug.Log($"aaa_If you don't see '*** CALLBACK TRIGGERED ***' messages, the onReceived callback is NOT working!");
+        Debug.Log($"aaa_=== AUDIO VERIFICATION END ===");
+
     }
     
     public void DebugAudioState()
