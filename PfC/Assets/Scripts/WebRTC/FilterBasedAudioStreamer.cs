@@ -1,4 +1,5 @@
 
+
 using UnityEngine;
 using Unity.WebRTC;
 using Klak.Ndi;
@@ -199,15 +200,48 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         Debug.Log($"bbb_[🎵Filter-{pipelineType}] AudioTrack ID: {audioTrack.Id}");
         Debug.Log($"bbb_[🎵Filter-{pipelineType}] AudioTrack Enabled: {audioTrack.Enabled}");
 
-        if (webrtcFilter == null)
+        if (receivingAudioSource == null)
         {
-            Debug.LogError($"[F][🎵Filter-{pipelineType}] No WebRTC filter available – audio cannot be played");
-            return;
+            Debug.LogError($"aaa_[🎵Filter-{pipelineType}] No receiving AudioSource prepared - recreating");
+            CreateReceivingAudioSource();
+            
+            if (receivingAudioSource == null)
+            {
+                Debug.LogError($"aaa_[🎵Filter-{pipelineType}] Failed to create receiving AudioSource");
+                return;
+            }
         }
+        
+        // Stop previous audio before setting new track
+        if (receivingAudioSource.isPlaying)
+        {
+            receivingAudioSource.Stop();
+            Debug.Log($"aaa_[🎵Filter-{pipelineType}] Stopped previous audio before reconnection");
+        }
+        
+        // Use SetTrack approach
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] *** USING SETTRACK WITH INTERCEPTOR ***");
+    
+        // Add an audio interceptor to the receiving AudioSource
+        var receiveInterceptor = receivingAudioGameObject.GetComponent<ReceivingAudioInterceptor>();
+        if (receiveInterceptor == null)
+        {
+            receiveInterceptor = receivingAudioGameObject.AddComponent<ReceivingAudioInterceptor>();
+            receiveInterceptor.Initialize(pipelineType, webrtcFilter);
+        }
+    
+        // Use SetTrack
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] *** USING SETTRACK ***");
+        receivingAudioSource.SetTrack(audioTrack);
+        receivingAudioSource.loop = true;
+        receivingAudioSource.volume = 1.0f; // Full volume for interception
+        receivingAudioSource.Play();
         
         isReceiving = true;
     
         Debug.Log($"bbb_[🎵Filter-{pipelineType}] Audio setup complete with interceptor");
+        StartCoroutine(VerifyAudioSetup());
+
     }
     // Add this new method to handle chunked audio data
     private void OnWebRTCAudioReceived(float[] audioData, int channels, int sampleRate)
@@ -505,14 +539,13 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
     private void CreateReceivingAudioSource()
     {
-        // Clean up existing audio
+        // Clean up existing receiving audio first
         CleanupReceivingAudio();
-
-        // Create GameObject to host the receiving audio
+        
         receivingAudioGameObject = new GameObject($"WebRTC_Audio_Receiver_{pipelineType}_{connectionAttemptCount}");
         receivingAudioGameObject.hideFlags = HideFlags.DontSave;
-
-        // Position it near the audio listener or source object
+        
+        // Position the audio source correctly
         if (audioSourcePosition != null)
         {
             receivingAudioGameObject.transform.position = audioSourcePosition.position;
@@ -522,28 +555,27 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         {
             receivingAudioGameObject.transform.position = transform.position;
         }
-
-        // Add AudioSource ONLY to trigger OnAudioFilterRead (do not play audio directly)
+        
         receivingAudioSource = receivingAudioGameObject.AddComponent<AudioSource>();
+        
+        // Configure for 3D spatial audio
         receivingAudioSource.spatialBlend = spatialBlend;
-        receivingAudioSource.volume = 1.0f; // Will be overridden by filter volume
+        receivingAudioSource.volume = 1.0f; // Volume controlled by filter
         receivingAudioSource.minDistance = minDistance;
         receivingAudioSource.maxDistance = maxDistance;
         receivingAudioSource.rolloffMode = AudioRolloffMode.Linear;
         receivingAudioSource.playOnAwake = true;
         receivingAudioSource.loop = true;
-
-        // Add WebRTCAudioFilter to inject streamed audio
+        
+        // Add WebRTC audio filter
         webrtcFilter = receivingAudioGameObject.AddComponent<WebRTCAudioFilter>();
         webrtcFilter.Initialize(pipelineType, _audioVolume);
-
-        // Activate and start the AudioSource (even though no clip or track is attached)
+        
         receivingAudioGameObject.SetActive(true);
-        receivingAudioSource.Play(); // This triggers OnAudioFilterRead
-
-        Debug.Log($"[F][🎵Filter-{pipelineType}] Receiving audio source created using DSP-only mode (no SetTrack)");
+        receivingAudioSource.Play(); // Start playing to trigger OnAudioFilterRead
+        
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] Receiving audio source created - waiting for SetTrack");
     }
-
     
     /// <summary>
     /// Dummy audio callback to keep AudioSource active

@@ -1,58 +1,86 @@
+
 using UnityEngine;
+using Unity.WebRTC;
 using BroadcastPipeline;
 using System;
 using System.Collections.Generic;
 
 /// <summary>
-/// Clean WebRTC audio receiver using only Unity DSP chain (no AudioSource.SetTrack)
+/// Component that uses OnAudioFilterRead to inject WebRTC audio into Unity's audio pipeline
+/// This bypasses AudioSource volume and gives us direct control
 /// </summary>
 public class WebRTCAudioFilter : MonoBehaviour
 {
     private PipelineType pipelineType;
+    private AudioStreamTrack incomingAudioTrack;
     private float volumeMultiplier = 1.0f;
     private bool isInitialized = false;
-
+    private bool hasIncomingAudio = false;
+    
+    // Audio buffer for WebRTC data
+    private float[] webrtcAudioBuffer;
+    private int bufferSize = 1024;
+    private int channels = 2;
+    
+    //chuncked audio handling
     private Queue<float[]> audioChunkQueue = new Queue<float[]>();
-    private float[] currentChunk;
+    private float[] currentAudioBuffer;
     private int bufferPosition = 0;
+    private int expectedChannels = 2;
+    private int expectedSampleRate = 48000;
     private readonly object queueLock = new object();
-
-    private const int MaxQueueSize = 12; // Roughly 0.25s of audio if using 1024 chunks
-    private const float SilenceThreshold = 0.0001f;
-
+    
     public void Initialize(PipelineType pipeline, float volume)
     {
         pipelineType = pipeline;
         volumeMultiplier = Mathf.Clamp01(volume);
         isInitialized = true;
-
-        Debug.Log($"[W][🎵WebRTC-{pipelineType}] Initialized audio filter with volume {volumeMultiplier:F2}");
+        
+        // Initialize audio buffer
+        webrtcAudioBuffer = new float[bufferSize * channels];
+        
+        Debug.Log($"[🎵WebRTC-{pipelineType}] Audio filter initialized with volume {volumeMultiplier:F2}");
     }
-
+    
+    public void SetIncomingAudioTrack(AudioStreamTrack audioTrack)
+    {
+        incomingAudioTrack = audioTrack;
+        hasIncomingAudio = true;
+        
+        Debug.Log($"[🎵WebRTC-{pipelineType}] Incoming audio track set");
+    }
+    
     public void SetVolume(float volume)
     {
         volumeMultiplier = Mathf.Clamp01(volume);
-        Debug.Log($"[W][🎵WebRTC-{pipelineType}] Volume set to {volumeMultiplier:F2}");
+        Debug.Log($"[🎵WebRTC-{pipelineType}] Volume multiplier set to {volumeMultiplier:F2}");
     }
-
+    
     public void ReceiveAudioChunk(float[] audioData, int channels, int sampleRate)
     {
+        Debug.Log($"aaa_[🎵WebRTC-{pipelineType}] Received chunk: {audioData.Length} samples, channels: {channels}, sampleRate: {sampleRate}");
+        
+        expectedChannels = channels;
+        expectedSampleRate = sampleRate;
+        
         lock (queueLock)
         {
+            // Create a copy of the audio data and queue it
             float[] chunk = new float[audioData.Length];
             Array.Copy(audioData, chunk, audioData.Length);
             audioChunkQueue.Enqueue(chunk);
-
-            while (audioChunkQueue.Count > MaxQueueSize)
-                audioChunkQueue.Dequeue(); // Prevent memory bloat
-        }
-
-        if (audioData.Length > 0)
-        {
-            Debug.Log($"[W][🎵WebRTC-{pipelineType}] Chunk received: {audioData.Length} samples");
+            
+            // Keep queue size manageable
+            while (audioChunkQueue.Count > 10)
+            {
+                audioChunkQueue.Dequeue();
+            }
         }
     }
-
+    
+    /// <summary>
+    /// This is where we inject WebRTC audio into Unity's audio pipeline
+    /// </summary>
     void OnAudioFilterRead(float[] data, int channels)
     {
         if (!isInitialized)
@@ -60,44 +88,59 @@ public class WebRTCAudioFilter : MonoBehaviour
             Array.Clear(data, 0, data.Length);
             return;
         }
-
+        
         lock (queueLock)
         {
-            int outputPos = 0;
-
-            while (outputPos < data.Length)
+            // Fill the output buffer from queued chunks
+            int outputIndex = 0;
+            
+            while (outputIndex < data.Length && audioChunkQueue.Count > 0)
             {
-                if (currentChunk == null || bufferPosition >= currentChunk.Length)
+                if (currentAudioBuffer == null || bufferPosition >= currentAudioBuffer.Length)
                 {
+                    // Get next chunk from queue
                     if (audioChunkQueue.Count > 0)
                     {
-                        currentChunk = audioChunkQueue.Dequeue();
+                        currentAudioBuffer = audioChunkQueue.Dequeue();
                         bufferPosition = 0;
                     }
                     else
                     {
-                        break; // No data: exit early, will fill silence below
+                        break;
                     }
                 }
-
-                int samplesToCopy = Mathf.Min(data.Length - outputPos, currentChunk.Length - bufferPosition);
-                Array.Copy(currentChunk, bufferPosition, data, outputPos, samplesToCopy);
-
-                for (int i = outputPos; i < outputPos + samplesToCopy; i++)
-                    data[i] *= volumeMultiplier;
-
-                outputPos += samplesToCopy;
-                bufferPosition += samplesToCopy;
+                
+                if (currentAudioBuffer != null)
+                {
+                    // Copy data from current chunk to output
+                    int samplesToCopy = Mathf.Min(data.Length - outputIndex, currentAudioBuffer.Length - bufferPosition);
+                    Array.Copy(currentAudioBuffer, bufferPosition, data, outputIndex, samplesToCopy);
+                    
+                    outputIndex += samplesToCopy;
+                    bufferPosition += samplesToCopy;
+                    
+                    // Apply volume
+                    for (int i = outputIndex - samplesToCopy; i < outputIndex; i++)
+                    {
+                        data[i] *= volumeMultiplier;
+                    }
+                }
             }
-
-            if (outputPos < data.Length)
-                Array.Clear(data, outputPos, data.Length - outputPos);
+            
+            // Fill remaining with silence
+            if (outputIndex < data.Length)
+            {
+                Array.Clear(data, outputIndex, data.Length - outputIndex);
+            }
         }
     }
 
+    
     void OnDestroy()
     {
         if (isInitialized)
-            Debug.Log($"[W][🎵WebRTC-{pipelineType}] Filter destroyed");
+        {
+            Debug.Log($"[🎵WebRTC-{pipelineType}] Audio filter destroyed");
+        }
     }
 }
