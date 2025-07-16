@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using Unity.WebRTC;
 using Klak.Ndi;
@@ -22,7 +23,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
     [Header("Audio Settings")]
     [SerializeField] private float spatialBlend = 1.0f;
-    [SerializeField] private float minDistance = 0.1f;
+    [SerializeField] private float minDistance = 1f;
     [SerializeField] private float maxDistance = 10f;
     [SerializeField] private float _audioVolume = 1.0f;
     
@@ -208,30 +209,20 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             }
         }
         
-        // Stop previous audio before setting new track
+        // CRITICAL: Stop previous audio before setting new track
         if (receivingAudioSource.isPlaying)
         {
             receivingAudioSource.Stop();
             Debug.Log($"aaa_[🎵Filter-{pipelineType}] Stopped previous audio before reconnection");
         }
     
-        // Use Unity's SetTrack instead of onReceived callback
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] *** USING SetTrack APPROACH ***");
-    
-        try
-        {
-            receivingAudioSource.SetTrack(audioTrack);
-            receivingAudioSource.loop = true;
-            receivingAudioSource.volume = _audioVolume;
-            receivingAudioSource.Play();
+        // Use the simple SetTrack approach for receiving
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] *** CONNECTING onReceived CALLBACK ***");
+        audioTrack.onReceived += OnWebRTCAudioReceived;
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] onReceived callback connected successfully");
         
-            Debug.Log($"aaa_[🎵Filter-{pipelineType}] SetTrack successful - AudioSource playing: {receivingAudioSource.isPlaying}");
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"aaa_[🎵Filter-{pipelineType}] SetTrack failed: {e.Message}");
-            return;
-        }
+        receivingAudioSource.loop = true;
+        receivingAudioSource.Play();
         
         isReceiving = true;
     
@@ -356,7 +347,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             ndiInterceptor.Initialize(pipelineType, this);
             isCapturingAudio = true;
             
-            TestSetTrackMethod(); // Test NDI audio immediately after setup
+            TestNDIAudioSource(); // Test NDI audio immediately after setup
 
         
             Debug.Log($"[🎵Filter-{pipelineType}] NDI audio interception setup complete on: {ndiAudioSourceComponent.name}");
@@ -394,7 +385,6 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             Debug.LogError($"aaa_[🎵Filter-{pipelineType}] Data length: {audioData.Length}, Channels: {channels}, SampleRate: {actualSampleRate}");
             Debug.LogError($"aaa_[🎵Filter-{pipelineType}] Error feeding audio to WebRTC: {e.Message}");
         }
-        
     }
     #endregion
     
@@ -421,7 +411,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             ndiInterceptor.Initialize(pipelineType, this);
             isCapturingAudio = true;
         
-            TestSetTrackMethod(); // Debug what we found
+            TestNDIAudioSource(); // Debug what we found
         }
         else
         {
@@ -564,10 +554,18 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         receivingAudioSource.playOnAwake = false;
         receivingAudioSource.loop = true;
         
+        // Add WebRTC audio filter
+        webrtcFilter = receivingAudioGameObject.AddComponent<WebRTCAudioFilter>();
+        webrtcFilter.Initialize(pipelineType, _audioVolume);
+        
+        // Create dummy clip to trigger OnAudioFilterRead
+        var dummyClip = AudioClip.Create("WebRTC_Receiver_Dummy", AudioSettings.outputSampleRate, 2, AudioSettings.outputSampleRate, true, OnDummyAudioRead);
+        receivingAudioSource.clip = dummyClip;
         
         receivingAudioGameObject.SetActive(true);
+        receivingAudioSource.Play(); // Start playing to trigger OnAudioFilterRead
         
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Receiving audio source created for SetTrack method");
+        Debug.Log($"[🎵Filter-{pipelineType}] Receiving audio source created at {receivingAudioGameObject.transform.position} (attempt: {connectionAttemptCount})");
     }
     
     /// <summary>
@@ -619,7 +617,12 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         if (receivingAudioSource != null)
         {
             receivingAudioSource.Stop();
-            Debug.Log($"aaa_[🎵Filter-{pipelineType}] Stopped receiving AudioSource");
+        }
+        
+        if (webrtcFilter != null)
+        {
+            DestroyImmediate(webrtcFilter);
+            webrtcFilter = null;
         }
         
         if (receivingAudioGameObject != null)
@@ -627,7 +630,6 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             DestroyImmediate(receivingAudioGameObject);
             receivingAudioGameObject = null;
             receivingAudioSource = null;
-            Debug.Log($"aaa_[🎵Filter-{pipelineType}] Cleaned up receiving audio components");
         }
     }
     
@@ -637,21 +639,29 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
     private IEnumerator VerifyAudioSetup()
     {
-        yield return new WaitForSeconds(2f);
-    
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] === AUDIO VERIFICATION START (SetTrack) ===");
-    
+        yield return new WaitForSeconds(1f);
+        
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] === AUDIO VERIFICATION START ===");
+        
         if (receivingAudioSource != null)
         {
             Debug.Log($"aaa_  - AudioSource Playing: {receivingAudioSource.isPlaying}");
             Debug.Log($"aaa_  - AudioSource Volume: {receivingAudioSource.volume}");
             Debug.Log($"aaa_  - AudioSource Enabled: {receivingAudioSource.enabled}");
-            Debug.Log($"aaa_  - AudioSource Clip: {(receivingAudioSource.clip != null ? receivingAudioSource.clip.name : "null")}");
-            Debug.Log($"aaa_  - AudioSource Spatial Blend: {receivingAudioSource.spatialBlend}");
         }
         else
         {
             Debug.LogError($"aaa_  - AudioSource is NULL!");
+        }
+        
+        if (ndiInterceptor != null)
+        {
+            Debug.Log($"aaa_  - WebRTC Filter Active: {webrtcFilter.enabled}");
+            Debug.Log($"aaa_  - WebRTC Filter Component: {webrtcFilter.GetType().Name}");
+        }
+        else
+        {
+            Debug.LogError($"aaa_  - WebRTC Filter is NULL!");
         }
         
         // Check AudioListener
@@ -775,33 +785,39 @@ public void DebugAudioFlow()
     /// Test if NDI is actually producing audio
     /// </summary>
     [ContextMenu("Test NDI Audio Source")]
-    public void TestSetTrackMethod()
+    public void TestNDIAudioSource()
     {
         if (ndiAudioSource == null)
         {
-            Debug.LogError($"aaa_No receiving AudioSource available for testing");
+            Debug.LogError("aaa_No NDI audio source assigned!");
             return;
         }
 
-        // Create a test audio clip
-        var testClip = AudioClip.Create("TestClip", AudioSettings.outputSampleRate, 2, AudioSettings.outputSampleRate, false);
-        float[] samples = new float[AudioSettings.outputSampleRate * 2]; // 1 second, stereo
-    
-        // Generate a simple sine wave
-        for (int i = 0; i < samples.Length; i += 2)
+        var ndiAudioComponent = ndiAudioSource.GetComponentInChildren<AudioSource>();
+        if (ndiAudioComponent == null)
         {
-            float sample = Mathf.Sin(2 * Mathf.PI * 440 * i / AudioSettings.outputSampleRate) * 0.1f;
-            samples[i] = sample;     // Left channel
-            samples[i + 1] = sample; // Right channel
+            Debug.LogError("aaa_NDI hasn't created an AudioSource yet!");
+            return;
         }
-    
-        testClip.SetData(samples, 0);
-    
-        receivingAudioSource.clip = testClip;
-        receivingAudioSource.loop = false;
-        receivingAudioSource.Play();
-    
-        Debug.Log($"aaa_Playing test clip - should hear 440Hz tone for 1 second");
 
+        Debug.Log($"aaa_[🎵Test] NDI AudioSource found: {ndiAudioComponent.name}");
+        Debug.Log($"aaa_[🎵Test] Is Playing: {ndiAudioComponent.isPlaying}");
+        Debug.Log($"aaa_[🎵Test] Volume: {ndiAudioComponent.volume}");
+        Debug.Log($"aaa_[🎵Test] Has Clip: {ndiAudioComponent.clip != null}");
+
+        if (ndiAudioComponent.clip != null)
+        {
+            Debug.Log($"aaa_[🎵Test] Clip Sample Rate: {ndiAudioComponent.clip.frequency}");
+            Debug.Log($"aaa_[🎵Test] Clip Channels: {ndiAudioComponent.clip.channels}");
+            Debug.Log($"aaa_[🎵Test] Clip Length: {ndiAudioComponent.clip.length}s");
+        }
+
+        // Check if interceptor exists
+        var interceptor = ndiAudioComponent.GetComponent<NDIAudioInterceptor>();
+        Debug.Log($"aaa_[🎵Test] Has Interceptor: {interceptor != null}");
+        if (interceptor != null)
+        {
+            Debug.Log($"aaa_[🎵Test] Interceptor Enabled: {interceptor.enabled}");
+        }
     }
 }
