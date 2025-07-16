@@ -558,21 +558,17 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         receivingAudioSource.minDistance = minDistance;
         receivingAudioSource.maxDistance = maxDistance;
         receivingAudioSource.rolloffMode = AudioRolloffMode.Linear;
-        receivingAudioSource.playOnAwake = false;
+        receivingAudioSource.playOnAwake = true;
         receivingAudioSource.loop = true;
         
         // Add WebRTC audio filter
         webrtcFilter = receivingAudioGameObject.AddComponent<WebRTCAudioFilter>();
         webrtcFilter.Initialize(pipelineType, _audioVolume);
         
-        // Create dummy clip to trigger OnAudioFilterRead
-        var dummyClip = AudioClip.Create("WebRTC_Receiver_Dummy", AudioSettings.outputSampleRate, 2, AudioSettings.outputSampleRate, true, OnDummyAudioRead);
-        receivingAudioSource.clip = dummyClip;
-        
         receivingAudioGameObject.SetActive(true);
         receivingAudioSource.Play(); // Start playing to trigger OnAudioFilterRead
         
-        Debug.Log($"[🎵Filter-{pipelineType}] Receiving audio source created at {receivingAudioGameObject.transform.position} (attempt: {connectionAttemptCount})");
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] Receiving audio source created - waiting for SetTrack");
     }
     
     /// <summary>
