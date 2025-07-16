@@ -580,6 +580,7 @@ public class WebRTCStreamer : MonoBehaviour
             return;
         }
         
+        
         StartCoroutine(ProcessOfferImmediately(offer, fromClient));
     }
     
