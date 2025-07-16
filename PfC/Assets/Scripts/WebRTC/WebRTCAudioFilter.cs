@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.WebRTC;
 using BroadcastPipeline;
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Component that uses OnAudioFilterRead to inject WebRTC audio into Unity's audio pipeline
@@ -19,6 +20,14 @@ public class WebRTCAudioFilter : MonoBehaviour
     private float[] webrtcAudioBuffer;
     private int bufferSize = 1024;
     private int channels = 2;
+    
+    //chuncked audio handling
+    private Queue<float[]> audioChunkQueue = new Queue<float[]>();
+    private float[] currentAudioBuffer;
+    private int bufferPosition = 0;
+    private int expectedChannels = 2;
+    private int expectedSampleRate = 48000;
+    private readonly object queueLock = new object();
     
     public void Initialize(PipelineType pipeline, float volume)
     {
@@ -46,40 +55,85 @@ public class WebRTCAudioFilter : MonoBehaviour
         Debug.Log($"[🎵WebRTC-{pipelineType}] Volume multiplier set to {volumeMultiplier:F2}");
     }
     
+    public void ReceiveAudioChunk(float[] audioData, int channels, int sampleRate)
+    {
+        Debug.Log($"aaa_[🎵WebRTC-{pipelineType}] Received chunk: {audioData.Length} samples, channels: {channels}, sampleRate: {sampleRate}");
+        
+        expectedChannels = channels;
+        expectedSampleRate = sampleRate;
+        
+        lock (queueLock)
+        {
+            // Create a copy of the audio data and queue it
+            float[] chunk = new float[audioData.Length];
+            Array.Copy(audioData, chunk, audioData.Length);
+            audioChunkQueue.Enqueue(chunk);
+            
+            // Keep queue size manageable
+            while (audioChunkQueue.Count > 10)
+            {
+                audioChunkQueue.Dequeue();
+            }
+        }
+    }
+    
     /// <summary>
     /// This is where we inject WebRTC audio into Unity's audio pipeline
     /// </summary>
     void OnAudioFilterRead(float[] data, int channels)
     {
-        if (!isInitialized || !hasIncomingAudio)
+        if (!isInitialized)
         {
-            // Fill with silence if no audio
             Array.Clear(data, 0, data.Length);
             return;
         }
         
-        // Here we would normally get audio data from the WebRTC track
-        // Since Unity WebRTC doesn't expose raw audio data directly,
-        // we need to use a different approach
-        
-        // For now, let's create a working version that demonstrates the concept
-        // In a full implementation, you'd need to:
-        // 1. Extract audio data from the AudioStreamTrack
-        // 2. Convert it to the right format
-        // 3. Apply volume control
-        // 4. Fill the data array
-        
-        // Temporary: Fill with silence but apply volume control to demonstrate
-        Array.Clear(data, 0, data.Length);
-        
-        // If we had audio data, we would do:
-        // for (int i = 0; i < data.Length; i++)
-        // {
-        //     data[i] = webrtcAudioData[i] * volumeMultiplier;
-        // }
-        
-
+        lock (queueLock)
+        {
+            // Fill the output buffer from queued chunks
+            int outputIndex = 0;
+            
+            while (outputIndex < data.Length && audioChunkQueue.Count > 0)
+            {
+                if (currentAudioBuffer == null || bufferPosition >= currentAudioBuffer.Length)
+                {
+                    // Get next chunk from queue
+                    if (audioChunkQueue.Count > 0)
+                    {
+                        currentAudioBuffer = audioChunkQueue.Dequeue();
+                        bufferPosition = 0;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                
+                if (currentAudioBuffer != null)
+                {
+                    // Copy data from current chunk to output
+                    int samplesToCopy = Mathf.Min(data.Length - outputIndex, currentAudioBuffer.Length - bufferPosition);
+                    Array.Copy(currentAudioBuffer, bufferPosition, data, outputIndex, samplesToCopy);
+                    
+                    outputIndex += samplesToCopy;
+                    bufferPosition += samplesToCopy;
+                    
+                    // Apply volume
+                    for (int i = outputIndex - samplesToCopy; i < outputIndex; i++)
+                    {
+                        data[i] *= volumeMultiplier;
+                    }
+                }
+            }
+            
+            // Fill remaining with silence
+            if (outputIndex < data.Length)
+            {
+                Array.Clear(data, outputIndex, data.Length - outputIndex);
+            }
+        }
     }
+
     
     void OnDestroy()
     {

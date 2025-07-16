@@ -196,7 +196,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         }
     
         // Use the simple SetTrack approach for receiving
-        receivingAudioSource.SetTrack(audioTrack);
+        audioTrack.onReceived += OnWebRTCAudioReceived;
         receivingAudioSource.loop = true;
         receivingAudioSource.Play();
     
@@ -204,7 +204,22 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     
         StartCoroutine(VerifyAudioSetup());
     }
+    // Add this new method to handle chunked audio data
+    private void OnWebRTCAudioReceived(float[] audioData, int channels, int sampleRate)
+    {
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Received audio chunk: {audioData.Length} samples, {channels} channels, {sampleRate}Hz");
     
+        // Check audio levels
+        float maxLevel = audioData.Max(sample => Mathf.Abs(sample));
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Received audio maxLevel: {maxLevel:F4}");
+    
+        // Now you need to feed this chunked data to your WebRTCAudioFilter
+        // or directly to Unity's audio system
+        if (webrtcFilter != null)
+        {
+            webrtcFilter.ReceiveAudioChunk(audioData, channels, sampleRate);
+        }
+    }
     /// <summary>
     /// Stop current audio operations with improved cleanup
     /// </summary>
