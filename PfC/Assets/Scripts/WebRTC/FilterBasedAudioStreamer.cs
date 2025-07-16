@@ -33,6 +33,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     private AudioSource receivingAudioSource;
     private GameObject receivingAudioGameObject;
     private int cachedSampleRate = 48000; // Cache the sample rate
+    private AudioStreamTrack currentReceivingTrack;
 
     
     // Audio Filter Management
@@ -46,6 +47,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     private bool isReceiving = false;
     private string currentSessionId = string.Empty;
     private int connectionAttemptCount = 0; // Track reconnection attempts
+    
+    private Coroutine audioPollingCoroutine;
     
     [ContextMenu("Test Audio Callback Manually")]
     public void TestAudioCallbackManually()
@@ -192,11 +195,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     /// </summary>
     public void HandleIncomingAudioTrack(AudioStreamTrack audioTrack)
     {
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] *** HandleIncomingAudioTrack CALLED *** Session: {currentSessionId}");
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] AudioTrack ID: {audioTrack.Id}");
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] AudioTrack Enabled: {audioTrack.Enabled}");
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] AudioTrack Kind: {audioTrack.Kind}");
-    
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] *** HandleIncomingAudioTrack CALLED *** Session: {currentSessionId}");
+
         if (receivingAudioSource == null)
         {
             Debug.LogError($"aaa_[🎵Filter-{pipelineType}] No receiving AudioSource prepared - recreating");
@@ -215,20 +215,27 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             receivingAudioSource.Stop();
             Debug.Log($"aaa_[🎵Filter-{pipelineType}] Stopped previous audio before reconnection");
         }
-    
-        // Use the simple SetTrack approach for receiving
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] *** CONNECTING onReceived CALLBACK ***");
-        audioTrack.onReceived += OnWebRTCAudioReceived;
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] onReceived callback connected successfully");
         
+        // Use SetTrack approach
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] *** USING SETTRACK WITH INTERCEPTOR ***");
+    
+        // CRITICAL: Add an audio interceptor to the receiving AudioSource
+        var receiveInterceptor = receivingAudioGameObject.GetComponent<ReceivingAudioInterceptor>();
+        if (receiveInterceptor == null)
+        {
+            receiveInterceptor = receivingAudioGameObject.AddComponent<ReceivingAudioInterceptor>();
+            receiveInterceptor.Initialize(pipelineType, webrtcFilter);
+        }
+    
+        // Use SetTrack
+        receivingAudioSource.SetTrack(audioTrack);
         receivingAudioSource.loop = true;
+        receivingAudioSource.volume = 1.0f; // Full volume for interception
         receivingAudioSource.Play();
         
         isReceiving = true;
     
-        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Audio setup complete - AudioSource playing: {receivingAudioSource.isPlaying}");
-    
-        StartCoroutine(VerifyAudioSetup());
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] Audio setup complete with interceptor");
     }
     // Add this new method to handle chunked audio data
     private void OnWebRTCAudioReceived(float[] audioData, int channels, int sampleRate)

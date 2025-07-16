@@ -45,7 +45,7 @@ public class NDIAudioInterceptor : MonoBehaviour
 
         // Log every ~2 seconds (assuming 48kHz, 1024 samples per call = ~96 calls per 2 seconds)
         debugCounter++;
-        if (debugCounter % 96 == 0)
+        if (debugCounter % 1096 == 0)
         {
             Debug.Log($"aaa_[🎵NDI-{pipelineType}] Audio data: {data.Length} samples, {channels} channels, hasAudio: {hasAudio}, maxLevel: {maxSample:F4}");
         }
