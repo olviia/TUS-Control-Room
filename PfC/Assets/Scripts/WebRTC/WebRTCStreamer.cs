@@ -380,6 +380,32 @@ public class WebRTCStreamer : MonoBehaviour
         Debug.Log($"[📡{instanceId}] Tracks added to connection");
     }
     
+    private void ForceAudioTrackReestablishment()
+    {
+        Debug.Log($"aaa_[📡{instanceId}] Forcing audio track re-establishment");
+    
+        if (audioStreamer != null && receiveMediaStream != null)
+        {
+            // Find audio tracks in the MediaStream
+            var audioTracks = receiveMediaStream.GetAudioTracks();
+        
+            foreach (var track in audioTracks)
+            {
+                if (track is AudioStreamTrack audioStreamTrack)
+                {
+                    Debug.Log($"aaa_[📡{instanceId}] Re-establishing audio track: {audioStreamTrack.Id}");
+                    audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
+                    break; // Only need the first audio track
+                }
+            }
+        
+            if (!audioTracks.Any())
+            {
+                Debug.LogWarning($"aaa_[📡{instanceId}] No audio tracks found in MediaStream for re-establishment");
+            }
+        }
+    }
+    
     #endregion
     
     #region NDI Management
@@ -715,7 +741,7 @@ public class WebRTCStreamer : MonoBehaviour
                 if (enableOptimisticStates && isOfferer)
                 {
                     SetState(StreamerState.Streaming);
-                    targetRenderer?.ShowLocalNDI();
+                    //targetRenderer?.ShowLocalNDI();
                 }
                 break;
                 
@@ -728,6 +754,11 @@ public class WebRTCStreamer : MonoBehaviour
                 {
                     Debug.Log($"[📡{instanceId}] Refreshing NDI audio after connection established");
                     audioStreamer.RefreshNDIConnection();
+                }
+                if (!isOfferer) // Only for receivers
+                {
+                    Debug.Log($"aaa_[📡{instanceId}] Connection established - forcing audio re-establishment");
+                    ForceAudioTrackReestablishment();
                 }
                 ClearConnectionTimeout();
                 retryCount = 0;
