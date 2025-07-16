@@ -104,7 +104,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     public AudioStreamTrack StartAudioStreaming(string sessionId)
     {
         Debug.Log($"[🎵Filter-{pipelineType}] StartAudioStreaming called for session: {sessionId}");
-        
+        RefreshNDIConnection();
+
         // CRITICAL: Clean up previous audio track if reconnecting
         if (isStreaming && currentSessionId != sessionId)
         {
@@ -122,7 +123,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         connectionAttemptCount++;
         isStreaming = true;
         
-        SetupNDIAudioInterception();
+        RefreshNDIConnection();
+
         CreateSendingAudioTrack();
 
         DebugAudioFlow();
@@ -333,6 +335,38 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     #endregion
     
     #region WebRTC Audio Management
+    
+    public void RefreshNDIConnection()
+    {
+        Debug.Log($"aaa_[🎵Filter-{pipelineType}] Refreshing NDI audio connection");
+    
+        if (ndiAudioSource == null) return;
+    
+        // Clean up any existing interceptor
+        CleanupNDIInterceptor();
+    
+        // Immediately check for AudioSource
+        var currentAudioSource = ndiAudioSource.GetComponentInChildren<AudioSource>();
+    
+        if (currentAudioSource != null)
+        {
+            Debug.Log($"aaa_[🎵Filter-{pipelineType}] Found NDI AudioSource during refresh: {currentAudioSource.name}");
+        
+            // Add interceptor immediately
+            ndiInterceptor = currentAudioSource.gameObject.AddComponent<NDIAudioInterceptor>();
+            ndiInterceptor.Initialize(pipelineType, this);
+            isCapturingAudio = true;
+        
+            TestNDIAudioSource(); // Debug what we found
+        }
+        else
+        {
+            Debug.Log($"aaa_[🎵Filter-{pipelineType}] No NDI AudioSource found during refresh - will wait");
+            // Fall back to the coroutine approach
+            StartCoroutine(WaitForNDIAudioSource());
+        }
+    }
+
     
     private IEnumerator ContinuousNDIMonitoring()
 {

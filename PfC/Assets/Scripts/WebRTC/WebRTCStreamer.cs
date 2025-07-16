@@ -724,6 +724,11 @@ public class WebRTCStreamer : MonoBehaviour
                 AdaptToNetworkPerformance(connectionDuration);
                 
                 SetState(isOfferer ? StreamerState.Streaming : StreamerState.Receiving);
+                if (audioStreamer != null)
+                {
+                    Debug.Log($"[📡{instanceId}] Refreshing NDI audio after connection established");
+                    audioStreamer.RefreshNDIConnection();
+                }
                 ClearConnectionTimeout();
                 retryCount = 0;
                 break;
