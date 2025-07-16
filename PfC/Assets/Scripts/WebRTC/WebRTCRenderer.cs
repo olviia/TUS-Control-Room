@@ -5,8 +5,8 @@ using Klak.Ndi;
 using System.Collections;
 
 /// <summary>
-/// Updated WebRTC Renderer with separated audio handling
-/// Now focuses purely on video rendering while audio is handled by WebRTCAudioStreamer
+/// Updated WebRTC Renderer 
+/// Now focuses purely on video rendering 
 /// </summary>
 public class WebRTCRenderer : MonoBehaviour
 {
@@ -15,9 +15,6 @@ public class WebRTCRenderer : MonoBehaviour
     public PipelineType pipelineType;
     public NdiReceiver localNdiReceiver;
     public NdiReceiver localNdiReceiverCaptions;
-    
-    [Header("Audio Component")]
-    public FilterBasedAudioStreamer audioStreamer; // Reference to the audio streamer
     
     [Header("Display Settings")]
     [SerializeField] private bool debugMode = false;
@@ -62,11 +59,6 @@ public class WebRTCRenderer : MonoBehaviour
         if (localNdiReceiver == null)
         {
             Debug.LogWarning($"[🖥️Renderer] No local NDI receiver assigned for {pipelineType}");
-        }
-        
-        if (audioStreamer == null)
-        {
-            Debug.LogWarning($"[🖥️Renderer] No audio streamer assigned for {pipelineType}");
         }
     }
     
@@ -113,52 +105,6 @@ public class WebRTCRenderer : MonoBehaviour
     }
     
     /// <summary>
-    /// Handle incoming WebRTC audio track - delegate to audio streamer
-    /// </summary>
-    public void HandleRemoteAudioTrack(AudioStreamTrack audioTrack)
-    {
-        if (audioStreamer != null)
-        {
-            audioStreamer.HandleIncomingAudioTrack(audioTrack);
-            Debug.Log($"[🖥️Renderer] Audio track delegated to audio streamer");
-        }
-        else
-        {
-            Debug.LogError($"[🖥️Renderer] No audio streamer available for audio track");
-        }
-    }
-    
-    /// <summary>
-    /// Get audio source for WebRTC audio connection
-    /// </summary>
-    public AudioSource GetRemoteAudioSource()
-    {
-        if (audioStreamer != null)
-        {
-            return audioStreamer.ReceivingAudioSource;
-        }
-        
-        Debug.LogError($"[🖥️Renderer] No audio streamer available");
-        return null;
-    }
-    
-    /// <summary>
-    /// Prepare for receiving remote audio
-    /// </summary>
-    public void PrepareRemoteAudio(string sessionId = "")
-    {
-        if (audioStreamer != null)
-        {
-            audioStreamer.PrepareAudioReceiving(sessionId);
-            Debug.Log($"[🖥️Renderer] Remote audio preparation delegated to audio streamer");
-        }
-        else
-        {
-            Debug.LogError($"[🖥️Renderer] No audio streamer available for remote audio preparation");
-        }
-    }
-    
-    /// <summary>
     /// Show local NDI - INSTANT switch back
     /// </summary>
     public void ShowLocalNDI()
@@ -174,12 +120,6 @@ public class WebRTCRenderer : MonoBehaviour
             
         propertyBlock.Clear(); // Remove all overrides
         sharedRenderer.SetPropertyBlock(propertyBlock);
-        
-        // Stop remote audio
-        if (audioStreamer != null)
-        {
-            audioStreamer.StopAudioOperations();
-        }
         
         // Enable local audio
         SetLocalAudioActive(true);
@@ -208,13 +148,6 @@ public class WebRTCRenderer : MonoBehaviour
         propertyBlock.Clear();
         sharedRenderer.SetPropertyBlock(propertyBlock);
         sharedRenderer.material = originalMaterial;
-        
-        // Audio clearing
-        SetLocalAudioActive(false);
-        if (audioStreamer != null)
-        {
-            audioStreamer.StopAudioOperations();
-        }
         
         isShowingRemoteStream = false;
         currentDisplaySession = string.Empty;
@@ -263,6 +196,9 @@ public class WebRTCRenderer : MonoBehaviour
     /// <summary>
     /// Control local NDI audio
     /// </summary>
+    ///
+    
+    //rewrite it into properly muting/unmuting ndi, use code from button
     private void SetLocalAudioActive(bool active)
     {
         if (localNdiReceiver != null)
@@ -318,20 +254,7 @@ public class WebRTCRenderer : MonoBehaviour
     {
         return sharedRenderer?.material?.mainTexture;
     }
-    
-    // Audio-related properties (delegated to audio streamer)
-    public float AudioVolume
-    {
-        get => audioStreamer?.AudioVolume ?? 0f;
-        set
-        {
-            if (audioStreamer != null)
-                audioStreamer.AudioVolume = value;
-        }
-    }
-    
-    public bool IsReceivingAudio => audioStreamer?.IsReceiving ?? false;
-    
+
     #endregion
     
     #region Debug Methods
@@ -348,19 +271,6 @@ public class WebRTCRenderer : MonoBehaviour
         ClearDisplay();
     }
     
-    [ContextMenu("Debug Audio State")]
-    public void DebugAudioState()
-    {
-        if (audioStreamer != null)
-        {
-            audioStreamer.DebugAudioState();
-        }
-        else
-        {
-            Debug.Log($"[🖥️Renderer] No audio streamer assigned for {pipelineType}");
-        }
-    }
-    
     void OnValidate()
     {
         if (sharedRenderer == null)
@@ -371,11 +281,6 @@ public class WebRTCRenderer : MonoBehaviour
         if (localNdiReceiver == null)
         {
             localNdiReceiver = GetComponentInChildren<NdiReceiver>();
-        }
-        
-        if (audioStreamer == null)
-        {
-            audioStreamer = GetComponent<FilterBasedAudioStreamer>();
         }
     }
     

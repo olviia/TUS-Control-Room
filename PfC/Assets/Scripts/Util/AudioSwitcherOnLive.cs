@@ -4,14 +4,14 @@ using System.Collections.Generic;
 using System.Reflection;
 using BroadcastPipeline;
 using UnityEngine;
-
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class AudioSwitcherOnLive : MonoBehaviour
 {
     [SerializeField] private NdiReceiver ndiReceiver;
     [SerializeField] private WebRTCRenderer incomingAudioWebRtcRenderer;
-    [SerializeField] private bool playAudio;
+    [SerializeField] private bool audioIsPlaying;
 
     private Coroutine ndiTurnOnCoroutine;
 
@@ -21,25 +21,24 @@ public class AudioSwitcherOnLive : MonoBehaviour
     {
         if (incomingAudioWebRtcRenderer != null && incomingAudioWebRtcRenderer.isShowingRemoteStream)
         {
-            float newVolume = incomingAudioWebRtcRenderer.AudioVolume > 0 ? 0f : 1f;
-            incomingAudioWebRtcRenderer.AudioVolume = newVolume;
+           // float newVolume = incomingAudioWebRtcRenderer.AudioVolume > 0 ? 0f : 1f;
+           // incomingAudioWebRtcRenderer.AudioVolume = newVolume;
 
         }
         else if (ndiReceiver != null)
         {        
-            NDIAudioInterceptor ndiAudioInterceptor = ndiReceiver.GetComponent<NDIAudioInterceptor>();
+           // NDIAudioInterceptor ndiAudioInterceptor = ndiReceiver.GetComponent<NDIAudioInterceptor>();
 
             // change ndi volume
-            if (!playAudio)
+            if (!audioIsPlaying)
             {
-                ndiReceiver.GetComponentInChildren<AudioSource>().volume = 1f;
+                TurnOnNdi(true);
             }
             else
             {
-                ndiReceiver.GetComponentInChildren<AudioSource>().volume = 0f;
-
+                TurnOnNdi(false);
             }
-            playAudio = !playAudio;
+            audioIsPlaying = !audioIsPlaying;
         }
     }
 
@@ -47,27 +46,15 @@ public class AudioSwitcherOnLive : MonoBehaviour
 
     private void Start()
     {
-        WebRTCStreamer.OnStateChanged += CheckAndTurnOnNdi;
-    }
-
-    private void CheckAndTurnOnNdi(PipelineType pipeline, StreamerState state, string sessionId)
-    {
-        ndiTurnOnCoroutine= StartCoroutine(NdiTurnOn(pipeline));
-
-    }
-
-    private IEnumerator NdiTurnOn(PipelineType pipeline)
-    {
-        if (ndiReceiver == null) yield return new WaitForEndOfFrame();
         
-        if (pipeline == PipelineType.StudioLive || PipelineType.TVLive == pipeline)
-        {
-            SetReceiveAudioField(true);
-            SetCreateVirtualSpeakersField(true);
-            ndiReceiver.GetComponentInChildren<AudioSource>().volume = 0f;
-            
-            WebRTCStreamer.OnStateChanged -= CheckAndTurnOnNdi;
-        }
+    }
+
+
+
+    private  void TurnOnNdi(bool activate)
+    {
+            SetReceiveAudioField(activate);
+            SetCreateVirtualSpeakersField(activate);
     }
 
     // Helper method to set the _createVirtualSpeakers field via reflection

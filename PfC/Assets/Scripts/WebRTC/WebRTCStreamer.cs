@@ -15,8 +15,8 @@ public enum StreamerState
 }
 
 /// <summary>
-/// Updated WebRTC streamer with separated audio handling
-/// Integrates with WebRTCAudioStreamer for proper audio streaming
+/// Updated WebRTC streamer with separated 
+/// Integrates with 
 /// </summary>
 public class WebRTCStreamer : MonoBehaviour
 {
@@ -28,7 +28,6 @@ public class WebRTCStreamer : MonoBehaviour
     public NdiReceiver ndiReceiverSource;
     public NdiReceiver ndiReceiverCaptions;
     public WebRTCRenderer targetRenderer;
-    public FilterBasedAudioStreamer audioStreamer; // New audio streamer reference
     
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1920;
@@ -40,7 +39,6 @@ public class WebRTCStreamer : MonoBehaviour
     // WebRTC objects
     private RTCPeerConnection peerConnection;
     private VideoStreamTrack videoTrack;
-    private AudioStreamTrack audioTrack; // Now managed by audio streamer
     private RenderTexture webRtcTexture;
     private MediaStream receiveMediaStream;
     
@@ -80,7 +78,6 @@ public class WebRTCStreamer : MonoBehaviour
         ConnectToSignaling();
         SetState(StreamerState.Idle);
         blendMaterial = new Material(Shader.Find("Custom/BlendTwoTextures"));
-        ValidateAudioStreamer();
     }
     
     void OnDestroy()
@@ -98,19 +95,6 @@ public class WebRTCStreamer : MonoBehaviour
     private void CreateInstanceId()
     {
         instanceId = $"{pipelineType}_{System.Guid.NewGuid().ToString("N")[..8]}";
-        Debug.Log($"[📡{instanceId}] Created with audio streaming support");
-    }
-    
-    private void ValidateAudioStreamer()
-    {
-        if (audioStreamer == null)
-        {
-            Debug.LogError($"[📡{instanceId}] No WebRTCAudioStreamer assigned - audio will not work");
-        }
-        else
-        {
-            Debug.Log($"[📡{instanceId}] Audio streamer validated and ready");
-        }
     }
     
     private void RegisterWithEngine()
@@ -183,12 +167,6 @@ public class WebRTCStreamer : MonoBehaviour
         PrepareForNewSessionSync(sessionId);
         isOfferer = false;
         SetupReceivingConnection();
-        
-        // Prepare audio receiving
-        if (audioStreamer != null)
-        {
-            audioStreamer.PrepareAudioReceiving(sessionId);
-        }
         
         Debug.Log($"[📡{instanceId}] Receiver ready immediately for: {sessionId}");
         StartConnectionTimeout();
@@ -316,46 +294,9 @@ public class WebRTCStreamer : MonoBehaviour
         peerConnection.OnConnectionStateChange = OnConnectionStateChange;
         peerConnection.OnIceConnectionChange = OnIceConnectionChange;
     
-        // Create MediaStream for receiving audio
-        if (!isOfferer)
-        {
-            Debug.Log($"aaa_[📡{instanceId}] Creating MediaStream for receiver (isOfferer=false)");
-            receiveMediaStream = new MediaStream();
-            receiveMediaStream.OnAddTrack = OnMediaStreamTrackAdded;
-            Debug.Log($"aaa_[📡{instanceId}] MediaStream created with OnAddTrack callback");
-        }
-        else
-        {
-            Debug.Log($"aaa_[📡{instanceId}] Skipping MediaStream creation (isOfferer=true)");
-        }
-    
         Debug.Log($"aaa_[📡{instanceId}] CreatePeerConnection COMPLETE");
     }
     
-    private void OnMediaStreamTrackAdded(MediaStreamTrackEvent e)
-    {
-        Debug.Log($"aaa_[📡{instanceId}] *** MEDIASTREAM TRACK ADDED *** Kind: {e.Track.Kind}, ID: {e.Track.Id}");
-    
-        if (e.Track is AudioStreamTrack audioStreamTrack)
-        {
-            Debug.Log($"aaa_[📡{instanceId}] *** CALLING HandleIncomingAudioTrack ***");
-            
-            // Delegate audio handling to audio streamer
-            if (audioStreamer != null)
-            {
-                Debug.Log($"aaa_[📡{instanceId}] Audio streamer found, calling HandleIncomingAudioTrack");
-                audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
-            }
-            else
-            {
-                Debug.LogError($"aaa_[📡{instanceId}] No audio streamer available for incoming audio track");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"aaa_[📡{instanceId}] Non-audio track added to MediaStream: {e.Track.Kind}");
-        }
-    }
     
     private void AddTracksToConnection()
     {
@@ -369,53 +310,9 @@ public class WebRTCStreamer : MonoBehaviour
         // Add video track
         peerConnection.AddTrack(videoTrack);
         
-        // Add audio track via audio streamer
-        if (audioStreamer != null)
-        {
-            audioTrack = audioStreamer.StartAudioStreaming(currentSessionId);
-            if (audioTrack != null)
-            {
-                peerConnection.AddTrack(audioTrack);
-                Debug.Log($"[📡{instanceId}] Audio track added via audio streamer");
-            }
-            else
-            {
-                Debug.LogError($"[📡{instanceId}] Failed to create audio track via audio streamer");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[📡{instanceId}] No audio streamer - streaming video only");
-        }
-        
         Debug.Log($"[📡{instanceId}] Tracks added to connection");
     }
     
-    private void ForceAudioTrackReestablishment()
-    {
-        Debug.Log($"aaa_[📡{instanceId}] Forcing audio track re-establishment");
-    
-        if (audioStreamer != null && receiveMediaStream != null)
-        {
-            // Find audio tracks in the MediaStream
-            var audioTracks = receiveMediaStream.GetAudioTracks();
-        
-            foreach (var track in audioTracks)
-            {
-                if (track is AudioStreamTrack audioStreamTrack)
-                {
-                    Debug.Log($"aaa_[📡{instanceId}] Re-establishing audio track: {audioStreamTrack.Id}");
-                    audioStreamer.HandleIncomingAudioTrack(audioStreamTrack);
-                    break; // Only need the first audio track
-                }
-            }
-        
-            if (!audioTracks.Any())
-            {
-                Debug.LogWarning($"aaa_[📡{instanceId}] No audio tracks found in MediaStream for re-establishment");
-            }
-        }
-    }
     
     #endregion
     
@@ -717,22 +614,6 @@ public class WebRTCStreamer : MonoBehaviour
             SetState(StreamerState.Receiving);
             ClearConnectionTimeout();
         }
-        else if (e.Track is AudioStreamTrack audioStreamTrack)
-        {
-            Debug.Log($"aaa_[📡{instanceId}] *** AUDIO TRACK RECEIVED *** ID: {audioStreamTrack.Id}");
-            Debug.Log($"aaa_[📡{instanceId}] Audio track enabled: {audioStreamTrack.Enabled}");
-            Debug.Log($"aaa_[📡{instanceId}] Audio track kind: {audioStreamTrack.Kind}");
-
-            if (receiveMediaStream != null)
-            {
-                Debug.Log($"aaa_[📡{instanceId}] Adding audio track to MediaStream");
-                receiveMediaStream.AddTrack(e.Track);
-            }
-            else
-            {
-                Debug.LogError($"aaa_[📡{instanceId}] No receive MediaStream available!");
-            }
-        }
         else
         {
             Debug.LogWarning($"aaa_[📡{instanceId}] Unknown track type received: {e.Track.GetType()}");
@@ -769,16 +650,7 @@ public class WebRTCStreamer : MonoBehaviour
                 AdaptToNetworkPerformance(connectionDuration);
                 
                 SetState(isOfferer ? StreamerState.Streaming : StreamerState.Receiving);
-                if (audioStreamer != null)
-                {
-                    Debug.Log($"[📡{instanceId}] Refreshing NDI audio after connection established");
-                    audioStreamer.RefreshNDIConnection();
-                }
-                if (!isOfferer) // Only for receivers
-                {
-                    Debug.Log($"aaa_[📡{instanceId}] Connection established - forcing audio re-establishment");
-                    ForceAudioTrackReestablishment();
-                }
+
                 ClearConnectionTimeout();
                 retryCount = 0;
                 break;
@@ -917,12 +789,7 @@ public class WebRTCStreamer : MonoBehaviour
     {
         ClearConnectionTimeout();
         StopTextureUpdates();
-        
-        // Stop audio operations
-        if (audioStreamer != null)
-        {
-            audioStreamer.StopAudioOperations();
-        }
+
     }
     
     private void CleanupCurrentSession()
@@ -981,13 +848,6 @@ public class WebRTCStreamer : MonoBehaviour
             videoTrack = null;
         }
         
-        // Audio track is now managed by audio streamer
-        if (audioTrack != null)
-        {
-            audioTrack.Dispose();
-            audioTrack = null;
-        }
-        
         if (webRtcTexture != null)
         {
             webRtcTexture.Release();
@@ -1025,37 +885,9 @@ public class WebRTCStreamer : MonoBehaviour
     public string CurrentSessionId => currentSessionId;
     public string InstanceId => instanceId;
     public bool IsConnected => currentState == StreamerState.Streaming || currentState == StreamerState.Receiving;
-    public bool HasAudioStreamer => audioStreamer != null;
+
     
     #endregion
     
-    #region Debug Methods
-    
-    [ContextMenu("Debug Audio State")]
-    public void DebugAudioState()
-    {
-        if (audioStreamer != null)
-        {
-            audioStreamer.DebugAudioState();
-        }
-        else
-        {
-            Debug.Log($"[📡{instanceId}] No audio streamer assigned");
-        }
-    }
-    
-    void OnValidate()
-    {
-        if (audioStreamer == null)
-        {
-            audioStreamer = GetComponent<FilterBasedAudioStreamer>();
-        }
-        
-        if (targetRenderer == null)
-        {
-            targetRenderer = GetComponent<WebRTCRenderer>();
-        }
-    }
-    
-    #endregion
+
 }
