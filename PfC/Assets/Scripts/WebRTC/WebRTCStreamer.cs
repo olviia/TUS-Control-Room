@@ -759,7 +759,7 @@ public class WebRTCStreamer : MonoBehaviour
                 if (enableOptimisticStates && isOfferer)
                 {
                     SetState(StreamerState.Streaming);
-                    //targetRenderer?.ShowLocalNDI();
+                    targetRenderer?.ShowLocalNDI();
                 }
                 break;
                 
@@ -785,7 +785,6 @@ public class WebRTCStreamer : MonoBehaviour
             case RTCPeerConnectionState.Failed:
                 
             case RTCPeerConnectionState.Disconnected:
-                targetRenderer?.ShowLocalNDI();
                 if (currentState != StreamerState.Disconnecting)
                     HandleConnectionFailure();
                 break;
