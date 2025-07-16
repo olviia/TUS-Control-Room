@@ -196,6 +196,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
     public void HandleIncomingAudioTrack(AudioStreamTrack audioTrack)
     {
         Debug.Log($"bbb_[🎵Filter-{pipelineType}] *** HandleIncomingAudioTrack CALLED *** Session: {currentSessionId}");
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] AudioTrack ID: {audioTrack.Id}");
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] AudioTrack Enabled: {audioTrack.Enabled}");
 
         if (receivingAudioSource == null)
         {
@@ -209,7 +211,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
             }
         }
         
-        // CRITICAL: Stop previous audio before setting new track
+        // Stop previous audio before setting new track
         if (receivingAudioSource.isPlaying)
         {
             receivingAudioSource.Stop();
@@ -219,7 +221,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         // Use SetTrack approach
         Debug.Log($"bbb_[🎵Filter-{pipelineType}] *** USING SETTRACK WITH INTERCEPTOR ***");
     
-        // CRITICAL: Add an audio interceptor to the receiving AudioSource
+        // Add an audio interceptor to the receiving AudioSource
         var receiveInterceptor = receivingAudioGameObject.GetComponent<ReceivingAudioInterceptor>();
         if (receiveInterceptor == null)
         {
@@ -228,6 +230,7 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         }
     
         // Use SetTrack
+        Debug.Log($"bbb_[🎵Filter-{pipelineType}] *** USING SETTRACK ***");
         receivingAudioSource.SetTrack(audioTrack);
         receivingAudioSource.loop = true;
         receivingAudioSource.volume = 1.0f; // Full volume for interception
@@ -236,6 +239,8 @@ public class FilterBasedAudioStreamer : MonoBehaviour
         isReceiving = true;
     
         Debug.Log($"bbb_[🎵Filter-{pipelineType}] Audio setup complete with interceptor");
+        StartCoroutine(VerifyAudioSetup());
+
     }
     // Add this new method to handle chunked audio data
     private void OnWebRTCAudioReceived(float[] audioData, int channels, int sampleRate)
