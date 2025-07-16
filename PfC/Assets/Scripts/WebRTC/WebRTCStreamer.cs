@@ -705,10 +705,15 @@ public class WebRTCStreamer : MonoBehaviour
     {
         if (e.Track is VideoStreamTrack videoStreamTrack)
         {
-            Debug.Log($"aaa_[📡{instanceId}] Video track received and processed");
-            videoStreamTrack.OnVideoReceived += OnVideoReceived;
-            SetState(StreamerState.Receiving);
-            ClearConnectionTimeout();
+            if (receiveMediaStream != null)
+            {
+                Debug.Log($"aaa_[📡{instanceId}] Adding video track to MediaStream");
+                receiveMediaStream.AddTrack(e.Track);
+            }
+            else
+            {
+                Debug.LogError($"aaa_[📡{instanceId}] No receive MediaStream available!");
+            }
         }
         else if (e.Track is AudioStreamTrack audioStreamTrack)
         {
