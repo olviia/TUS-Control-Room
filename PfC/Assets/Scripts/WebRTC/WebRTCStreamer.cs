@@ -5,6 +5,7 @@ using System.Collections;
 using BroadcastPipeline;
 using Unity.Netcode;
 using System;
+using System.Linq;
 using UnityEngine.Rendering;
 
 public enum StreamerState
