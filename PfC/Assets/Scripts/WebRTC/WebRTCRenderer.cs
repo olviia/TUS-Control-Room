@@ -20,11 +20,18 @@ public class WebRTCRenderer : MonoBehaviour
     [SerializeField] private bool debugMode = false;
     [SerializeField] private bool autoFallbackToLocal = true;
     
+    [Header("Audio Integration")]
+    public WebRTCAudioReceiver audioReceiver; // Assign in inspector 
+    public bool enableAudioReceiving = true;
+    
     // Video rendering components
     private Material originalMaterial;
     public bool isShowingRemoteStream = false;
     private string currentDisplaySession = string.Empty;
     private MaterialPropertyBlock propertyBlock;
+    
+    // Audio state tracking
+    private bool isReceivingAudio = false;
     
     // Events
     public static event System.Action<PipelineType, bool, string> OnDisplayModeChanged;
@@ -96,6 +103,14 @@ public class WebRTCRenderer : MonoBehaviour
         // Disable local NDI immediately
         SetNdiReceiverActive(false);
         
+        // Start audio receiving (audio will be started by WebRTCStreamer when track is received)
+        // We just ensure audio receiver is ready
+        if (enableAudioReceiving && audioReceiver != null)
+        {
+            // Audio receiver will be activated by WebRTCStreamer when audio track arrives
+            Debug.Log($"[🖥️Renderer] Audio receiver ready for {pipelineType}");
+        }
+        
         // Update state
         isShowingRemoteStream = true;
         currentDisplaySession = sessionId;
@@ -118,11 +133,19 @@ public class WebRTCRenderer : MonoBehaviour
         if (propertyBlock == null)
             propertyBlock = new MaterialPropertyBlock();
             
+            
         propertyBlock.Clear(); // Remove all overrides
         sharedRenderer.SetPropertyBlock(propertyBlock);
         
         // Enable local audio
         SetLocalAudioActive(true);
+        //Stop remote audio receiving
+        if (enableAudioReceiving && audioReceiver != null && isReceivingAudio)
+        {
+            audioReceiver.StopReceivingAudio();
+            isReceivingAudio = false;
+            Debug.Log($"[🖥️Renderer] Remote audio stopped for {pipelineType}");
+        }
         
         // Update state
         isShowingRemoteStream = false;
@@ -148,6 +171,13 @@ public class WebRTCRenderer : MonoBehaviour
         propertyBlock.Clear();
         sharedRenderer.SetPropertyBlock(propertyBlock);
         sharedRenderer.material = originalMaterial;
+        
+        if (enableAudioReceiving && audioReceiver != null && isReceivingAudio)
+        {
+            audioReceiver.StopReceivingAudio();
+            isReceivingAudio = false;
+            Debug.Log($"[🖥️Renderer] Audio cleared for {pipelineType}");
+        }
         
         isShowingRemoteStream = false;
         currentDisplaySession = string.Empty;

@@ -36,6 +36,18 @@ public class WebRTCStreamer : MonoBehaviour
     [SerializeField] private bool enableOptimisticStates = true;
     [SerializeField] private int maxRetryAttempts = 3;
     
+    [Header("Audio Integration")]
+    public NdiAudioInterceptor audioInterceptor; // Assign in inspector or find automatically
+    public bool enableAudioStreaming = true;
+
+// Audio streaming components
+    private AudioStreamTrack audioTrack;
+    private RTCRtpSender audioSender;
+    private bool isAudioStreamingActive = false;
+
+// Audio receiving components  
+    private AudioStreamTrack receivedAudioTrack;
+    
     // WebRTC objects
     private RTCPeerConnection peerConnection;
     private VideoStreamTrack videoTrack;
@@ -66,6 +78,7 @@ public class WebRTCStreamer : MonoBehaviour
     private RTCSessionDescription? pendingOffer = null;
     private ulong pendingOfferClient = 0;
     
+    public static event Action<PipelineType, bool, string> OnAudioStreamChanged;
     public static event Action<PipelineType, StreamerState, string> OnStateChanged;
     
     #region Unity Lifecycle
@@ -309,6 +322,23 @@ public class WebRTCStreamer : MonoBehaviour
         
         // Add video track
         peerConnection.AddTrack(videoTrack);
+        
+        //add audio track
+        if (enableAudioStreaming && audioInterceptor != null && isOfferer)
+        {
+            // Start audio streaming (interceptor handles ALL complexity)
+            audioInterceptor.StartAudioStreaming();
+            audioTrack = audioInterceptor.GetAudioTrack();
+        
+            if (audioTrack != null)
+            {
+                // Add to peer connection 
+                audioSender = peerConnection.AddTrack(audioTrack);
+                isAudioStreamingActive = true;
+                OnAudioStreamChanged?.Invoke(pipelineType, true, currentSessionId);
+                Debug.Log($"[📡{instanceId}] Audio track added to peer connection");
+            }
+        }
         
         Debug.Log($"[📡{instanceId}] Tracks added to connection");
     }
@@ -613,6 +643,16 @@ public class WebRTCStreamer : MonoBehaviour
             videoStreamTrack.OnVideoReceived += OnVideoReceived;
             SetState(StreamerState.Receiving);
             ClearConnectionTimeout();
+        } 
+        else if (e.Track is AudioStreamTrack audioStreamTrack)
+        {
+            Debug.Log($"[📡{instanceId}] Audio track received and processed");
+            receivedAudioTrack = audioStreamTrack;
+        
+            // Notify renderer to start audio
+            NotifyRendererStartAudio(audioStreamTrack);
+        
+            OnAudioStreamChanged?.Invoke(pipelineType, true, currentSessionId);
         }
         else
         {
@@ -625,6 +665,23 @@ public class WebRTCStreamer : MonoBehaviour
         Debug.Log($"[📡{instanceId}] Video received: {texture.width}x{texture.height}");
         targetRenderer?.ShowRemoteStream(texture, currentSessionId);
         SetState(StreamerState.Receiving);
+    }
+    private void NotifyRendererStartAudio(AudioStreamTrack audioStreamTrack)
+    {
+        if (targetRenderer == null) return;
+    
+        // Try to find WebRTCAudioReceiver
+        var audioReceiver = targetRenderer.GetComponentInChildren<WebRTCAudioReceiver>();
+    
+        if (audioReceiver != null)
+        {
+            audioReceiver.StartReceivingAudio(audioStreamTrack, currentSessionId);
+            Debug.Log($"[📡{instanceId}] Audio receiver started for session: {currentSessionId}");
+        }
+        else
+        {
+            Debug.LogWarning($"[📡{instanceId}] No WebRTCAudioReceiver found - audio will not be heard");
+        }
     }
     
     private float lastConnectionTime = 0f;
@@ -795,7 +852,61 @@ public class WebRTCStreamer : MonoBehaviour
     private void CleanupCurrentSession()
     {
         StopAllOperations();
+        
+        if (isAudioStreamingActive)
+        {
+            StopAudioStreaming();
+        }
+        if (receivedAudioTrack != null)
+        {
+            NotifyRendererStopAudio();
+            receivedAudioTrack = null;
+        }
+        
         ClosePeerConnection();
+    }
+    
+    private void StopAudioStreaming()
+    {
+        if (!isAudioStreamingActive) return;
+        
+        try
+        {
+            // Remove audio track from peer connection
+            if (audioSender != null && peerConnection != null)
+            {
+                peerConnection.RemoveTrack(audioSender);
+                audioSender = null;
+            }
+        
+            // Stop audio interceptor
+            if (audioInterceptor != null)
+            {
+                audioInterceptor.StopAudioStreaming();
+            }
+        
+            audioTrack = null;
+            isAudioStreamingActive = false;
+        
+            OnAudioStreamChanged?.Invoke(pipelineType, false, currentSessionId);
+            Debug.Log($"[📡{instanceId}] Audio streaming stopped");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[📡{instanceId}] Error stopping audio streaming: {e.Message}");
+        }
+    }
+    private void NotifyRendererStopAudio()
+    {
+        if (targetRenderer == null) return;
+    
+        // Try to find WebRTCAudioReceiver
+        var audioReceiver = targetRenderer.GetComponentInChildren<WebRTCAudioReceiver>();
+        if (audioReceiver != null)
+        {
+            audioReceiver.StopReceivingAudio();
+            Debug.Log($"[📡{instanceId}] Audio receiver stopped");
+        }
     }
     
     private void ResetSessionState()
@@ -885,9 +996,28 @@ public class WebRTCStreamer : MonoBehaviour
     public string CurrentSessionId => currentSessionId;
     public string InstanceId => instanceId;
     public bool IsConnected => currentState == StreamerState.Streaming || currentState == StreamerState.Receiving;
-
+    public bool IsAudioStreamingActive => isAudioStreamingActive;
+    public bool HasReceivedAudioTrack => receivedAudioTrack != null;
+    public bool HasAudioInterceptor => audioInterceptor != null;
+    public string GetAudioStatus()
+    {
+        if (!enableAudioStreaming) return "Audio disabled";
+        if (audioInterceptor == null) return "No audio interceptor";
+        if (isOfferer && isAudioStreamingActive) return "Streaming audio";
+        if (!isOfferer && receivedAudioTrack != null) return "Receiving audio";
+        if (isOfferer) return "Ready to stream";
+        return "Ready to receive";
+    }
     
     #endregion
-    
 
+    #region Debug
+
+    [ContextMenu("Print Audio Status")]
+    public void DebugPrintAudioStatus()
+    {
+        Debug.Log($"[📡{instanceId}] Audio Status: {GetAudioStatus()}");
+    }
+
+    #endregion
 }
