@@ -18,13 +18,15 @@ namespace Klak.Ndi
 		private AudioSource _audioSource;
 		
 		//to grab audio directly
-		private float[] lastProcessedAudio;
-		private int lastChannelCount;
+		public System.Action<float[], int, int> OnWebRTCAudioReady;
+		private int cachedSampleRate;
+
 		
 		private void Awake()
 		{
 			hideFlags = HideFlags.NotEditable;
 			_audioSource = GetComponent<AudioSource>();
+			cachedSampleRate = AudioSettings.outputSampleRate;
 		}
 
 		public void Init(bool isVirtualSpeaker, int maxSystemChannels, int virtualSpeakerChannel = -1, int maxVirtualSpeakerChannels = -1, bool usingSpatializerPlugin = false)
@@ -94,15 +96,12 @@ namespace Klak.Ndi
 			else
 			{
 				if (!_handler.FillPassthroughData(ref data, channels))
+				{
 					Array.Fill(data, 0f);
-
+				}
 			}
-			//store for external access
-			if (lastProcessedAudio == null || lastProcessedAudio.Length != data.Length)
-				lastProcessedAudio = new float[data.Length];
-    
-			System.Array.Copy(data, lastProcessedAudio, data.Length);
-			lastChannelCount = channels;
+			OnWebRTCAudioReady?.Invoke(data, channels, cachedSampleRate);
+
 		}
 
 		private void OnDestroy()
@@ -114,19 +113,7 @@ namespace Klak.Ndi
 
 			if (_handler) _handler.HandleAudioSourceBridgeOnDestroy();
 		}
-		//added for external audio grabbing
-		public bool TryGetLatestAudio(out float[] audioData, out int channels)
-		{
-			if (lastProcessedAudio != null)
-			{
-				audioData = lastProcessedAudio;
-				channels = lastChannelCount;
-				return true;
-			}
-			audioData = null;
-			channels = 0;
-			return false;
-		}
+
 	}
 	
 	
