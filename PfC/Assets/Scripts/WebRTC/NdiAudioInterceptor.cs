@@ -2,61 +2,81 @@ using UnityEngine;
 using Unity.WebRTC;
 using Klak.Ndi;
 using System.Collections;
-using System.Collections.Generic;
-using BroadcastPipeline;
 
 /// <summary>
-/// Intercepts audio from NDI's automatically generated AudioSource child
-/// Provides CONTINUOUS audio streaming - always streams (silence when no NDI audio)
-/// Attach this to the same GameObject as NdiReceiver
+/// NDI Audio Interceptor that directly feeds WebRTC using SetData with proper buffering
+/// Back to the working approach but with smooth buffer management
 /// </summary>
 [RequireComponent(typeof(NdiReceiver))]
 public class NdiAudioInterceptor : MonoBehaviour
 {
     [Header("Audio Settings")]
-    [SerializeField] private int bufferSize = 1024;
-    [SerializeField] private int sampleRate = 48000;
-    [SerializeField] private int channels = 2;
     [SerializeField] private bool debugMode = false;
     
-    [Header("Test Audio Settings")]
-    [SerializeField] private float testToneFrequency = 440f; // A4 note
-    [SerializeField] private float testToneVolume = 0.3f;
+    [Header("Component References")]
+    [SerializeField] private AudioSourceBridge targetAudioSourceBridge;
     
+    [Header("Buffering and Timing")]
+    [SerializeField] private float audioPollingRate = 1000f; // Hz - high frequency NDI data pulling
+    [SerializeField] private float webrtcSendRate = 100f; // Hz - WebRTC streaming rate
+    [SerializeField] private int bufferSizeMs = 100; // Buffer size in milliseconds
+    
+    [Header("Test Audio Settings")]
+    [SerializeField] private float testToneFrequency = 440f;
+    [SerializeField] private float testToneVolume = 0.3f;
+
     // NDI and WebRTC components
     private NdiReceiver ndiReceiver;
-    private AudioSource ndiAudioSource; // NDI's child AudioSource
     private AudioStreamTrack audioStreamTrack;
     
-    // Audio buffering system - ALWAYS active when streaming
-    private float[] currentAudioBuffer;
-    private float[] silenceBuffer;
+    // Smooth buffering system
     private readonly object audioLock = new object();
+    private float[] smoothBuffer;
+    private int smoothBufferSize;
+    private int smoothBufferWritePos = 0;
+    private int smoothBufferReadPos = 0;
+    private bool bufferHasData = false;
+    
+    // WebRTC streaming
+    private float[] webrtcBuffer;
+    private int webrtcBufferSize;
+    
+    // Timing calculations
+    private float audioPollingInterval;
+    private float webrtcSendInterval;
     
     // Test audio generation
     private bool isGeneratingTestAudio = false;
     private float testTonePhase = 0f;
-    private Coroutine testAudioCoroutine;
     
-    // NDI audio detection
+    // Audio level monitoring
+    private float currentAudioLevel = 0f;
+    private float peakAudioLevel = 0f;
+    private int ndiFramesProcessedCount = 0;
+    private int webrtcFramesSentCount = 0;
+    private float totalAudioTime = 0f;
+    
+    // Chunk size tracking
+    private int lastChunkSize = 0;
+    private int minChunkSize = int.MaxValue;
+    private int maxChunkSize = 0;
+    
+    // Audio data tracking
     private bool hasNdiAudioThisFrame = false;
-    private float[] latestNdiAudio;
-    private int latestNdiChannels;
+    private int sampleRate;
+    private int systemChannels;
     
     // State management
     private bool isStreamingActive = false;
     private bool isInitialized = false;
-    private Coroutine streamingCoroutine;
-    
-    // Events
-    public static event System.Action<PipelineType, bool> OnAudioAvailabilityChanged;
+    private Coroutine ndiPullingCoroutine;
+    private Coroutine webrtcStreamingCoroutine;
     
     #region Unity Lifecycle
     
     void Awake()
     {
         ndiReceiver = GetComponent<NdiReceiver>();
-        ValidateConfiguration();
         InitializeAudioSystem();
     }
     
@@ -65,19 +85,15 @@ public class NdiAudioInterceptor : MonoBehaviour
         if (ndiReceiver != null)
         {
             Debug.Log($"[🎵AudioInterceptor] Connected to NDI receiver: {ndiReceiver.ndiName}");
-            FindOrWaitForNdiAudioSource();
         }
     }
     
     void Update()
     {
-        // Reset NDI audio detection each frame
-        hasNdiAudioThisFrame = false;
-        
-        // Check if we lost the NDI audio source and need to find it again
-        if (ndiAudioSource == null && ndiReceiver != null)
+        // Dynamic AudioSourceBridge detection for runtime on/off capability
+        if (targetAudioSourceBridge == null)
         {
-            FindNdiAudioSource();
+            targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
         }
     }
     
@@ -85,26 +101,34 @@ public class NdiAudioInterceptor : MonoBehaviour
     {
         StopTestAudio();
         StopAudioStreaming();
-        CleanupAudioSystem();
     }
     
     #endregion
     
     #region Initialization
     
-    private void ValidateConfiguration()
+    private void InitializeAudioSystem()
     {
-        if (ndiReceiver == null)
-        {
-            Debug.LogError("[🎵AudioInterceptor] No NdiReceiver found!");
-            return;
-        }
-        
-        // Get actual Unity audio settings
         sampleRate = AudioSettings.outputSampleRate;
-        channels = GetChannelCountFromSpeakerMode(AudioSettings.speakerMode);
+        systemChannels = GetChannelCountFromSpeakerMode(AudioSettings.speakerMode);
         
-        Debug.Log($"[🎵AudioInterceptor] Unity Audio - Sample Rate: {sampleRate}Hz, Channels: {channels}");
+        // Calculate intervals
+        audioPollingInterval = 1f / audioPollingRate;
+        webrtcSendInterval = 1f / webrtcSendRate;
+        
+        // Calculate buffer sizes
+        smoothBufferSize = (int)(sampleRate * systemChannels * bufferSizeMs / 1000f);
+        webrtcBufferSize = (int)(sampleRate * systemChannels * webrtcSendInterval);
+        
+        // Initialize buffers
+        smoothBuffer = new float[smoothBufferSize];
+        webrtcBuffer = new float[webrtcBufferSize];
+        
+        isInitialized = true;
+        Debug.Log($"[🎵AudioInterceptor] Initialized - Sample Rate: {sampleRate}Hz, Channels: {systemChannels}");
+        Debug.Log($"[🎵AudioInterceptor] Smooth buffer: {smoothBufferSize} samples ({bufferSizeMs}ms)");
+        Debug.Log($"[🎵AudioInterceptor] WebRTC buffer: {webrtcBufferSize} samples ({webrtcSendInterval*1000:F1}ms)");
+        Debug.Log($"[🎵AudioInterceptor] NDI pulling: {audioPollingRate}Hz, WebRTC sending: {webrtcSendRate}Hz");
     }
     
     private int GetChannelCountFromSpeakerMode(AudioSpeakerMode speakerMode)
@@ -121,321 +145,227 @@ public class NdiAudioInterceptor : MonoBehaviour
         }
     }
     
-    private void InitializeAudioSystem()
-    {
-        // Create audio buffers
-        currentAudioBuffer = new float[bufferSize * channels];
-        silenceBuffer = new float[bufferSize * channels]; // Already filled with zeros
-        
-        isInitialized = true;
-        Debug.Log($"[🎵AudioInterceptor] Initialized - Buffer: {bufferSize}, Sample Rate: {sampleRate}Hz, Channels: {channels}");
-    }
-    
     #endregion
     
-    #region NDI AudioSource Detection
+    #region NDI Data Pulling
     
-    private void FindOrWaitForNdiAudioSource()
+    private IEnumerator NdiDataPulling()
     {
-        if (FindNdiAudioSource())
-        {
-            SetupNdiAudioInterception();
-        }
-        else
-        {
-            // NDI audio source not ready yet, start checking periodically
-            StartCoroutine(WaitForNdiAudioSource());
-        }
-    }
-    
-    private bool FindNdiAudioSource()
-    {
-        if (ndiReceiver == null) return false;
-        
-        // Look for AudioSource in children (NDI creates it as child)
-        AudioSource[] childAudioSources = ndiReceiver.GetComponentsInChildren<AudioSource>();
-        
-        foreach (var audioSource in childAudioSources)
-        {
-            // NDI audio sources are typically on child GameObjects
-            if (audioSource.gameObject != this.gameObject)
-            {
-                ndiAudioSource = audioSource;
-                Debug.Log($"[🎵AudioInterceptor] Found NDI AudioSource: {audioSource.gameObject.name}");
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    private IEnumerator WaitForNdiAudioSource()
-    {
-        Debug.Log("[🎵AudioInterceptor] Waiting for NDI AudioSource to be created...");
-        
-        float timeout = 10f; // Wait up to 10 seconds
-        float elapsed = 0f;
-        
-        while (elapsed < timeout && ndiAudioSource == null)
-        {
-            if (FindNdiAudioSource())
-            {
-                SetupNdiAudioInterception();
-                yield break;
-            }
-            
-            elapsed += 0.5f;
-            yield return new WaitForSeconds(0.5f);
-        }
-        
-        if (ndiAudioSource == null)
-        {
-            Debug.LogWarning("[🎵AudioInterceptor] NDI AudioSource not found after timeout. Audio will stream silence until NDI audio is available.");
-        }
-    }
-    
-    private void SetupNdiAudioInterception()
-    {
-        if (ndiAudioSource == null) return;
-        var existingBridge = ndiAudioSource.GetComponent<AudioSourceBridge>();
-
-        // Add our audio filter to the NDI AudioSource to intercept its audio
-        var audioFilter = ndiAudioSource.gameObject.GetComponent<NdiAudioFilter>();
-        if (audioFilter == null)
-        {
-            audioFilter = ndiAudioSource.gameObject.AddComponent<NdiAudioFilter>();
-        }
-        
-        // Connect the filter to this interceptor
-        audioFilter.Initialize(this);
-        
-        Debug.Log($"[🎵AudioInterceptor] Audio interception setup complete on {ndiAudioSource.gameObject.name}");
-    }
-    
-    #endregion
-    
-    #region Public Interface
-    
-    /// <summary>
-    /// Start streaming audio through WebRTC AudioStreamTrack
-    /// IMMEDIATELY starts continuous streaming (silence until audio available)
-    /// Called from WebRTCStreamer when video streaming starts
-    /// </summary>
-    public void StartAudioStreaming()
-    {
-        if (!isInitialized)
-        {
-            Debug.LogError("[🎵AudioInterceptor] Not initialized!");
-            return;
-        }
-        
-        if (isStreamingActive)
-        {
-            Debug.LogWarning("[🎵AudioInterceptor] Audio streaming already active");
-            return;
-        }
-        
-        // Create WebRTC audio track (no AudioSource - we use SetData)
-        audioStreamTrack = new AudioStreamTrack();
-        audioStreamTrack.Loopback = false; // Don't play locally
-        
-        isStreamingActive = true;
-        
-        // START CONTINUOUS STREAMING IMMEDIATELY
-        streamingCoroutine = StartCoroutine(ContinuousAudioStreamingCoroutine());
-        
-        Debug.Log("[🎵AudioInterceptor] CONTINUOUS audio streaming started - will stream silence until audio available");
-    }
-    
-    /// <summary>
-    /// Stop audio streaming
-    /// Called from WebRTCStreamer when video streaming stops
-    /// </summary>
-    public void StopAudioStreaming()
-    {
-        isStreamingActive = false;
-        
-        // Stop streaming coroutine
-        if (streamingCoroutine != null)
-        {
-            StopCoroutine(streamingCoroutine);
-            streamingCoroutine = null;
-        }
-        
-        // Dispose WebRTC track
-        if (audioStreamTrack != null)
-        {
-            audioStreamTrack.Dispose();
-            audioStreamTrack = null;
-        }
-        
-        Debug.Log("[🎵AudioInterceptor] Audio streaming stopped");
-    }
-    
-    /// <summary>
-    /// Get the current audio track for adding to peer connection
-    /// </summary>
-    public AudioStreamTrack GetAudioTrack()
-    {
-        return audioStreamTrack;
-    }
-    
-    /// <summary>
-    /// Called by NdiAudioFilter when NDI audio data is available
-    /// This updates our audio buffer with real NDI data
-    /// </summary>
-    public void OnNdiAudioData(float[] audioData, int audioChannels)
-    {
-        if (!isStreamingActive) return;
-        
-        lock (audioLock)
-        {
-            hasNdiAudioThisFrame = true;
-            
-            // Store latest NDI audio data
-            latestNdiAudio = audioData;
-            latestNdiChannels = audioChannels;
-            
-            // Convert and copy to current buffer
-            ConvertAndCopyAudioData(audioData, audioChannels, currentAudioBuffer, channels);
-        }
-        
-        if (debugMode && Time.frameCount % 60 == 0) // Log once per second at 60fps
-        {
-            float rms = CalculateRMS(audioData);
-            Debug.Log($"[🎵AudioInterceptor] NDI audio received - Samples: {audioData.Length}, Channels: {audioChannels}, RMS: {rms:F4}");
-        }
-    }
-    
-    /// <summary>
-    /// Check if audio is currently being received from NDI or generated
-    /// </summary>
-    public bool IsReceivingAudio => hasNdiAudioThisFrame || isGeneratingTestAudio;
-    
-    /// <summary>
-    /// Check if streaming is active
-    /// </summary>
-    public bool IsStreamingActive => isStreamingActive;
-    
-    #endregion
-    
-    #region Continuous Audio Streaming - CORE FUNCTIONALITY
-    
-    /// <summary>
-    /// CONTINUOUS audio streaming coroutine - ALWAYS streams something
-    /// Streams real audio when available, silence when not
-    /// </summary>
-    private IEnumerator ContinuousAudioStreamingCoroutine()
-    {
-        Debug.Log("[🎵AudioInterceptor] Continuous audio streaming coroutine started");
+        Debug.Log($"[🎵AudioInterceptor] Starting NDI data pulling at {audioPollingRate}Hz");
         
         while (isStreamingActive)
         {
-            if (audioStreamTrack != null)
-            {
-                // Prepare next audio buffer
-                PrepareNextAudioBuffer();
-                
-                // ALWAYS send data to WebRTC (silence or real audio)
-                try
-                {
-                    audioStreamTrack.SetData(currentAudioBuffer, channels, sampleRate);
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"[🎵AudioInterceptor] Error sending audio data: {e.Message}");
-                }
-            }
-            
-            // Wait for next audio frame (audio update rate)
-            yield return new WaitForSeconds((float)bufferSize / sampleRate);
+            PullNdiAudioData();
+            yield return new WaitForSeconds(audioPollingInterval);
         }
         
-        Debug.Log("[🎵AudioInterceptor] Continuous audio streaming coroutine ended");
+        Debug.Log("[🎵AudioInterceptor] NDI data pulling stopped");
     }
     
-    /// <summary>
-    /// Prepares the next audio buffer - real audio, test audio, or silence
-    /// ALWAYS provides data - never leaves WebRTC hanging
-    /// </summary>
-    private void PrepareNextAudioBuffer()
+    private void PullNdiAudioData()
     {
+        hasNdiAudioThisFrame = false;
+        
+        if (targetAudioSourceBridge == null)
+            return;
+            
+        // Try to get latest processed audio from AudioSourceBridge
+        if (targetAudioSourceBridge.TryGetLatestAudio(out float[] audioData, out int sourceChannels))
+        {
+            lock (audioLock)
+            {
+                hasNdiAudioThisFrame = true;
+                ndiFramesProcessedCount++;
+                
+                // Write to smooth buffer
+                WriteToSmoothBuffer(audioData, sourceChannels);
+                
+                // Track chunk sizes for analysis
+                lastChunkSize = audioData.Length;
+                if (lastChunkSize < minChunkSize) minChunkSize = lastChunkSize;
+                if (lastChunkSize > maxChunkSize) maxChunkSize = lastChunkSize;
+                
+                // Calculate audio levels
+                currentAudioLevel = CalculateRMS(audioData);
+                if (currentAudioLevel > peakAudioLevel)
+                {
+                    peakAudioLevel = currentAudioLevel;
+                }
+                
+                totalAudioTime += (float)audioData.Length / sourceChannels / sampleRate;
+                
+                if (debugMode || currentAudioLevel > 0.001f)
+                {
+                    Debug.Log($"[🎵AudioInterceptor] NDI Audio pulled - RMS: {currentAudioLevel:F3}, Size: {audioData.Length}, Channels: {sourceChannels}");
+                }
+            }
+        }
+        else if (isGeneratingTestAudio)
+        {
+            hasNdiAudioThisFrame = true;
+        }
+    }
+    
+    #endregion
+    
+    #region WebRTC Streaming
+    
+    private IEnumerator WebRtcStreaming()
+    {
+        Debug.Log($"[🎵AudioInterceptor] Starting WebRTC streaming at {webrtcSendRate}Hz");
+        
+        while (isStreamingActive)
+        {
+            SendToWebRtc();
+            yield return new WaitForSeconds(webrtcSendInterval);
+        }
+        
+        Debug.Log("[🎵AudioInterceptor] WebRTC streaming stopped");
+    }
+    
+    private void SendToWebRtc()
+    {
+        if (audioStreamTrack == null) return;
+        
         lock (audioLock)
         {
+            // Clear WebRTC buffer
+            System.Array.Clear(webrtcBuffer, 0, webrtcBuffer.Length);
+            
             if (isGeneratingTestAudio)
             {
-                // Generate test audio
-                GenerateTestAudio(currentAudioBuffer, channels);
+                // Generate test audio directly
+                GenerateTestAudio(webrtcBuffer, systemChannels);
             }
-            else if (hasNdiAudioThisFrame && latestNdiAudio != null)
+            else if (bufferHasData)
             {
-                // Use real NDI audio (already copied in OnNdiAudioData)
-                // currentAudioBuffer already contains converted NDI data
+                // Read from smooth buffer
+                ReadFromSmoothBuffer(webrtcBuffer, systemChannels);
             }
-            else
+            // else: buffer stays silent
+            
+            // Send to WebRTC
+            try
             {
-                // No audio available - use silence
-                System.Array.Copy(silenceBuffer, 0, currentAudioBuffer, 0, currentAudioBuffer.Length);
+                audioStreamTrack.SetData(webrtcBuffer, systemChannels, sampleRate);
+                webrtcFramesSentCount++;
                 
-                if (debugMode && Time.frameCount % 300 == 0) // Log every 5 seconds
+                if (debugMode)
                 {
-                    Debug.Log("[🎵AudioInterceptor] Streaming silence - no audio source available");
+                    float rms = CalculateRMS(webrtcBuffer);
+                    Debug.Log($"[🎵AudioInterceptor] WebRTC sent - Frame: {webrtcFramesSentCount}, RMS: {rms:F3}");
                 }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[🎵AudioInterceptor] Error sending to WebRTC: {e.Message}");
             }
         }
     }
     
     #endregion
     
-    #region Audio Processing
+    #region Buffer Management
     
-    private void ConvertAndCopyAudioData(float[] input, int inputChannels, float[] output, int outputChannels)
+    private void WriteToSmoothBuffer(float[] ndiData, int ndiChannels)
     {
-        int inputSamples = input.Length / inputChannels;
-        int outputSamples = output.Length / outputChannels;
-        int samplesToCopy = Mathf.Min(inputSamples, outputSamples);
+        if (ndiData == null || ndiData.Length == 0) return;
         
-        for (int sample = 0; sample < samplesToCopy; sample++)
+        int ndiSamples = ndiData.Length / ndiChannels;
+        
+        // Write NDI data to circular buffer with channel conversion
+        for (int sample = 0; sample < ndiSamples; sample++)
         {
-            if (inputChannels == outputChannels)
+            for (int ch = 0; ch < systemChannels; ch++)
             {
-                // Direct copy
-                for (int ch = 0; ch < outputChannels; ch++)
+                float sampleValue = 0f;
+                
+                if (ndiChannels == systemChannels)
                 {
-                    output[sample * outputChannels + ch] = input[sample * inputChannels + ch];
+                    sampleValue = ndiData[sample * ndiChannels + ch];
                 }
-            }
-            else if (inputChannels == 1 && outputChannels == 2)
-            {
-                // Mono to stereo
-                float monoSample = input[sample];
-                output[sample * 2] = monoSample;
-                output[sample * 2 + 1] = monoSample;
-            }
-            else if (inputChannels == 2 && outputChannels == 1)
-            {
-                // Stereo to mono
-                float leftSample = input[sample * 2];
-                float rightSample = input[sample * 2 + 1];
-                output[sample] = (leftSample + rightSample) * 0.5f;
-            }
-            else
-            {
-                // Default: copy available channels, pad with zeros
-                for (int ch = 0; ch < outputChannels; ch++)
+                else if (ndiChannels == 1 && systemChannels == 2)
                 {
-                    if (ch < inputChannels)
+                    // Mono to stereo
+                    sampleValue = ndiData[sample];
+                }
+                else if (ndiChannels == 2 && systemChannels == 1)
+                {
+                    // Stereo to mono
+                    if (ch == 0)
                     {
-                        output[sample * outputChannels + ch] = input[sample * inputChannels + ch];
-                    }
-                    else
-                    {
-                        output[sample * outputChannels + ch] = 0f;
+                        float left = ndiData[sample * 2];
+                        float right = ndiData[sample * 2 + 1];
+                        sampleValue = (left + right) * 0.5f;
                     }
                 }
+                else if (ch < ndiChannels)
+                {
+                    sampleValue = ndiData[sample * ndiChannels + ch];
+                }
+                
+                int bufferIndex = (smoothBufferWritePos + sample * systemChannels + ch) % smoothBufferSize;
+                smoothBuffer[bufferIndex] = sampleValue;
             }
         }
+        
+        // Advance write position
+        smoothBufferWritePos = (smoothBufferWritePos + ndiSamples * systemChannels) % smoothBufferSize;
+        bufferHasData = true;
+        
+        if (debugMode)
+        {
+            Debug.Log($"[🎵AudioInterceptor] Wrote to buffer - Samples: {ndiSamples}, Available: {GetAvailableSamples()}");
+        }
     }
+    
+    private void ReadFromSmoothBuffer(float[] outputBuffer, int outputChannels)
+    {
+        int samplesNeeded = outputBuffer.Length / outputChannels;
+        int samplesAvailable = GetAvailableSamples();
+        
+        if (samplesAvailable < samplesNeeded)
+        {
+            // Not enough data, buffer underrun
+            if (debugMode)
+            {
+                Debug.Log($"[🎵AudioInterceptor] Buffer underrun - Need: {samplesNeeded}, Available: {samplesAvailable}");
+            }
+            return; // Keep buffer silent
+        }
+        
+        // Read samples from circular buffer
+        for (int sample = 0; sample < samplesNeeded; sample++)
+        {
+            for (int ch = 0; ch < outputChannels; ch++)
+            {
+                int bufferIndex = (smoothBufferReadPos + sample * systemChannels + ch) % smoothBufferSize;
+                outputBuffer[sample * outputChannels + ch] = smoothBuffer[bufferIndex];
+            }
+        }
+        
+        // Advance read position
+        smoothBufferReadPos = (smoothBufferReadPos + samplesNeeded * systemChannels) % smoothBufferSize;
+        
+        if (debugMode)
+        {
+            float rms = CalculateRMS(outputBuffer);
+            Debug.Log($"[🎵AudioInterceptor] Read from buffer - RMS: {rms:F3}, Available after read: {GetAvailableSamples()}");
+        }
+    }
+    
+    private int GetAvailableSamples()
+    {
+        if (!bufferHasData) return 0;
+        
+        int available = smoothBufferWritePos - smoothBufferReadPos;
+        if (available < 0) available += smoothBufferSize;
+        return available / systemChannels;
+    }
+    
+    #endregion
+    
+    #region Audio Processing Utilities
     
     private float CalculateRMS(float[] audioData)
     {
@@ -445,6 +375,97 @@ public class NdiAudioInterceptor : MonoBehaviour
             sum += audioData[i] * audioData[i];
         }
         return Mathf.Sqrt(sum / audioData.Length);
+    }
+    
+    #endregion
+    
+    #region Public Interface
+    
+    public void StartAudioStreaming()
+    {
+        if (audioStreamTrack != null)
+        {
+            audioStreamTrack.Dispose();
+        }
+        
+        // Create AudioStreamTrack without AudioSource (direct feeding)
+        audioStreamTrack = new AudioStreamTrack();
+        audioStreamTrack.Loopback = false;
+        
+        isStreamingActive = true;
+        
+        // Reset buffers
+        lock (audioLock)
+        {
+            bufferHasData = false;
+            smoothBufferWritePos = 0;
+            smoothBufferReadPos = 0;
+            System.Array.Clear(smoothBuffer, 0, smoothBuffer.Length);
+        }
+        
+        // Start coroutines
+        if (ndiPullingCoroutine != null)
+        {
+            StopCoroutine(ndiPullingCoroutine);
+        }
+        if (webrtcStreamingCoroutine != null)
+        {
+            StopCoroutine(webrtcStreamingCoroutine);
+        }
+        
+        ndiPullingCoroutine = StartCoroutine(NdiDataPulling());
+        webrtcStreamingCoroutine = StartCoroutine(WebRtcStreaming());
+        
+        Debug.Log($"[🎵AudioInterceptor] Audio streaming started - Direct WebRTC feeding with smooth buffering");
+    }
+    
+    public void StopAudioStreaming()
+    {
+        isStreamingActive = false;
+        
+        // Stop coroutines
+        if (ndiPullingCoroutine != null)
+        {
+            StopCoroutine(ndiPullingCoroutine);
+            ndiPullingCoroutine = null;
+        }
+        
+        if (webrtcStreamingCoroutine != null)
+        {
+            StopCoroutine(webrtcStreamingCoroutine);
+            webrtcStreamingCoroutine = null;
+        }
+        
+        if (audioStreamTrack != null)
+        {
+            audioStreamTrack.Dispose();
+            audioStreamTrack = null;
+        }
+        
+        // Clear buffers
+        lock (audioLock)
+        {
+            bufferHasData = false;
+            smoothBufferWritePos = 0;
+            smoothBufferReadPos = 0;
+            System.Array.Clear(smoothBuffer, 0, smoothBuffer.Length);
+        }
+        
+        Debug.Log("[🎵AudioInterceptor] Audio streaming stopped");
+    }
+    
+    public AudioStreamTrack GetAudioTrack()
+    {
+        return audioStreamTrack;
+    }
+    
+    public bool IsReceivingAudio => hasNdiAudioThisFrame || isGeneratingTestAudio;
+    public bool IsStreamingActive => isStreamingActive;
+    
+    public void SetTargetAudioSourceBridge(AudioSourceBridge bridge)
+    {
+        targetAudioSourceBridge = bridge;
+        Debug.Log($"[🎵AudioInterceptor] Target AudioSourceBridge set: {(bridge != null ? bridge.name : "null")}");
     }
     
     #endregion
@@ -461,65 +482,29 @@ public class NdiAudioInterceptor : MonoBehaviour
             float sineWave = Mathf.Sin(testTonePhase) * testToneVolume;
             testTonePhase += 2f * Mathf.PI * testToneFrequency / sampleRateFloat;
             
-            // Reset phase to prevent overflow
             if (testTonePhase > 2f * Mathf.PI)
                 testTonePhase -= 2f * Mathf.PI;
             
-            // Apply to all channels
             for (int ch = 0; ch < audioChannels; ch++)
             {
                 data[sample * audioChannels + ch] = sineWave;
             }
         }
+        
+        currentAudioLevel = testToneVolume;
     }
     
     private void StopTestAudio()
     {
         isGeneratingTestAudio = false;
-        
-        if (testAudioCoroutine != null)
-        {
-            StopCoroutine(testAudioCoroutine);
-            testAudioCoroutine = null;
-        }
-    }
-    
-    #endregion
-    
-    #region Utility
-    
-    private PipelineType GetPipelineType()
-    {
-        // Try to determine pipeline type from parent objects
-        var streamManager = GetComponentInParent<WebRTCStreamer>();
-        if (streamManager != null)
-        {
-            return streamManager.pipelineType;
-        }
-        
-        // Fallback - you might need to adjust this based on your naming convention
-        if (name.ToLower().Contains("studio"))
-            return PipelineType.StudioLive;
-        else if (name.ToLower().Contains("tv"))
-            return PipelineType.TVLive;
-        
-        return PipelineType.StudioLive; // Default
-    }
-    
-    private void CleanupAudioSystem()
-    {
-        // Cleanup resources
-        currentAudioBuffer = null;
-        silenceBuffer = null;
-        latestNdiAudio = null;
     }
     
     #endregion
     
     #region Test Methods
     
-    [ContextMenu("Test Audio - Sender + Receiver (with local playback)")]
-    public void TestAudioSenderAndReceiver()
+    [ContextMenu("Test Audio - Start")]
+    public void TestAudioStart()
     {
         if (!isStreamingActive)
         {
@@ -527,45 +512,8 @@ public class NdiAudioInterceptor : MonoBehaviour
             return;
         }
         
-        // This test plays audio locally AND streams it
-        if (ndiAudioSource != null)
-        {
-            // Enable local playback on NDI audio source
-            ndiAudioSource.volume = testToneVolume;
-            ndiAudioSource.enabled = true;
-        }
-        
-        // Generate test audio
         isGeneratingTestAudio = true;
-        
-        Debug.Log("[🎵AudioInterceptor] Test audio started - you should hear it locally AND on receiver");
-        
-        // Auto-stop after 3 seconds
-        StartCoroutine(StopTestAfterDelay(3f));
-    }
-    
-    [ContextMenu("Test Audio - Receiver Only (no local playback)")]
-    public void TestAudioReceiverOnly()
-    {
-        if (!isStreamingActive)
-        {
-            Debug.LogWarning("[🎵AudioInterceptor] Start audio streaming first!");
-            return;
-        }
-        
-        // This test streams audio but doesn't play locally
-        if (ndiAudioSource != null)
-        {
-            // Disable local playback
-            ndiAudioSource.volume = 0f;
-        }
-        
-        // Generate test audio
-        isGeneratingTestAudio = true;
-        
-        Debug.Log("[🎵AudioInterceptor] Test audio started - you should ONLY hear it on receiver, not locally");
-        
-        // Auto-stop after 3 seconds
+        Debug.Log("[🎵AudioInterceptor] Test audio started");
         StartCoroutine(StopTestAfterDelay(3f));
     }
     
@@ -573,64 +521,43 @@ public class NdiAudioInterceptor : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         StopTestAudio();
-        
-        // Restore NDI audio source to normal state
-        if (ndiAudioSource != null)
-        {
-            ndiAudioSource.volume = 1f; // Restore normal volume
-        }
-        
         Debug.Log("[🎵AudioInterceptor] Test audio stopped");
     }
     
     [ContextMenu("Print Audio Status")]
     public void PrintAudioStatus()
     {
-        string ndiSourceStatus = ndiAudioSource != null ? 
-            $"Found ({ndiAudioSource.gameObject.name})" : 
-            "Not found - will stream silence until available";
-            
+        string bridgeStatus = "Not assigned";
+        if (targetAudioSourceBridge != null)
+        {
+            bridgeStatus = $"Connected to '{targetAudioSourceBridge.name}'";
+        }
+        
+        string ndiCoroutineStatus = ndiPullingCoroutine != null ? "Running" : "Stopped";
+        string webrtcCoroutineStatus = webrtcStreamingCoroutine != null ? "Running" : "Stopped";
+        
+        int availableSamples = GetAvailableSamples();
+        
         string status = $"[🎵AudioInterceptor] Status:\n" +
-                       $"  Streaming: {isStreamingActive}\n" +
-                       $"  Receiving NDI Audio: {hasNdiAudioThisFrame}\n" +
-                       $"  Generating Test Audio: {isGeneratingTestAudio}\n" +
-                       $"  Sample Rate: {sampleRate}Hz\n" +
-                       $"  Channels: {channels}\n" +
-                       $"  NDI AudioSource: {ndiSourceStatus}\n" +
-                       $"  Test Frequency: {testToneFrequency}Hz\n" +
-                       $"  Current Mode: {GetCurrentAudioMode()}";
+                        $"  NDI Source: {(ndiReceiver != null ? $"Connected to '{ndiReceiver.ndiName}'" : "No NDI receiver")}\n" +
+                        $"  AudioSourceBridge: {bridgeStatus}\n" +
+                        $"  Streaming: {isStreamingActive}\n" +
+                        $"  NDI Pulling Coroutine: {ndiCoroutineStatus} ({audioPollingRate}Hz)\n" +
+                        $"  WebRTC Streaming Coroutine: {webrtcCoroutineStatus} ({webrtcSendRate}Hz)\n" +
+                        $"  Smooth Buffer: {availableSamples} samples available ({availableSamples / (float)sampleRate:F3}s)\n" +
+                        $"  Receiving Audio: {hasNdiAudioThisFrame}\n" +
+                        $"  Audio Level: {currentAudioLevel:F3} (Peak: {peakAudioLevel:F3})\n" +
+                        $"  NDI Frames Processed: {ndiFramesProcessedCount}\n" +
+                        $"  WebRTC Frames Sent: {webrtcFramesSentCount}\n" +
+                        $"  Chunk Sizes - Last: {lastChunkSize}, Min: {(minChunkSize == int.MaxValue ? 0 : minChunkSize)}, Max: {maxChunkSize}\n" +
+                        $"  Buffer Size: {smoothBufferSize} samples ({bufferSizeMs}ms)\n" +
+                        $"  WebRTC Buffer: {webrtcBufferSize} samples ({webrtcSendInterval*1000:F1}ms)\n" +
+                        $"  Total Audio Time: {totalAudioTime:F1}s\n" +
+                        $"  Test Audio: {isGeneratingTestAudio}\n" +
+                        $"  Sample Rate: {sampleRate}Hz, Channels: {systemChannels}";
         
         Debug.Log(status);
     }
     
-    private string GetCurrentAudioMode()
-    {
-        if (!isStreamingActive) return "Not streaming";
-        if (isGeneratingTestAudio) return "Test audio";
-        if (hasNdiAudioThisFrame) return "NDI audio";
-        return "Silence";
-    }
-    
     #endregion
-}
-
-/// <summary>
-/// Helper component that gets added to NDI's AudioSource to intercept audio data
-/// </summary>
-public class NdiAudioFilter : MonoBehaviour
-{
-    private NdiAudioInterceptor interceptor;
-    
-    public void Initialize(NdiAudioInterceptor interceptor)
-    {
-        this.interceptor = interceptor;
-    }
-    
-    void OnAudioFilterRead(float[] data, int channels)
-    {
-        if (interceptor != null)
-        {
-            interceptor.OnNdiAudioData(data, channels);
-        }
-    }
 }

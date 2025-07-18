@@ -30,8 +30,9 @@ public class AudioSwitcher : MonoBehaviour
     public enum AudioMode
     {
         //commented automatic. it is possible to return it back
-        //Automatic = 0,
-        VirtualSpeakers = 0,
+        
+        Automatic = 0,
+        //VirtualSpeakers = 0,
         None = 1
     }
 
@@ -58,17 +59,17 @@ public class AudioSwitcher : MonoBehaviour
 
         switch (currentMode)
         {
-            //case AudioMode.Automatic:
-                // Automatic mode
-                // SetReceiveAudioField(true);
-                // SetCreateVirtualSpeakersField(false);
-                // break;
+            case AudioMode.Automatic:
+                 //Automatic mode
+                 SetReceiveAudioField(true);
+                 SetCreateVirtualSpeakersField(false);
+                 break;
 
-            case AudioMode.VirtualSpeakers:
-                // Always create Virtual Speakers
-                SetReceiveAudioField(true);
-                SetCreateVirtualSpeakersField(true);
-                break;
+            // case AudioMode.VirtualSpeakers:
+            //     // Always create Virtual Speakers
+            //     SetReceiveAudioField(true); (maybe this one should be false)
+            //     SetCreateVirtualSpeakersField(true);
+            //     break;
 
             case AudioMode.None:
                 // No audio

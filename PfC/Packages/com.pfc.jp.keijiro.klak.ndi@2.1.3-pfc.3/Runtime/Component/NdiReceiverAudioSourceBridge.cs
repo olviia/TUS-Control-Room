@@ -4,10 +4,10 @@ using UnityEngine;
 namespace Klak.Ndi
 {
 	[RequireComponent(typeof(AudioSource))]
-	internal class AudioSourceBridge : MonoBehaviour
+	public class AudioSourceBridge : MonoBehaviour
 	{
 		internal bool _isDestroyed;
-		internal NdiReceiver _handler;
+		public NdiReceiver _handler;
 		private int _customChannel = -1;
 		private int _maxChannels = -1;
 		internal static double _lastFrameUpdate = -1;
@@ -16,6 +16,10 @@ namespace Klak.Ndi
 		private static AudioClip _spatilizeHelperClip;
 		private bool _noSpatializerPlugin = false;
 		private AudioSource _audioSource;
+		
+		//to grab audio directly
+		private float[] lastProcessedAudio;
+		private int lastChannelCount;
 		
 		private void Awake()
 		{
@@ -91,7 +95,14 @@ namespace Klak.Ndi
 			{
 				if (!_handler.FillPassthroughData(ref data, channels))
 					Array.Fill(data, 0f);
+
 			}
+			//store for external access
+			if (lastProcessedAudio == null || lastProcessedAudio.Length != data.Length)
+				lastProcessedAudio = new float[data.Length];
+    
+			System.Array.Copy(data, lastProcessedAudio, data.Length);
+			lastChannelCount = channels;
 		}
 
 		private void OnDestroy()
@@ -103,6 +114,21 @@ namespace Klak.Ndi
 
 			if (_handler) _handler.HandleAudioSourceBridgeOnDestroy();
 		}
+		//added for external audio grabbing
+		public bool TryGetLatestAudio(out float[] audioData, out int channels)
+		{
+			if (lastProcessedAudio != null)
+			{
+				audioData = lastProcessedAudio;
+				channels = lastChannelCount;
+				return true;
+			}
+			audioData = null;
+			channels = 0;
+			return false;
+		}
 	}
+	
+	
 	
 }

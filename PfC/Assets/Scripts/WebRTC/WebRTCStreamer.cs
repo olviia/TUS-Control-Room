@@ -324,12 +324,15 @@ public class WebRTCStreamer : MonoBehaviour
         peerConnection.AddTrack(videoTrack);
         
         //add audio track
-        if (enableAudioStreaming && audioInterceptor != null && isOfferer)
+        
+        Debug.Log($"aabb_started audio streaming sending. audiointerceptopr {audioInterceptor.name}, enableaudiostreaming {enableAudioStreaming}");
+        if (enableAudioStreaming && audioInterceptor != null)
         {
             // Start audio streaming (interceptor handles ALL complexity)
             audioInterceptor.StartAudioStreaming();
             audioTrack = audioInterceptor.GetAudioTrack();
         
+            Debug.Log($"aabb_audio track {audioTrack}");
             if (audioTrack != null)
             {
                 // Add to peer connection 

@@ -96,6 +96,7 @@ public class StreamManager : MonoBehaviour
         streamer.pipelineType = source.pipelineType;
         streamer.targetRenderer = source.renderer;
         streamer.ndiReceiverSource = source.ndiReceiverSource;
+        streamer.audioInterceptor = source.ndiReceiverSource.GetComponent<NdiAudioInterceptor>();
         streamer.ndiReceiverCaptions = source.ndiReceiverCaptions;
         
         // Store references
