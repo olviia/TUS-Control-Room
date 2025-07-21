@@ -119,8 +119,13 @@ public class CommunicationManager : MonoBehaviour
             
             Debug.Log($"[CommunicationManager] Joining channel: {channelName} as {currentRole}");
             
-            await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly);
+            //await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly);
             
+            
+            string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
+
+            await VivoxService.Instance.JoinEchoChannelAsync(echoChannelName, ChatCapability.AudioOnly);
+
             Debug.Log($"[CommunicationManager] Successfully joined channel: {channelName}");
         }
         catch (Exception e)
