@@ -92,8 +92,8 @@ public class CommunicationManager : MonoBehaviour
             // Auto-join channel based on role
             await JoinRoleBasedChannel();
             
-            VivoxService.Instance.SetInputDeviceVolume(90);  // Set mic volume to 50%
-            VivoxService.Instance.SetOutputDeviceVolume(90); 
+            VivoxService.Instance.SetInputDeviceVolume(50);  // Set mic volume to 50%
+            VivoxService.Instance.SetOutputDeviceVolume(50); 
         }
         catch (Exception e)
         {
@@ -119,12 +119,12 @@ public class CommunicationManager : MonoBehaviour
             
             Debug.Log($"[CommunicationManager] Joining channel: {channelName} as {currentRole}");
             
-            //await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly);
+            await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly);
             
-            
-            string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
-
-            await VivoxService.Instance.JoinEchoChannelAsync(echoChannelName, ChatCapability.AudioOnly);
+            //
+            // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
+            //
+            // await VivoxService.Instance.JoinEchoChannelAsync(echoChannelName, ChatCapability.AudioOnly);
 
             Debug.Log($"[CommunicationManager] Successfully joined channel: {channelName}");
         }
