@@ -84,14 +84,13 @@ public class CommunicationManager : MonoBehaviour
             var vivoxConfig = new VivoxConfigurationOptions
             {
                 DisableAudioDucking = true,  // Prevents audio interference
-                DynamicVoiceProcessingSwitching = false  // Stable audio processing
+                DynamicVoiceProcessingSwitching = false,  // Stable audio processing
             };
 
             // Initialize Vivox with configuration
             await VivoxService.Instance.InitializeAsync(vivoxConfig);
             Debug.Log("[CommunicationManager] Vivox initialized with proper config");
-
-            BindChannelEvents();
+            
             
             // Login to Vivox
             await VivoxService.Instance.LoginAsync();
@@ -101,6 +100,7 @@ public class CommunicationManager : MonoBehaviour
             
             // Auto-join channel based on role
             await JoinRoleBasedChannel();
+            ConfigureAudioAfterChannelJoin();
             
         }
         catch (Exception e)
@@ -108,49 +108,6 @@ public class CommunicationManager : MonoBehaviour
             Debug.LogError($"[CommunicationManager] Initialization failed: {e.Message}");
         }
         
-    }
-    private void BindChannelEvents()
-    {
-        Debug.Log("[Events] Binding channel events...");
-        
-        // Unbind first to prevent duplicates
-        VivoxService.Instance.ChannelJoined -= OnChannelJoined;
-        VivoxService.Instance.ChannelLeft -= OnChannelLeft;
-        
-        // Bind to channel events
-        VivoxService.Instance.ChannelJoined += OnChannelJoined;
-        VivoxService.Instance.ChannelLeft += OnChannelLeft;
-        
-        Debug.Log("[Events] ✅ Channel events bound successfully");
-    }
-    private void OnChannelJoined(string channelName)
-    {
-        Debug.Log($"[Events] 🎉 CHANNEL JOINED EVENT: {channelName}");
-        
-        if (channelName == currentChannelName)
-        {
-            Debug.Log("[Events] This is our target channel - configuring audio NOW");
-            
-            //  Configure audio after channel is joined
-            ConfigureAudioAfterChannelJoin();
-            
-            isJoiningChannel = false;
-            Debug.Log("[Events] 🎤 GROUP CHANNEL READY - Both machines should now hear each other!");
-        }
-        else
-        {
-            Debug.Log($"[Events] Different channel joined: {channelName} vs expected {currentChannelName}");
-        }
-    }
-    private void OnChannelLeft(string channelName)
-    {
-        Debug.Log($"[Events] 📤 Channel left: {channelName}");
-        
-        if (channelName == currentChannelName)
-        {
-            currentChannelName = null;
-            isJoiningChannel = false;
-        }
     }
     
     private async Task JoinRoleBasedChannel()
@@ -209,8 +166,8 @@ public class CommunicationManager : MonoBehaviour
         {
             VivoxService.Instance.UnmuteInputDevice();
             VivoxService.Instance.UnmuteOutputDevice();
-            VivoxService.Instance.SetInputDeviceVolume(50);
-            VivoxService.Instance.SetOutputDeviceVolume(50);
+            VivoxService.Instance.SetInputDeviceVolume(25);
+            VivoxService.Instance.SetOutputDeviceVolume(40);
         }
         catch (Exception e)
         {
