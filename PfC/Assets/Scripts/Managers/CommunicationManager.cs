@@ -17,6 +17,8 @@ public class CommunicationManager : MonoBehaviour
     private Role currentRole;    
     private string currentChannelName;
     private bool isInitialized = false;
+    private bool isJoiningChannel = false;
+
 
 
     public static CommunicationManager Instance
@@ -79,10 +81,18 @@ public class CommunicationManager : MonoBehaviour
 
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
-            // Initialize Vivox
-            await VivoxService.Instance.InitializeAsync();
-            Debug.Log("[CommunicationManager] Vivox initialized");
+            var vivoxConfig = new VivoxConfigurationOptions
+            {
+                DisableAudioDucking = true,  // Prevents audio interference
+                DynamicVoiceProcessingSwitching = false  // Stable audio processing
+            };
 
+            // Initialize Vivox with configuration
+            await VivoxService.Instance.InitializeAsync(vivoxConfig);
+            Debug.Log("[CommunicationManager] Vivox initialized with proper config");
+
+            BindChannelEvents();
+            
             // Login to Vivox
             await VivoxService.Instance.LoginAsync();
             Debug.Log("[CommunicationManager] Vivox login successful");
@@ -92,14 +102,55 @@ public class CommunicationManager : MonoBehaviour
             // Auto-join channel based on role
             await JoinRoleBasedChannel();
             
-            VivoxService.Instance.SetInputDeviceVolume(50);  // Set mic volume to 50%
-            VivoxService.Instance.SetOutputDeviceVolume(50); 
         }
         catch (Exception e)
         {
             Debug.LogError($"[CommunicationManager] Initialization failed: {e.Message}");
         }
         
+    }
+    private void BindChannelEvents()
+    {
+        Debug.Log("[Events] Binding channel events...");
+        
+        // Unbind first to prevent duplicates
+        VivoxService.Instance.ChannelJoined -= OnChannelJoined;
+        VivoxService.Instance.ChannelLeft -= OnChannelLeft;
+        
+        // Bind to channel events
+        VivoxService.Instance.ChannelJoined += OnChannelJoined;
+        VivoxService.Instance.ChannelLeft += OnChannelLeft;
+        
+        Debug.Log("[Events] ✅ Channel events bound successfully");
+    }
+    private void OnChannelJoined(string channelName)
+    {
+        Debug.Log($"[Events] 🎉 CHANNEL JOINED EVENT: {channelName}");
+        
+        if (channelName == currentChannelName)
+        {
+            Debug.Log("[Events] This is our target channel - configuring audio NOW");
+            
+            //  Configure audio after channel is joined
+            ConfigureAudioAfterChannelJoin();
+            
+            isJoiningChannel = false;
+            Debug.Log("[Events] 🎤 GROUP CHANNEL READY - Both machines should now hear each other!");
+        }
+        else
+        {
+            Debug.Log($"[Events] Different channel joined: {channelName} vs expected {currentChannelName}");
+        }
+    }
+    private void OnChannelLeft(string channelName)
+    {
+        Debug.Log($"[Events] 📤 Channel left: {channelName}");
+        
+        if (channelName == currentChannelName)
+        {
+            currentChannelName = null;
+            isJoiningChannel = false;
+        }
     }
     
     private async Task JoinRoleBasedChannel()
@@ -116,10 +167,14 @@ public class CommunicationManager : MonoBehaviour
             }
 
             currentChannelName = channelName;
-            
+            var channelOptions = new ChannelOptions
+            { 
+                MakeActiveChannelUponJoining = true  
+            };
+ 
             Debug.Log($"[CommunicationManager] Joining channel: {channelName} as {currentRole}");
             
-            await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly);
+            await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
             
             //
             // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
@@ -145,6 +200,21 @@ public class CommunicationManager : MonoBehaviour
             default:
                 Debug.LogWarning($"[CommunicationManager] Unknown role: {role}");
                 return "studio-tus-channel";
+        }
+    }
+    
+    private void ConfigureAudioAfterChannelJoin()
+    {
+        try
+        {
+            VivoxService.Instance.UnmuteInputDevice();
+            VivoxService.Instance.UnmuteOutputDevice();
+            VivoxService.Instance.SetInputDeviceVolume(50);
+            VivoxService.Instance.SetOutputDeviceVolume(50);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[Audio] Failed to configure audio: {e.Message}");
         }
     }
 
