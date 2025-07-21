@@ -77,6 +77,8 @@ public class CommunicationManager : MonoBehaviour
             await UnityServices.InitializeAsync(options);
             Debug.Log("[CommunicationManager] Unity Services initialized");
 
+            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+
             // Initialize Vivox
             await VivoxService.Instance.InitializeAsync();
             Debug.Log("[CommunicationManager] Vivox initialized");
