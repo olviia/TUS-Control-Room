@@ -91,6 +91,9 @@ public class CommunicationManager : MonoBehaviour
             
             // Auto-join channel based on role
             await JoinRoleBasedChannel();
+            
+            VivoxService.Instance.SetInputDeviceVolume(90);  // Set mic volume to 50%
+            VivoxService.Instance.SetOutputDeviceVolume(90); 
         }
         catch (Exception e)
         {
@@ -144,5 +147,20 @@ public class CommunicationManager : MonoBehaviour
     {
         currentRole = role;
     }
+    
+    [ContextMenu("Test Audio")]
+    public void TestAudio()
+    {
+            Debug.Log($"[Audio Status] Input Device: {VivoxService.Instance.ActiveInputDevice.DeviceName ?? "None"}");
+            Debug.Log($"[Audio Status] Output Device: {VivoxService.Instance.ActiveOutputDevice?.DeviceName ?? "None"}");
+            Debug.Log($"[Audio Status] Input Muted: {VivoxService.Instance.IsInputDeviceMuted}");
+            Debug.Log($"[Audio Status] Output Muted: {VivoxService.Instance.IsOutputDeviceMuted}");
+            Debug.Log($"[Audio Status] Input Volume: {VivoxService.Instance.InputDeviceVolume}");
+            Debug.Log($"[Audio Status] Output Volume: {VivoxService.Instance.OutputDeviceVolume}");
+  
+    }
+
+
+   
 
 }
