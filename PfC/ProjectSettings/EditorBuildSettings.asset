@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/TestScenes/3DLayout.unity
+    path: Assets/Scenes/3DLayout.unity
     guid: 33035419e1c56ce4693b702e2fd2dc7d
   - enabled: 0
     path: Assets/Scenes/TestScenes/3DLayout_ControlPanelTest.unity
