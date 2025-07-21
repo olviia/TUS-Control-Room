@@ -15,6 +15,8 @@ public class WebRTCRenderer : MonoBehaviour
     public PipelineType pipelineType;
     public NdiReceiver localNdiReceiver;
     public NdiReceiver localNdiReceiverCaptions;
+
+    public MeshRenderer[] additionalRenderers ;
     
     [Header("Display Settings")]
     [SerializeField] private bool debugMode = false;
@@ -171,6 +173,12 @@ public class WebRTCRenderer : MonoBehaviour
         propertyBlock.Clear();
         sharedRenderer.SetPropertyBlock(propertyBlock);
         sharedRenderer.material = originalMaterial;
+
+        foreach (var additionalRenderer in additionalRenderers)
+        {
+            additionalRenderer.SetPropertyBlock(propertyBlock);
+            additionalRenderer.material = originalMaterial;
+        }
         
         if (enableAudioReceiving && audioReceiver != null && isReceivingAudio)
         {
@@ -221,6 +229,11 @@ public class WebRTCRenderer : MonoBehaviour
         
         // Apply immediately
         sharedRenderer.SetPropertyBlock(propertyBlock);
+
+        foreach (var additionalRenderer in additionalRenderers)
+        {
+            additionalRenderer.SetPropertyBlock(propertyBlock);
+        }
     }
     
     /// <summary>

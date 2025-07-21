@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.WebRTC;
 using BroadcastPipeline;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Receives WebRTC audio and plays it through AudioSource
@@ -15,6 +16,8 @@ public class WebRTCAudioReceiver : MonoBehaviour
     [SerializeField] private bool spatialAudio = true;
     [SerializeField] private float spatialBlend = 1.0f;
     [SerializeField] private bool debugMode = false;
+    [SerializeField] private AudioSource[] additionalAudioSources;
+    
     
     // Audio components
     private AudioSource audioSource;
@@ -84,11 +87,21 @@ public class WebRTCAudioReceiver : MonoBehaviour
             audioSource.dopplerLevel = 0.1f;
             audioSource.rolloffMode = AudioRolloffMode.Linear;
             audioSource.minDistance = 1f;
-            audioSource.maxDistance = 10f;
+            audioSource.maxDistance = 1000f;
         }
         else
         {
             audioSource.spatialBlend = 0f; // 2D audio
+        }
+
+        foreach (AudioSource source in additionalAudioSources)
+        {
+            source.clip = null;
+            source.spatialBlend = spatialBlend;
+            source.dopplerLevel = 0.1f;
+            source.rolloffMode = AudioRolloffMode.Linear;
+            source.minDistance = 1f;
+            source.maxDistance = 10f;
         }
         
         // Disable initially
@@ -160,6 +173,15 @@ public class WebRTCAudioReceiver : MonoBehaviour
             audioSource.SetTrack(receivedAudioTrack);
             audioSource.enabled = true;
             audioSource.Play();
+
+            foreach (var additionalAudio in additionalAudioSources)
+            {
+                Debug.Log($"[🔊AudioReceiver] received additional audio");
+   
+                additionalAudio.SetTrack(receivedAudioTrack);
+                additionalAudio.enabled = true;
+                additionalAudio.Play();
+            }
             
             isReceivingAudio = true;
             OnAudioStateChanged?.Invoke(pipelineType, true, sessionId);
@@ -200,6 +222,12 @@ public class WebRTCAudioReceiver : MonoBehaviour
             string sessionId = currentSessionId;
             currentSessionId = string.Empty;
             receivedAudioTrack = null;
+
+            foreach (var additionalAudio in additionalAudioSources)
+            {
+                additionalAudio.Stop();
+                additionalAudio.SetTrack(null);
+            }
             
             OnAudioStateChanged?.Invoke(pipelineType, false, sessionId);
             
