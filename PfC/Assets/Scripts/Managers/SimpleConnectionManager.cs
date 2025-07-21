@@ -77,7 +77,7 @@ public class SimpleConnectionManager : MonoBehaviour
             ClientConnectionProcess(targetIP);
         }
 
-        CommunicationManager.Instance.InitializeAsync(role.ToString());
+        CommunicationManager.Instance.InitializeAsync(role);
     }
     
     private string GetTargetIP()
