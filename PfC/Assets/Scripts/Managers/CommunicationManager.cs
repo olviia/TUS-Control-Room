@@ -64,7 +64,7 @@ public class CommunicationManager : MonoBehaviour
         var vivoxConfig = new VivoxConfigurationOptions
         {
             DisableAudioDucking = true,  // Prevents audio interference
-            DynamicVoiceProcessingSwitching = false,  // Stable audio processing
+            DynamicVoiceProcessingSwitching = true
         };
 
         // Initialize Vivox with configuration
@@ -89,7 +89,7 @@ public class CommunicationManager : MonoBehaviour
             
             // Auto-join channel based on role
             await JoinRoleBasedChannel();
-            ConfigureAudioAfterChannelJoin();
+           // ConfigureAudioAfterChannelJoin();
             
         
         
@@ -144,8 +144,8 @@ public class CommunicationManager : MonoBehaviour
         {
             VivoxService.Instance.UnmuteInputDevice();
             VivoxService.Instance.UnmuteOutputDevice();
-            VivoxService.Instance.SetInputDeviceVolume(25);
-            VivoxService.Instance.SetOutputDeviceVolume(40);
+            VivoxService.Instance.SetInputDeviceVolume(10);
+            VivoxService.Instance.SetOutputDeviceVolume(15);
         }
         catch (Exception e)
         {
