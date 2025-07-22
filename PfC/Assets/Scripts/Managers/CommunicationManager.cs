@@ -55,8 +55,18 @@ public class CommunicationManager : MonoBehaviour
             return;
         }
 
-        // Don't auto-initialize here, wait for explicit call
-        Debug.Log("[CommunicationManager] Ready for initialization");
+        var options = new InitializationOptions();
+        await UnityServices.InitializeAsync(options);
+        Debug.Log("[CommunicationManager] Unity Services initialized");
+
+        var vivoxConfig = new VivoxConfigurationOptions
+        {
+            DisableAudioDucking = true,  // Prevents audio interference
+            DynamicVoiceProcessingSwitching = false,  // Stable audio processing
+        };
+
+        // Initialize Vivox with configuration
+        await VivoxService.Instance.InitializeAsync(vivoxConfig);
     }
 
     public async Task InitializeAsync(Role role)
@@ -66,31 +76,11 @@ public class CommunicationManager : MonoBehaviour
             Debug.LogWarning("[CommunicationManager] Already initialized");
             return ;
         }
-
-        try
-        {
+        
             Debug.Log($"[CommunicationManager] Starting initialization for player: {role}");
             
             // Set role first
             currentRole = role;
-            
-            // Initialize Unity Services
-            var options = new InitializationOptions();
-            await UnityServices.InitializeAsync(options);
-            Debug.Log("[CommunicationManager] Unity Services initialized");
-
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-
-            var vivoxConfig = new VivoxConfigurationOptions
-            {
-                DisableAudioDucking = true,  // Prevents audio interference
-                DynamicVoiceProcessingSwitching = false,  // Stable audio processing
-            };
-
-            // Initialize Vivox with configuration
-            await VivoxService.Instance.InitializeAsync(vivoxConfig);
-            Debug.Log("[CommunicationManager] Vivox initialized with proper config");
-            
             
             // Login to Vivox
             await VivoxService.Instance.LoginAsync();
@@ -102,11 +92,7 @@ public class CommunicationManager : MonoBehaviour
             await JoinRoleBasedChannel();
             ConfigureAudioAfterChannelJoin();
             
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[CommunicationManager] Initialization failed: {e.Message}");
-        }
+        
         
     }
     
@@ -116,21 +102,14 @@ public class CommunicationManager : MonoBehaviour
         {
             // Determine channel name based on role
             string channelName = GetChannelNameForRole(currentRole);
-            
-            if (string.IsNullOrEmpty(channelName))
-            {
-                Debug.LogError("[CommunicationManager] Invalid channel name for role");
-                return;
-            }
 
             currentChannelName = channelName;
             var channelOptions = new ChannelOptions
             { 
                 MakeActiveChannelUponJoining = true  
             };
- 
-            Debug.Log($"[CommunicationManager] Joining channel: {channelName} as {currentRole}");
-            
+            //to 1000% finish login
+            await Task.Delay(500);
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
             
             //
