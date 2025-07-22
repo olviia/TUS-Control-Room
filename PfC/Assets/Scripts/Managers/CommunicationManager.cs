@@ -56,8 +56,16 @@ public class CommunicationManager : MonoBehaviour
         }
 
         var options = new InitializationOptions();
-        await UnityServices.InitializeAsync(options);
-        Debug.Log("[CommunicationManager] Unity Services initialized");
+        try {
+            await UnityServices.InitializeAsync(options);
+            Debug.Log($"Vivox: Unity Services State: {UnityServices.State}");
+            Debug.Log($"Vivox: Project ID: {Application.cloudProjectId}");
+        } catch (Exception e) {
+            Debug.LogError($"Vivox: Unity Services failed: {e}");
+        }
+        Debug.Log($"Vivox: Platform: {Application.platform}");
+        Debug.Log($"Vivox: Unity Version: {Application.unityVersion}");
+        Debug.Log($"Vivox: Has Microphone: {Microphone.devices.Length > 0}");
 
         var vivoxConfig = new VivoxConfigurationOptions
         {
@@ -76,9 +84,6 @@ public class CommunicationManager : MonoBehaviour
             Debug.LogWarning("[CommunicationManager] Already initialized");
             return ;
         }
-        
-            Debug.Log($"[CommunicationManager] Starting initialization for player: {role}");
-            
             // Set role first
             currentRole = role;
             
