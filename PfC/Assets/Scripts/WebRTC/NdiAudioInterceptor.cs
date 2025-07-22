@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 using Unity.WebRTC;
 using Klak.Ndi;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// NDI Audio Interceptor that creates a mirror AudioSource for smooth WebRTC streaming
@@ -14,10 +16,9 @@ public class NdiAudioInterceptor : MonoBehaviour
     [Header("Component References")]
     [SerializeField] private AudioSourceBridge targetAudioSourceBridge;
     
-    [Header("Buffering Settings")]
-    [SerializeField] private float audioPollingRate = 1000f; // Hz - high frequency NDI data pulling
-    [SerializeField] private int bufferSizeMs = 100; // Buffer size in milliseconds
-
+    private readonly Queue<float[]> audioBuffer = new Queue<float[]>();
+    private readonly object bufferLock = new object();
+    
     // NDI and WebRTC components
     private NdiReceiver ndiReceiver;
     public AudioStreamTrack audioStreamTrack;
@@ -26,7 +27,6 @@ public class NdiAudioInterceptor : MonoBehaviour
     // State management
     private bool isStreamingActive = false;
     private bool isInitialized = false;
-    private Coroutine ndiPullingCoroutine;
     
     #region Unity Lifecycle
     
@@ -56,18 +56,41 @@ public class NdiAudioInterceptor : MonoBehaviour
     
 
     #region Audio Processing Utilities
-    
+
     private void HandleChunk(float[] audioData, int channels, int sampleRate)
     {
-        // Direct chunk forwarding - WebRTC handles the smoothness!
-        audioStreamTrack.SetData(audioData, channels, sampleRate);
-        
-        float rms = CalculateRMS(audioData);
+        if (!isStreamingActive) return;
 
-            Debug.Log($"[AudioSourceBridge] NDI Audio: RMS={rms:F3}, Channels={channels}");
-         
+        lock (bufferLock)
+        {
+            audioBuffer.Enqueue(audioData);
+
+            // Prevent buffer overflow
+            while (audioBuffer.Count > 5)
+            {
+                audioBuffer.Dequeue();
+            }
+        }
     }
-    
+    // Called by Unity audio thread at consistent intervals
+    private void OnAudioFilterRead(float[] data, int channels)
+    {
+        if (!isStreamingActive || audioStreamTrack == null) return;
+        
+        lock (bufferLock)
+        {
+            if (audioBuffer.Count > 0)
+            {
+                var bufferedChunk = audioBuffer.Dequeue();
+                
+                audioStreamTrack.SetData(bufferedChunk, channels, 48000);
+            }
+        }
+        
+        // Clear the filter data 
+        Array.Clear(data, 0, data.Length);
+    }
+
     private float CalculateRMS(float[] audioData)
     {
         float sum = 0f;
@@ -99,6 +122,10 @@ public class NdiAudioInterceptor : MonoBehaviour
         isStreamingActive = false;
         
         targetAudioSourceBridge.OnWebRTCAudioReady -= HandleChunk;
+        lock (bufferLock)
+        {
+            audioBuffer.Clear();
+        }
         
         Debug.Log("[🎵AudioInterceptor] Audio streaming stopped");
     }
