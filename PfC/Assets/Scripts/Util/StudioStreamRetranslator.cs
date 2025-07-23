@@ -7,7 +7,7 @@ public class StudioStreamRetranslator : MonoBehaviour
 
     public MeshRenderer studioCaptionsMesh;
     public NdiReceiver studioNdiReceiver;
-    public AudioSource audioSourceReceiver;
+    //public AudioSource audioSourceReceiver;
     private MeshRenderer mesh;
     private MaterialPropertyBlock studioBlock;
     private MaterialPropertyBlock captionsBlock;

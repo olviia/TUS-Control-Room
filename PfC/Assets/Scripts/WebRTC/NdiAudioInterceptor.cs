@@ -84,10 +84,10 @@ public class NdiAudioInterceptor : MonoBehaviour
     
     public void StartAudioStreaming()
     {
-        audioStreamTrack = new AudioStreamTrack();
-        
         targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
 
+        audioStreamTrack = new AudioStreamTrack();
+        
         targetAudioSourceBridge.OnWebRTCAudioReady += HandleChunk;
         
         isStreamingActive = true;

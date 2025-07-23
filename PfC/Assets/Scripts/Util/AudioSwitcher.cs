@@ -9,6 +9,7 @@ using UnityEngine.UI;
 public class AudioSwitcher : MonoBehaviour
 {
     [SerializeField] private NdiReceiver ndiReceiver;
+    private AudioMode currentMode;
 
     // Call this method from your UI button
     public void ToggleAudioMode()
@@ -19,6 +20,9 @@ public class AudioSwitcher : MonoBehaviour
             currentMode = (AudioMode)(((int)currentMode + 1) % 2);
 
             ApplyAudioMode();
+            
+            
+            GetReceiveAudioField();
         }
     }
 
@@ -28,18 +32,17 @@ public class AudioSwitcher : MonoBehaviour
 
     // Enum to represent the different audio modes
     public enum AudioMode
-    {
-        //commented automatic. it is possible to return it back
-        
+    {        
         Automatic = 0,
         //VirtualSpeakers = 0,
         None = 1
     }
 
-    private AudioMode currentMode = AudioMode.None;
+    
 
     private void Start()
     {
+        currentMode = GetReceiveAudioField() ? AudioMode.Automatic : AudioMode.None;
     }
 
 
@@ -102,6 +105,13 @@ public class AudioSwitcher : MonoBehaviour
             field.SetValue(ndiReceiver, value);
         else
             Debug.LogError("Could not find _receiveAudio field in NdiReceiver");
+    }    
+    private bool GetReceiveAudioField()
+    {
+        var field = typeof(NdiReceiver).GetField("_receiveAudio",
+            BindingFlags.NonPublic | BindingFlags.Instance);
+
+        return (bool)(field?.GetValue(ndiReceiver));
     }
 #endregion
 
