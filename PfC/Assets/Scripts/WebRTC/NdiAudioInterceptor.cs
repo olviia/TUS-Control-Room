@@ -42,7 +42,8 @@ public class NdiAudioInterceptor : MonoBehaviour
             Debug.Log($"[🎵AudioInterceptor] Connected to NDI receiver: {ndiReceiver.ndiName}");
         }
 
-        audioStreamTrack = new AudioStreamTrack();
+        StartAudioStreaming();
+        StopAudioStreaming();
     }
     
     // void Update()
@@ -99,14 +100,15 @@ public class NdiAudioInterceptor : MonoBehaviour
     #region Public Interface
     
     public void StartAudioStreaming()
-    {            
+    {                    
+        audioStreamTrack = new AudioStreamTrack();
+
         targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
 
         targetAudioSourceBridge.OnWebRTCAudioReady += HandleChunk;
 
         //
 
-        //audioStreamTrack = new AudioStreamTrack();
         
         isStreamingActive = true;
 
@@ -118,7 +120,7 @@ public class NdiAudioInterceptor : MonoBehaviour
         
         targetAudioSourceBridge.OnWebRTCAudioReady -= HandleChunk;
         
-        //audioStreamTrack?.Dispose();
+        audioStreamTrack?.Dispose();
         
         Debug.Log("[🎵AudioInterceptor] Audio streaming stopped");
     }
