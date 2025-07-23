@@ -78,6 +78,9 @@ public class WebRTCStreamer : MonoBehaviour
     private RTCSessionDescription? pendingOffer = null;
     private ulong pendingOfferClient = 0;
     
+    //veery bad workaround
+    private bool isStreamedForTheFirstTime = true;
+    
     public static event Action<PipelineType, StreamerState, string> OnStateChanged;
     
     #region Unity Lifecycle
@@ -131,8 +134,6 @@ public class WebRTCStreamer : MonoBehaviour
         videoTrack = new VideoStreamTrack(webRtcTexture);
 
         audioTrack = audioInterceptor.audioStreamTrack;
-        audioInterceptor.StartAudioStreaming();
-        audioInterceptor.StopAudioStreaming();
         
         Debug.Log($"[📡{instanceId}] WebRTC objects created {textureWidth}x{textureHeight}");
     }
@@ -311,6 +312,8 @@ public class WebRTCStreamer : MonoBehaviour
         peerConnection.OnTrack = OnTrackReceived;
         peerConnection.OnConnectionStateChange = OnConnectionStateChange;
         peerConnection.OnIceConnectionChange = OnIceConnectionChange;
+
+
     
         Debug.Log($"aaa_[📡{instanceId}] CreatePeerConnection COMPLETE");
     }
@@ -331,6 +334,18 @@ public class WebRTCStreamer : MonoBehaviour
         //add audio track
         if (enableAudioStreaming && audioInterceptor != null)
         {
+            
+            //ugly workaround
+            
+            if (isStreamedForTheFirstTime)
+            {
+                audioInterceptor.StartAudioStreaming();
+                NotifyRendererStartAudio(audioTrack);
+                audioInterceptor.StopAudioStreaming();
+                NotifyRendererStopAudio();
+                isStreamedForTheFirstTime = false;
+            }
+            
             // Start audio streaming
             audioInterceptor.StartAudioStreaming();
             
