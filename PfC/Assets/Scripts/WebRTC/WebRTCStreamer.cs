@@ -168,6 +168,8 @@ public class WebRTCStreamer : MonoBehaviour
     /// </summary>
     public void StartStreaming(string sessionId)
     {
+        streamingStartTime = Time.time;
+        Debug.Log($"aabb_[🔍Timing] Streaming started at: {streamingStartTime}");
         StartCoroutine(BeginStreamingSession(sessionId));
     }
     
@@ -176,7 +178,7 @@ public class WebRTCStreamer : MonoBehaviour
     /// </summary>
     public void StartReceiving(string sessionId)
     {
-        Debug.Log($"[📡{instanceId}] StartReceiving called for: {sessionId}");
+        Debug.Log($"aabb_[🔍Timing] Receiving started at: {Time.time}");
         
         PrepareForNewSessionSync(sessionId);
         isOfferer = false;
@@ -671,19 +673,26 @@ public class WebRTCStreamer : MonoBehaviour
 
     private void NotifyRendererStartAudio(AudioStreamTrack audioStreamTrack)
     {
+        audioInitTime = Time.time;
+        float timeSinceStreamStart = audioInitTime - streamingStartTime;
+        Debug.Log($"aabb_[🔍Timing] Audio initialization at: {audioInitTime} (+ {timeSinceStreamStart:F2}s after stream start)");
+
+        Debug.Log($"aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem");
+    
         if (targetRenderer == null) return;
-    
-        // Try to find WebRTCAudioReceiver
+
         var audioReceiver = targetRenderer.GetComponentInChildren<WebRTCAudioReceiver>();
-    
+
         if (audioReceiver != null)
         {
             audioReceiver.StartReceivingAudio(audioStreamTrack, currentSessionId);
-            Debug.Log($"[📡{instanceId}] Audio receiver started for session: {currentSessionId}");
+            audioSubsystemInitialized = true; // Mark as initialized
+            Debug.Log($"aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack");
+            Debug.Log($"aabb_[📡{instanceId}] Audio receiver started for session: {currentSessionId}");
         }
         else
         {
-            Debug.LogWarning($"[📡{instanceId}] No WebRTCAudioReceiver found - audio will not be heard");
+            Debug.LogWarning($"aabb_[📡{instanceId}] No WebRTCAudioReceiver found - audio will not be heard");
         }
     }
     
@@ -1019,6 +1028,43 @@ public class WebRTCStreamer : MonoBehaviour
     {
         Debug.Log($"[📡{instanceId}] Audio Status: {GetAudioStatus()}");
     }
+    
+    [ContextMenu("Debug Audio Subsystem State")]
+    public void DebugAudioSubsystemState()
+    {
+        Debug.Log($"aabb_[🔍AudioSubsystem] === UNITY AUDIO STATE ===");
+        Debug.Log($"aabb_[🔍AudioSubsystem] Speaker Mode: {AudioSettings.GetConfiguration().speakerMode}");
+        Debug.Log($"aabb_[🔍AudioSubsystem] Sample Rate: {AudioSettings.GetConfiguration().sampleRate}");
+        Debug.Log($"aabb_[🔍AudioSubsystem] Buffer Size: {AudioSettings.GetConfiguration().dspBufferSize}");
+        Debug.Log($"aabb_[🔍AudioSubsystem] Audio Active: {AudioListener.volume > 0}");
+    
+        // Check if any AudioSource has been used with WebRTC
+        var allAudioSources = FindObjectsOfType<AudioSource>();
+        var webrtcSources = allAudioSources.Where(a => a.clip == null && a.enabled).ToList();
+    
+        Debug.Log($"aabb_[🔍AudioSubsystem] Total AudioSources: {allAudioSources.Length}");
+        Debug.Log($"aabb_[🔍AudioSubsystem] WebRTC AudioSources (clip=null, enabled): {webrtcSources.Count}");
+    
+        foreach (var source in webrtcSources)
+        {
+            Debug.Log($"aabb_[🔍AudioSubsystem]   - {source.gameObject.name}: playing={source.isPlaying}, volume={source.volume}");
+        }
+    }
+    
+    private static bool audioSubsystemInitialized = false; // Static to track globally
 
+    [ContextMenu("Check WebRTC Audio Initialization State")]
+    public void CheckAudioInitState()
+    {
+        Debug.Log($"aabb_[🔍InitState] WebRTC Audio Subsystem Initialized: {audioSubsystemInitialized}");
+        Debug.Log($"aabb_[🔍InitState] WebRTC Engine Running: {WebRTCEngineManager.Instance.IsEngineRunning}");
+        Debug.Log($"aabb_[🔍InitState] Audio Track Created: {(audioTrack != null)}");
+        Debug.Log($"aabb_[🔍InitState] Is Streaming Active: {isAudioStreamingActive}");
+        Debug.Log($"aabb_[🔍InitState] Current State: {currentState}");
+    }
+
+    private float audioInitTime = 0f;
+    private float streamingStartTime = 0f;
+    
     #endregion
 }
