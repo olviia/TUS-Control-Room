@@ -130,7 +130,9 @@ public class WebRTCStreamer : MonoBehaviour
         
         videoTrack = new VideoStreamTrack(webRtcTexture);
 
-        audioTrack = new AudioStreamTrack();
+        audioTrack = audioInterceptor.audioStreamTrack;
+        audioInterceptor.StartAudioStreaming();
+        audioInterceptor.StopAudioStreaming();
         
         Debug.Log($"[📡{instanceId}] WebRTC objects created {textureWidth}x{textureHeight}");
     }
