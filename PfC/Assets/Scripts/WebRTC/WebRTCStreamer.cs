@@ -30,8 +30,8 @@ public class WebRTCStreamer : MonoBehaviour
     public WebRTCRenderer targetRenderer;
     
     [Header("Settings")]
-    [SerializeField] private int textureWidth = 1920;
-    [SerializeField] private int textureHeight = 1080;
+    [SerializeField] private int textureWidth = 1280;
+    [SerializeField] private int textureHeight = 720;
     [SerializeField] private float connectionTimeout = 5f;
     [SerializeField] private bool enableOptimisticStates = true;
     [SerializeField] private int maxRetryAttempts = 3;
