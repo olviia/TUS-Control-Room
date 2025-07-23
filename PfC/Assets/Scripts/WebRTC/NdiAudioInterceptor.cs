@@ -45,14 +45,14 @@ public class NdiAudioInterceptor : MonoBehaviour
         audioStreamTrack = new AudioStreamTrack();
     }
     
-    void Update()
-    {
-        //Dynamic AudioSourceBridge detection for runtime on/off capability
-        if (targetAudioSourceBridge == null)
-        {
-            targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
-        }
-    }
+    // void Update()
+    // {
+    //     //Dynamic AudioSourceBridge detection for runtime on/off capability
+    //     if (targetAudioSourceBridge == null)
+    //     {
+    //         targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
+    //     }
+    // }
     
     #endregion
     
@@ -85,7 +85,9 @@ public class NdiAudioInterceptor : MonoBehaviour
     #region Public Interface
     
     public void StartAudioStreaming()
-    {
+    {            
+        targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
+
         targetAudioSourceBridge.OnWebRTCAudioReady += HandleChunk;
 
         //
