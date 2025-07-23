@@ -41,7 +41,7 @@ public class WebRTCStreamer : MonoBehaviour
     public bool enableAudioStreaming = true;
 
 // Audio streaming components
-    private AudioStreamTrack audioTrack;
+    public AudioStreamTrack audioTrack;
     private RTCRtpSender audioSender;
     private bool isAudioStreamingActive = false;
 
@@ -129,6 +129,8 @@ public class WebRTCStreamer : MonoBehaviour
         webRtcTexture.Create();
         
         videoTrack = new VideoStreamTrack(webRtcTexture);
+
+        audioTrack = new AudioStreamTrack();
         
         Debug.Log($"[📡{instanceId}] WebRTC objects created {textureWidth}x{textureHeight}");
     }
