@@ -78,8 +78,6 @@ public class WebRTCStreamer : MonoBehaviour
     private RTCSessionDescription? pendingOffer = null;
     private ulong pendingOfferClient = 0;
     
-    //veery bad workaround
-    private bool isStreamedForTheFirstTime = true;
     
     public static event Action<PipelineType, StreamerState, string> OnStateChanged;
     
@@ -334,18 +332,6 @@ public class WebRTCStreamer : MonoBehaviour
         //add audio track
         if (enableAudioStreaming && audioInterceptor != null)
         {
-            
-            //ugly workaround
-            
-            if (isStreamedForTheFirstTime)
-            {
-                audioInterceptor.StartAudioStreaming();
-                NotifyRendererStartAudio(audioTrack);
-                audioInterceptor.StopAudioStreaming();
-                NotifyRendererStopAudio();
-                isStreamedForTheFirstTime = false;
-            }
-            
             // Start audio streaming
             audioInterceptor.StartAudioStreaming();
             

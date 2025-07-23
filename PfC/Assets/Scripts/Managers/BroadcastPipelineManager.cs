@@ -31,6 +31,11 @@ public class BroadcastPipelineManager : MonoBehaviour
     
     private NetworkStreamCoordinator networkStreamCoordinator;
     
+    //ugly workaround
+    private bool isStudioStreamedForTheFirstTime = true;
+    private bool isTVStreamedForTheFirstTime = true;
+    private Coroutine streamedForTheFirstTimeCoroutine;
+    
 
     private void Awake()
     {
@@ -74,6 +79,15 @@ public class BroadcastPipelineManager : MonoBehaviour
         Debug.Log($"xx_Pipeline Manager: Right click on {source.gameObject.name}");
         // Always assign to Studio Preview (overwrite if already there)
         AssignSourceToPipeline(source, PipelineType.StudioPreview);
+
+
+    }
+
+    private IEnumerator Reassign(PipelineType preview, PipelineType destination)
+    {
+        yield return new WaitForSeconds(1f);
+
+        ForwardContentToNextStage(preview, destination);
     }
     
     public void OnDestinationLeftClicked(PipelineDestination destination)
@@ -83,6 +97,12 @@ public class BroadcastPipelineManager : MonoBehaviour
         if(destination.pipelineType == PipelineType.TVPreview)
         {
             ForwardContentToNextStage(PipelineType.TVPreview, PipelineType.TVLive);
+            
+            if (isTVStreamedForTheFirstTime)
+            {
+                StartCoroutine(Reassign(PipelineType.TVPreview, PipelineType.TVLive));
+                isTVStreamedForTheFirstTime =  false;
+            }
         }
     }
 
@@ -93,6 +113,13 @@ public class BroadcastPipelineManager : MonoBehaviour
         if(destination.pipelineType == PipelineType.StudioPreview)
         {
             ForwardContentToNextStage(PipelineType.StudioPreview, PipelineType.StudioLive);
+            
+            if (isStudioStreamedForTheFirstTime)
+            {
+                StartCoroutine(Reassign(PipelineType.StudioPreview, PipelineType.StudioLive));
+                isStudioStreamedForTheFirstTime =  false;
+            }
+            
         }
     }
 
