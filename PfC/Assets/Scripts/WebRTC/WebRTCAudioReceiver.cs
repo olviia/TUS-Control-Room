@@ -166,11 +166,12 @@ public class WebRTCAudioReceiver : MonoBehaviour
         // Use Unity WebRTC extension method to set track
         try
         {
+            audioSource.enabled = true;
+
             receivedAudioTrack = audioTrack;
             currentSessionId = sessionId;
             
             audioSource.SetTrack(receivedAudioTrack);
-            audioSource.enabled = true;
             audioSource.Play();
             //
             // foreach (var additionalAudio in additionalAudioSources)
