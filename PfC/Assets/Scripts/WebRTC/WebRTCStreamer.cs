@@ -78,7 +78,6 @@ public class WebRTCStreamer : MonoBehaviour
     private RTCSessionDescription? pendingOffer = null;
     private ulong pendingOfferClient = 0;
     
-    public static event Action<PipelineType, bool, string> OnAudioStreamChanged;
     public static event Action<PipelineType, StreamerState, string> OnStateChanged;
     
     #region Unity Lifecycle
@@ -332,7 +331,6 @@ public class WebRTCStreamer : MonoBehaviour
                 // Add to peer connection 
                 audioSender = peerConnection.AddTrack(audioInterceptor.audioStreamTrack);
                 isAudioStreamingActive = true;
-                OnAudioStreamChanged?.Invoke(pipelineType, true, currentSessionId);
                 Debug.Log($"[📡{instanceId}] Audio track added to peer connection");
         }
         
@@ -637,31 +635,38 @@ public class WebRTCStreamer : MonoBehaviour
         {
             Debug.Log($"aaa_[📡{instanceId}] Video track received and processed");
             videoStreamTrack.OnVideoReceived += OnVideoReceived;
-            SetState(StreamerState.Receiving);
-            ClearConnectionTimeout();
         } 
         else if (e.Track is AudioStreamTrack audioStreamTrack)
         {
             Debug.Log($"[📡{instanceId}] Audio track received and processed");
             receivedAudioTrack = audioStreamTrack;
-        
-            // Notify renderer to start audio
             NotifyRendererStartAudio(audioStreamTrack);
-        
-            OnAudioStreamChanged?.Invoke(pipelineType, true, currentSessionId);
         }
         else
         {
             Debug.LogWarning($"aaa_[📡{instanceId}] Unknown track type received: {e.Track.GetType()}");
         }
+        
+        SetState(StreamerState.Receiving);
+        ClearConnectionTimeout();
     }
+    // private void OnAudioReceived(float[] data, int channels, int samplerate)
+    // {
+    //     Debug.Log($"[📡{instanceId}] Audio received");
+    //     receivedAudioTrack = audioStreamTrack;
+    //     
+    //     // Notify renderer to start audio
+    //     NotifyRendererStartAudio(audioStreamTrack);
+    //     SetState(StreamerState.Receiving);
+    // }
     
     private void OnVideoReceived(Texture texture)
     {
         Debug.Log($"[📡{instanceId}] Video received: {texture.width}x{texture.height}");
         targetRenderer?.ShowRemoteStream(texture, currentSessionId);
         SetState(StreamerState.Receiving);
-    }
+    }    
+
     private void NotifyRendererStartAudio(AudioStreamTrack audioStreamTrack)
     {
         if (targetRenderer == null) return;
@@ -883,8 +888,6 @@ public class WebRTCStreamer : MonoBehaviour
         
             audioTrack = null;
             isAudioStreamingActive = false;
-        
-            OnAudioStreamChanged?.Invoke(pipelineType, false, currentSessionId);
             Debug.Log($"[📡{instanceId}] Audio streaming stopped");
         }
         catch (System.Exception e)

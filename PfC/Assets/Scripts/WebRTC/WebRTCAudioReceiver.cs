@@ -16,7 +16,7 @@ public class WebRTCAudioReceiver : MonoBehaviour
     [SerializeField] private bool spatialAudio = true;
     [SerializeField] private float spatialBlend = 1.0f;
     [SerializeField] private bool debugMode = false;
-    [SerializeField] private AudioSource[] additionalAudioSources;
+    //[SerializeField] private AudioSource[] additionalAudioSources;
     
     
     // Audio components
@@ -30,7 +30,6 @@ public class WebRTCAudioReceiver : MonoBehaviour
     private PipelineType pipelineType;
     
     // Events
-    public static event System.Action<PipelineType, bool, string> OnAudioStateChanged;
     
     #region Unity Lifecycle
     
@@ -94,15 +93,15 @@ public class WebRTCAudioReceiver : MonoBehaviour
             audioSource.spatialBlend = 0f; // 2D audio
         }
 
-        foreach (AudioSource source in additionalAudioSources)
-        {
-            source.clip = null;
-            source.spatialBlend = spatialBlend;
-            source.dopplerLevel = 0.1f;
-            source.rolloffMode = AudioRolloffMode.Linear;
-            source.minDistance = 1f;
-            source.maxDistance = 10f;
-        }
+        // foreach (AudioSource source in additionalAudioSources)
+        // {
+        //     source.clip = null;
+        //     source.spatialBlend = spatialBlend;
+        //     source.dopplerLevel = 0.1f;
+        //     source.rolloffMode = AudioRolloffMode.Linear;
+        //     source.minDistance = 1f;
+        //     source.maxDistance = 10f;
+        // }
         
         // Disable initially
         audioSource.enabled = false;
@@ -173,18 +172,17 @@ public class WebRTCAudioReceiver : MonoBehaviour
             audioSource.SetTrack(receivedAudioTrack);
             audioSource.enabled = true;
             audioSource.Play();
-
-            foreach (var additionalAudio in additionalAudioSources)
-            {
-                Debug.Log($"[🔊AudioReceiver] received additional audio");
-   
-                additionalAudio.SetTrack(receivedAudioTrack);
-                additionalAudio.enabled = true;
-                additionalAudio.Play();
-            }
-            
+            //
+            // foreach (var additionalAudio in additionalAudioSources)
+            // {
+            //     Debug.Log($"[🔊AudioReceiver] received additional audio");
+            //
+            //     additionalAudio.SetTrack(receivedAudioTrack);
+            //     additionalAudio.enabled = true;
+            //     additionalAudio.Play();
+            // }
+            //
             isReceivingAudio = true;
-            OnAudioStateChanged?.Invoke(pipelineType, true, sessionId);
             
             Debug.Log($"[🔊AudioReceiver] Started receiving audio for session: {sessionId}");
         }
@@ -223,13 +221,12 @@ public class WebRTCAudioReceiver : MonoBehaviour
             currentSessionId = string.Empty;
             receivedAudioTrack = null;
 
-            foreach (var additionalAudio in additionalAudioSources)
-            {
-                additionalAudio.Stop();
-                additionalAudio.SetTrack(null);
-            }
+            // foreach (var additionalAudio in additionalAudioSources)
+            // {
+            //     additionalAudio.Stop();
+            //     additionalAudio.SetTrack(null);
+            // }
             
-            OnAudioStateChanged?.Invoke(pipelineType, false, sessionId);
             
             Debug.Log($"[🔊AudioReceiver] Stopped receiving audio for session: {sessionId}");
         }
