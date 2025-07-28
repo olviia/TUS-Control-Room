@@ -36,6 +36,7 @@ public class SimpleConnectionManager : MonoBehaviour
     private Role pendingRole;
     
     private bool hostAlreadyRunning = false;
+    private string hostIP;
 
     private void Start()
     {
@@ -115,16 +116,16 @@ public class SimpleConnectionManager : MonoBehaviour
 
         ScanForHosts();
             
-        SetTransportConnection(targetIP, port);
+        
         if (!hostAlreadyRunning)
         {
-            GetLocalIPAddress();
-            GetInputFieldIP();
+            SetTransportConnection(GetLocalIPAddress(), port);
+            
             NetworkManager.Singleton.StartHost();
         }
         else
         {
-            GetInputFieldIP();
+            SetTransportConnection(hostIP, port);
             NetworkManager.Singleton.StartClient();
         }
     }
@@ -411,14 +412,15 @@ public class SimpleConnectionManager : MonoBehaviour
     
         return (false, "");
     }
-    private void FinalizeScan(bool successful, string hostIP)
+    private void FinalizeScan(bool successful, string foundIP)
     {
-        //CleanupUDP();
+        CleanupUDP();
 
         // Update UI
         if (successful)
         {
-            ipInput.text = hostIP;
+            ipInput.text = foundIP;
+            hostIP = foundIP;
         }
 
         // Re-enable scan button
