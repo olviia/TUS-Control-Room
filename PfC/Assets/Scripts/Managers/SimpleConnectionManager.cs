@@ -59,7 +59,7 @@ public class SimpleConnectionManager : MonoBehaviour
             return;
         }
 
-        string targetIP = GetTargetIP();
+        string targetIP = GetInputFieldIP();
         SetLocation(role);
         CommunicationManager.Instance.SetRole(role);
         pendingRole = role;
@@ -80,7 +80,7 @@ public class SimpleConnectionManager : MonoBehaviour
         CommunicationManager.Instance.InitializeAsync(role);
     }
     
-    private string GetTargetIP()
+    private string GetInputFieldIP()
     {
         return string.IsNullOrEmpty(ipInput.text) ? GetLocalIPAddress() : ipInput.text.Trim();
     }
@@ -112,13 +112,21 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         Debug.Log($"xx_🔧 Director attempting to connect to {targetIP}:{port}");
         currentState = ConnectionState.ConnectingAsClient;
-        
+
+        ScanForHosts();
+            
         SetTransportConnection(targetIP, port);
         if (!hostAlreadyRunning)
         {
+            GetLocalIPAddress();
+            GetInputFieldIP();
             NetworkManager.Singleton.StartHost();
         }
-        else NetworkManager.Singleton.StartClient();
+        else
+        {
+            GetInputFieldIP();
+            NetworkManager.Singleton.StartClient();
+        }
     }
 
 
@@ -292,7 +300,7 @@ public class SimpleConnectionManager : MonoBehaviour
     private void AutoDetectIP()
     {
         //change the autodetecting
-        string detectedIP = GetTargetIP();
+        string detectedIP = GetInputFieldIP();
         ipInput.text = detectedIP;
         Debug.Log($"xx_🔧 🔍 Auto-detected IP: {detectedIP}");
     }
@@ -405,7 +413,7 @@ public class SimpleConnectionManager : MonoBehaviour
     }
     private void FinalizeScan(bool successful, string hostIP)
     {
-        CleanupUDP();
+        //CleanupUDP();
 
         // Update UI
         if (successful)
@@ -468,7 +476,7 @@ public class SimpleConnectionManager : MonoBehaviour
             if (request == "FIND_HOST")
             {
                 Debug.Log($"xx_🔧 📡 Discovery request from {remoteEndpoint.Address}");
-                SendHostResponse(GetTargetIP(), remoteEndpoint.Address);
+                SendHostResponse(GetInputFieldIP(), remoteEndpoint.Address);
             }
         }
         catch (Exception ex)
