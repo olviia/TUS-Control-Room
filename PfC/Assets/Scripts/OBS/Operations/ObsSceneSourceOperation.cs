@@ -218,4 +218,16 @@ public class ObsSceneSourceOperation : ObsOperationBase
     
     
     #endregion
+
+    public void SetTvProgrammeScene(string ndiName)
+    {
+        //add code to remove the item
+        //to do it, use RemoveSceneItem()
+        
+        string name = ObsUtilities.FindSceneBySourceFilter(SharedObsWebSocket, "Dedicated NDI® output",
+            "ndi_filter_ndiname",
+            ndiName);
+            
+        ConfigureAndExecute("StreamLive", name, true, name);
+    }
 }
