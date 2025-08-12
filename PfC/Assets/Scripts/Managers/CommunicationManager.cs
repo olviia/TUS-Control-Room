@@ -2,11 +2,14 @@
  * Creator: Deniz Mevlevioglu
  * Date: 09/04/2025
  */
+
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Vivox;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Unity.Netcode;
 using Unity.Services.Authentication;
 
 
@@ -14,11 +17,13 @@ public class CommunicationManager : MonoBehaviour
 {
     static object m_Lock = new object();
     static CommunicationManager m_Instance;
-    private Role currentRole;    
+    private Role currentRole;
     private string currentChannelName;
     private bool isInitialized = false;
     private bool isJoiningChannel = false;
 
+    
+    private NetworkRoleRegistry roleRegistry;
 
 
     public static CommunicationManager Instance
@@ -40,11 +45,13 @@ public class CommunicationManager : MonoBehaviour
                         singletonObject.name = typeof(CommunicationManager).ToString() + " (Singleton)";
                     }
                 }
+
                 DontDestroyOnLoad(m_Instance.gameObject);
                 return m_Instance;
             }
         }
     }
+
     async void Awake()
     {
         if (m_Instance != this && m_Instance != null)
@@ -57,13 +64,13 @@ public class CommunicationManager : MonoBehaviour
 
         var options = new InitializationOptions();
 
-            await UnityServices.InitializeAsync(options);
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        await UnityServices.InitializeAsync(options);
+        await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
 
         var vivoxConfig = new VivoxConfigurationOptions
         {
-            DisableAudioDucking = true,  // Prevents audio interference
+            DisableAudioDucking = true, // Prevents audio interference
             DynamicVoiceProcessingSwitching = true
         };
 
@@ -73,29 +80,35 @@ public class CommunicationManager : MonoBehaviour
 
     public async Task InitializeAsync(Role role)
     {
+        
         if (isInitialized)
         {
             Debug.LogWarning("[CommunicationManager] Already initialized");
-            return ;
+            return;
         }
-            // Set role first
-            currentRole = role;
-            
-            // Login to Vivox
-            await VivoxService.Instance.LoginAsync();
-            Debug.Log("[CommunicationManager] Vivox login successful");
+        // Find the network role registry
+        roleRegistry = FindObjectOfType<NetworkRoleRegistry>();
+        if (roleRegistry == null)
+        {
+            Debug.LogError("[CommunicationManager] NetworkRoleRegistry not found!");
+            return;
+        }
 
-            isInitialized = true;
-            
-            // Auto-join channel based on role
-            await JoinRoleBasedChannel();
-           // ConfigureAudioAfterChannelJoin();
-            
-        
-        
+        // Set role first
+        currentRole = role;
+
+        // Login to Vivox
+        await VivoxService.Instance.LoginAsync();
+        Debug.Log("[CommunicationManager] Vivox login successful");
+
+        isInitialized = true;
+
+        // Auto-join channel based on role
+        await JoinRoleBasedChannel();
+        // ConfigureAudioAfterChannelJoin();
     }
-    
-    private async Task JoinRoleBasedChannel()
+
+    public async Task JoinRoleBasedChannel()
     {
         try
         {
@@ -104,13 +117,15 @@ public class CommunicationManager : MonoBehaviour
 
             currentChannelName = channelName;
             var channelOptions = new ChannelOptions
-            { 
-                MakeActiveChannelUponJoining = true  
+            {
+                MakeActiveChannelUponJoining = true
             };
             //to 1000% finish login
-            await Task.Delay(500);
+            await WaitForNetworkConnection();
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
-            
+
+            // After joining, register ourselves in the network registry
+            await RegisterWithNetworkRegistry();
             //
             // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
             //
@@ -123,21 +138,19 @@ public class CommunicationManager : MonoBehaviour
             Debug.LogError($"[CommunicationManager] Failed to join channel: {e.Message}");
         }
     }
-    private string GetChannelNameForRole(Role role)
+
+
+
+    private async Task WaitForNetworkConnection()
     {
-        // Define your channel naming logic here
-        switch (role)
+        while (!NetworkManager.Singleton.IsConnectedClient && !NetworkManager.Singleton.IsHost)
         {
-            case Role.Director:
-                return "studio-tus-channel";
-            case Role.Audience:
-                return "studio-tus-channel";
-            default:
-                Debug.LogWarning($"[CommunicationManager] Unknown role: {role}");
-                return "studio-tus-channel";
+            await Task.Delay(100); // Short polling instead of arbitrary delay
         }
+
+        Debug.Log("[CommunicationManager] ✅ Network connection confirmed, proceeding with Vivox");
     }
-    
+
     private void ConfigureAudioAfterChannelJoin()
     {
         try
@@ -153,24 +166,58 @@ public class CommunicationManager : MonoBehaviour
         }
     }
 
+    #region Roles Setup
     public void SetRole(Role role)
     {
         currentRole = role;
     }
+    private string GetChannelNameForRole(Role role)
+    {
+        // Define your channel naming logic here
+        switch (role)
+        {
+            case Role.Director:
+                return "studio-tus-channel";
+            case Role.Presenter:
+                return "studio-tus-channel";
+            case Role.Audience:
+                return "studio-tus-channel";
+            default:
+                Debug.LogWarning($"[CommunicationManager] Unknown role: {role}");
+                return "studio-tus-channel";
+        }
+    }
     
+
+    private async Task RegisterWithNetworkRegistry()
+    {
+        // Wait a moment for Vivox to fully establish participant info
+        await Task.Delay(500);
+        
+        // Get our Vivox participant ID
+        var loginSession = this.LoginSession;
+        if (loginSession?.LoginSessionId != null)
+        {
+            string ourVivoxId = loginSession.LoginSessionId.Name; // This is our participant ID
+            ulong ourNetcodeId = NetworkManager.Singleton.LocalClientId;
+            
+            // Register with the network registry
+            roleRegistry.RegisterPlayerServerRpc(currentRole, ourNetcodeId, ourVivoxId, ourVivoxId);
+            
+            Debug.Log($"[CommunicationManager] Registered role {currentRole} with VivoxID: {ourVivoxId}");
+        }
+    }
+    #endregion
+
+
     [ContextMenu("Test Audio")]
     public void TestAudio()
     {
-            Debug.Log($"[Audio Status] Input Device: {VivoxService.Instance.ActiveInputDevice.DeviceName ?? "None"}");
-            Debug.Log($"[Audio Status] Output Device: {VivoxService.Instance.ActiveOutputDevice?.DeviceName ?? "None"}");
-            Debug.Log($"[Audio Status] Input Muted: {VivoxService.Instance.IsInputDeviceMuted}");
-            Debug.Log($"[Audio Status] Output Muted: {VivoxService.Instance.IsOutputDeviceMuted}");
-            Debug.Log($"[Audio Status] Input Volume: {VivoxService.Instance.InputDeviceVolume}");
-            Debug.Log($"[Audio Status] Output Volume: {VivoxService.Instance.OutputDeviceVolume}");
-  
+        Debug.Log($"[Audio Status] Input Device: {VivoxService.Instance.ActiveInputDevice.DeviceName ?? "None"}");
+        Debug.Log($"[Audio Status] Output Device: {VivoxService.Instance.ActiveOutputDevice?.DeviceName ?? "None"}");
+        Debug.Log($"[Audio Status] Input Muted: {VivoxService.Instance.IsInputDeviceMuted}");
+        Debug.Log($"[Audio Status] Output Muted: {VivoxService.Instance.IsOutputDeviceMuted}");
+        Debug.Log($"[Audio Status] Input Volume: {VivoxService.Instance.InputDeviceVolume}");
+        Debug.Log($"[Audio Status] Output Volume: {VivoxService.Instance.OutputDeviceVolume}");
     }
-
-
-   
-
 }
