@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Services.Authentication;
+using Unity.Services.Vivox.AudioTaps;
 
 
 public class CommunicationManager : MonoBehaviour
@@ -125,7 +126,7 @@ public class CommunicationManager : MonoBehaviour
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
 
             // After joining, register ourselves in the network registry
-            await RegisterWithNetworkRegistry();
+           NetworkRoleRegistry.Instance.RegisterRoleServerRpc(currentRole,  AuthenticationService.Instance.PlayerId);
             //
             // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
             //
@@ -189,25 +190,30 @@ public class CommunicationManager : MonoBehaviour
     }
     
 
-    private async Task RegisterWithNetworkRegistry()
-    {
-        // Wait a moment for Vivox to fully establish participant info
-        await Task.Delay(500);
-        
-        // Get our Vivox participant ID
-        var loginSession = this.LoginSession;
-        if (loginSession?.LoginSessionId != null)
-        {
-            string ourVivoxId = loginSession.LoginSessionId.Name; // This is our participant ID
-            ulong ourNetcodeId = NetworkManager.Singleton.LocalClientId;
-            
-            // Register with the network registry
-            roleRegistry.RegisterPlayerServerRpc(currentRole, ourNetcodeId, ourVivoxId, ourVivoxId);
-            
-            Debug.Log($"[CommunicationManager] Registered role {currentRole} with VivoxID: {ourVivoxId}");
-        }
-    }
+
     #endregion
+    
+    private void SetupPresenterAudioTap(string presenterVivoxId)
+    {
+        Debug.Log($"[CommunicationManager] 🎙️ Director setting up audio tap for presenter: {presenterVivoxId}");
+        
+        // Create or find the participant tap component
+        VivoxParticipantTap presenterTap = GetComponent<VivoxParticipantTap>();
+        if (presenterTap == null)
+        {
+            GameObject tapObject = new GameObject("PresenterAudioTap");
+            tapObject.AddComponent<AudioSource>();
+            presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
+        }
+        
+        // Configure to capture only presenter's audio
+        presenterTap.ParticipantName = presenterVivoxId;
+        
+        // Route to streaming (virtual audio cable, etc.)
+        SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
+    }
+    
+
 
 
     [ContextMenu("Test Audio")]
