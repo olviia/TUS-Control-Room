@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using Unity.Services.Authentication;
 
 public class SimpleConnectionManager : MonoBehaviour
 {
@@ -19,22 +20,28 @@ public class SimpleConnectionManager : MonoBehaviour
     [SerializeField] private Button autoDetectIPButton;
     [SerializeField] private Button scanForHostsButton;
     [SerializeField] private SpawnManager spawnManager;
-    
+
     // Connection settings
     [SerializeField] private ushort port = 7777;
     [SerializeField] private ushort broadcastPort = 7778; // Different port for discovery
     [SerializeField] private float connectionTimeout = 5f;
-    
+
     private Coroutine connectionAttemptCoroutine;
     private System.Net.Sockets.UdpClient udpBroadcaster;
     private System.Net.Sockets.UdpClient udpListener;
     private bool isHostBroadcasting = false;
-    
+
     // Connection state tracking
-    private enum ConnectionState { Idle, ConnectingAsClient, BecomingHost }
+    private enum ConnectionState
+    {
+        Idle,
+        ConnectingAsClient,
+        BecomingHost
+    }
+
     private ConnectionState currentState = ConnectionState.Idle;
     private Role pendingRole;
-    
+
     private bool hostAlreadyRunning = false;
     private string hostIP;
 
@@ -45,7 +52,7 @@ public class SimpleConnectionManager : MonoBehaviour
         audienceButton.onClick.AddListener(() => LoadBasedOnRole(Role.Audience));
         autoDetectIPButton.onClick.AddListener(AutoDetectIP);
         scanForHostsButton.onClick.AddListener(ScanForHosts);
-        
+
         // Add connection callbacks with enhanced debugging
         NetworkManager.Singleton.OnServerStarted += OnHostStarted;
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
@@ -64,29 +71,30 @@ public class SimpleConnectionManager : MonoBehaviour
         SetLocation(role);
         CommunicationManager.Instance.SetRole(role);
         pendingRole = role;
-        
+
         if (role == Role.Director)
         {
             WebsocketManager websocketManager = FindAnyObjectByType<WebsocketManager>();
             websocketManager.SetDefaultWsAdress(GetLocalIPAddress());
             websocketManager.AutoConnectToServer();
             DirectorConnectionProcess(targetIP);
-            
         }
         else
         {
             ClientConnectionProcess(targetIP);
         }
-        
+
+
+        NetworkRoleRegistry.Instance.RegisterRoleServerRpc(role, AuthenticationService.Instance.PlayerId);
 
         CommunicationManager.Instance.InitializeAsync(role);
     }
-    
+
     private string GetInputFieldIP()
     {
         return string.IsNullOrEmpty(ipInput.text) ? GetLocalIPAddress() : ipInput.text.Trim();
     }
-    
+
     private string GetLocalIPAddress()
     {
         try
@@ -104,7 +112,7 @@ public class SimpleConnectionManager : MonoBehaviour
         {
             Debug.LogWarning($"xx_🔧 ⚠️ Failed to get local IP: {ex.Message}");
         }
-    
+
         return "127.0.0.1"; // Fallback to localhost
     }
 
@@ -116,12 +124,12 @@ public class SimpleConnectionManager : MonoBehaviour
         currentState = ConnectionState.ConnectingAsClient;
 
         ScanForHosts();
-            
-        
+
+
         if (!hostAlreadyRunning)
         {
             SetTransportConnection(GetLocalIPAddress(), port);
-            
+
             NetworkManager.Singleton.StartHost();
         }
         else
@@ -136,32 +144,32 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         Debug.Log($"xx_🔧 Attempting to connect as client to {targetIP}:{port}");
         currentState = ConnectionState.ConnectingAsClient;
-        
+
         SetTransportConnection(targetIP, port);
-        
+
         // Start timeout for regular clients
         if (connectionAttemptCoroutine != null)
             StopCoroutine(connectionAttemptCoroutine);
         connectionAttemptCoroutine = StartCoroutine(ClientConnectionTimeout());
-        
+
         NetworkManager.Singleton.StartClient();
     }
 
     private IEnumerator ClientConnectionTimeout()
     {
         yield return new WaitForSeconds(connectionTimeout);
-        
+
         if (currentState == ConnectionState.ConnectingAsClient && !NetworkManager.Singleton.IsConnectedClient)
         {
             Debug.Log("xx_🔧 Client connection timeout - retrying once");
             NetworkManager.Singleton.Shutdown();
-            
+
             yield return new WaitForSeconds(1f); // Wait for potential host
-            
+
             // Retry once
             NetworkManager.Singleton.StartClient();
             yield return new WaitForSeconds(connectionTimeout);
-            
+
             if (!NetworkManager.Singleton.IsConnectedClient)
             {
                 Debug.Log("xx_🔧 Client retry failed");
@@ -193,13 +201,13 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         Debug.Log("xx_🔧 ✅ Host started successfully");
         currentState = ConnectionState.Idle;
-        
+
         if (connectionAttemptCoroutine != null)
         {
             StopCoroutine(connectionAttemptCoroutine);
             connectionAttemptCoroutine = null;
         }
-        
+
         StartHostBroadcasting();
     }
 
@@ -209,7 +217,7 @@ public class SimpleConnectionManager : MonoBehaviour
         {
             Debug.Log("xx_🔧 ✅ Connected as client successfully");
             currentState = ConnectionState.Idle;
-            
+
             if (connectionAttemptCoroutine != null)
             {
                 StopCoroutine(connectionAttemptCoroutine);
@@ -217,7 +225,7 @@ public class SimpleConnectionManager : MonoBehaviour
             }
         }
     }
-    
+
 
     private void OnClientDisconnected(ulong clientId)
     {
@@ -231,13 +239,13 @@ public class SimpleConnectionManager : MonoBehaviour
     {
         Debug.Log("xx_🔧 Client disconnected");
         currentState = ConnectionState.Idle;
-        
+
         if (connectionAttemptCoroutine != null)
         {
             StopCoroutine(connectionAttemptCoroutine);
             connectionAttemptCoroutine = null;
         }
-        
+
         ShowInitialSetup();
     }
 
@@ -251,7 +259,6 @@ public class SimpleConnectionManager : MonoBehaviour
         directorButton.interactable = true;
         journalistButton.interactable = true;
         audienceButton.interactable = true;
-        
     }
 
     #endregion
@@ -274,12 +281,12 @@ public class SimpleConnectionManager : MonoBehaviour
         {
             StopCoroutine(connectionAttemptCoroutine);
         }
-        
+
         // Clean up UDP resources
         StopHostBroadcasting();
         udpListener?.Close();
     }
-    
+
     public void ForceDisconnect()
     {
         if (NetworkManager.Singleton.IsHost)
@@ -290,7 +297,7 @@ public class SimpleConnectionManager : MonoBehaviour
         {
             Debug.Log("xx_🔧 Client disconnected");
         }
-        
+
         currentState = ConnectionState.Idle;
         NetworkManager.Singleton.Shutdown();
     }
@@ -312,23 +319,24 @@ public class SimpleConnectionManager : MonoBehaviour
         Debug.Log("xx_🔧 🔍 Scanning for hosts on local network...");
         StartCoroutine(ScanForHostsCoroutine());
     }
+
     private IEnumerator ScanForHostsCoroutine()
     {
         scanForHostsButton.interactable = false;
-    
+
         if (!SetupUDPListener() || !SendBroadcastRequest())
         {
             FinalizeScan(false, "");
             yield break;
         }
-    
+
 // Simple scan loop
         float scanTime = 0f;
         while (scanTime < 3f)
         {
             yield return new WaitForSeconds(0.1f);
             scanTime += 0.1f;
-        
+
             if (udpListener.Available > 0)
             {
                 var result = TryReceiveHostResponse();
@@ -341,11 +349,12 @@ public class SimpleConnectionManager : MonoBehaviour
                 }
             }
         }
-    
+
         Debug.Log("xx_🔧 ⚠️ No hosts found");
         hostAlreadyRunning = false;
         FinalizeScan(false, "");
     }
+
     private bool SetupUDPListener()
     {
         try
@@ -361,6 +370,7 @@ public class SimpleConnectionManager : MonoBehaviour
             return false;
         }
     }
+
     private void CleanupUDP()
     {
         try
@@ -376,16 +386,17 @@ public class SimpleConnectionManager : MonoBehaviour
             udpListener = null;
         }
     }
+
     private bool SendBroadcastRequest()
     {
         try
         {
             using var broadcastClient = new UdpClient();
             broadcastClient.EnableBroadcast = true;
-        
+
             byte[] data = System.Text.Encoding.UTF8.GetBytes("FIND_HOST");
             broadcastClient.Send(data, data.Length, new IPEndPoint(IPAddress.Broadcast, broadcastPort));
-        
+
             Debug.Log($"xx_🔧 📡 Broadcast sent on port {broadcastPort}");
             return true;
         }
@@ -395,6 +406,7 @@ public class SimpleConnectionManager : MonoBehaviour
             return false;
         }
     }
+
     private (bool found, string ip) TryReceiveHostResponse()
     {
         try
@@ -402,7 +414,7 @@ public class SimpleConnectionManager : MonoBehaviour
             var remoteEndpoint = new IPEndPoint(IPAddress.Any, broadcastPort + 1);
             byte[] data = udpListener.Receive(ref remoteEndpoint);
             string response = System.Text.Encoding.UTF8.GetString(data);
-        
+
             if (response.StartsWith("HOST_IP:"))
                 return (true, response.Substring(8));
         }
@@ -410,9 +422,10 @@ public class SimpleConnectionManager : MonoBehaviour
         {
             Debug.LogWarning($"xx_🔧 ⚠️ Error receiving UDP data: {ex.Message}");
         }
-    
+
         return (false, "");
     }
+
     private void FinalizeScan(bool successful, string foundIP)
     {
         CleanupUDP();
@@ -432,7 +445,7 @@ public class SimpleConnectionManager : MonoBehaviour
     private void StartHostBroadcasting()
     {
         if (isHostBroadcasting) return;
-        
+
         isHostBroadcasting = true;
         StartCoroutine(HostBroadcastCoroutine());
     }
@@ -440,19 +453,20 @@ public class SimpleConnectionManager : MonoBehaviour
     private IEnumerator HostBroadcastCoroutine()
     {
         if (!SetupUDPBroadcaster()) yield break;
-    
+
         Debug.Log($"xx_🔧 📡 Host broadcasting on port {broadcastPort}");
-    
+
         while (isHostBroadcasting && NetworkManager.Singleton.IsHost)
         {
             if (udpBroadcaster.Available > 0)
                 HandleDiscoveryRequest();
-            
+
             yield return new WaitForSeconds(0.1f);
         }
-    
+
         CleanupBroadcaster();
     }
+
     private bool SetupUDPBroadcaster()
     {
         try
@@ -468,6 +482,7 @@ public class SimpleConnectionManager : MonoBehaviour
             return false;
         }
     }
+
     private void HandleDiscoveryRequest()
     {
         try
@@ -488,6 +503,7 @@ public class SimpleConnectionManager : MonoBehaviour
                 Debug.LogWarning($"xx_🔧 ⚠️ Broadcast receive error: {ex.Message}");
         }
     }
+
     private void CleanupBroadcaster()
     {
         try
@@ -511,12 +527,12 @@ public class SimpleConnectionManager : MonoBehaviour
         {
             string response = $"HOST_IP:{hostIP}";
             byte[] responseData = System.Text.Encoding.UTF8.GetBytes(response);
-            
+
             var responseClient = new System.Net.Sockets.UdpClient();
             var responseEndpoint = new IPEndPoint(clientAddress, broadcastPort + 1);
             responseClient.Send(responseData, responseData.Length, responseEndpoint);
             responseClient.Close();
-            
+
             Debug.Log($"xx_🔧 📡 Sent host IP ({hostIP}) to {clientAddress}");
         }
         catch (System.Exception ex)
@@ -533,5 +549,4 @@ public class SimpleConnectionManager : MonoBehaviour
     }
 
     #endregion
-    
 }

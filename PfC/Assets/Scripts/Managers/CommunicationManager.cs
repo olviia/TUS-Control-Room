@@ -126,7 +126,6 @@ public class CommunicationManager : MonoBehaviour
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
 
             // After joining, register ourselves in the network registry
-           NetworkRoleRegistry.Instance.RegisterRoleServerRpc(currentRole,  AuthenticationService.Instance.PlayerId);
             //
             // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
             //
@@ -193,25 +192,25 @@ public class CommunicationManager : MonoBehaviour
 
     #endregion
     
-    private void SetupPresenterAudioTap(string presenterVivoxId)
-    {
-        Debug.Log($"[CommunicationManager] 🎙️ Director setting up audio tap for presenter: {presenterVivoxId}");
-        
-        // Create or find the participant tap component
-        VivoxParticipantTap presenterTap = GetComponent<VivoxParticipantTap>();
-        if (presenterTap == null)
-        {
-            GameObject tapObject = new GameObject("PresenterAudioTap");
-            tapObject.AddComponent<AudioSource>();
-            presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
-        }
-        
-        // Configure to capture only presenter's audio
-        presenterTap.ParticipantName = presenterVivoxId;
-        
-        // Route to streaming (virtual audio cable, etc.)
-        SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
-    }
+    // private void SetupPresenterAudioTap(string presenterVivoxId)
+    // {
+    //     Debug.Log($"[CommunicationManager] 🎙️ Director setting up audio tap for presenter: {presenterVivoxId}");
+    //     
+    //     // Create or find the participant tap component
+    //     VivoxParticipantTap presenterTap = GetComponent<VivoxParticipantTap>();
+    //     if (presenterTap == null)
+    //     {
+    //         GameObject tapObject = new GameObject("PresenterAudioTap");
+    //         tapObject.AddComponent<AudioSource>();
+    //         presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
+    //     }
+    //     
+    //     // Configure to capture only presenter's audio
+    //     presenterTap.ParticipantName = presenterVivoxId;
+    //     
+    //     // Route to streaming (virtual audio cable, etc.)
+    //     //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
+    // }
     
 
 
