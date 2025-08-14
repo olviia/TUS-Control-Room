@@ -6,6 +6,7 @@ using BroadcastPipeline;
 using Klak.Ndi;
 using OBSWebsocketDotNet;
 using Unity.Netcode;
+using Unity.Services.Vivox.AudioTaps;
 using UnityEngine;
 
 public class BroadcastPipelineManager : MonoBehaviour 
@@ -353,6 +354,12 @@ public class BroadcastPipelineManager : MonoBehaviour
                     
                     ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
                     obsScene.ConfigureAndExecute("StreamLive", name, true, name);
+                    
+                    // add audio tap if presenter
+                    if (RoleManager.Instance.currentRole == Role.Director)
+                    {
+                        CommunicationManager.Instance.SetupPresenterAudioTaps();
+                    }
                 }
             }
             else

@@ -3,17 +3,32 @@
  * Date: 16/04/2025
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class RoleManager : MonoBehaviour
 {
+    public static RoleManager Instance { get; private set; }
+    void Awake()
+    {
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+    
+
     /// <summary>
     /// Script for initialising XR setup prefabs
     /// based on the role details from Role class
     /// </summary>
-    private Role currentRole;
+    public Role currentRole;
     private List<RoleDetails> roleList;
 
     public void CreateRole()

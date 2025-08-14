@@ -86,7 +86,7 @@ public class SimpleConnectionManager : MonoBehaviour
 
 
         NetworkRoleRegistry.Instance.RegisterRoleServerRpc(role, AuthenticationService.Instance.PlayerId);
-
+        RoleManager.Instance.currentRole = role;
         CommunicationManager.Instance.InitializeAsync(role);
     }
 

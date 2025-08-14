@@ -191,26 +191,25 @@ public class CommunicationManager : MonoBehaviour
 
 
     #endregion
-    
-    // private void SetupPresenterAudioTap(string presenterVivoxId)
-    // {
-    //     Debug.Log($"[CommunicationManager] 🎙️ Director setting up audio tap for presenter: {presenterVivoxId}");
-    //     
-    //     // Create or find the participant tap component
-    //     VivoxParticipantTap presenterTap = GetComponent<VivoxParticipantTap>();
-    //     if (presenterTap == null)
-    //     {
-    //         GameObject tapObject = new GameObject("PresenterAudioTap");
-    //         tapObject.AddComponent<AudioSource>();
-    //         presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
-    //     }
-    //     
-    //     // Configure to capture only presenter's audio
-    //     presenterTap.ParticipantName = presenterVivoxId;
-    //     
-    //     // Route to streaming (virtual audio cable, etc.)
-    //     //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
-    // }
+
+    public void SetupPresenterAudioTaps()
+    {         
+        // Configure to capture only presenter's audio
+        var presentersID = NetworkRoleRegistry.Instance.GetPresentersIDList(Role.Presenter);
+        List<VivoxParticipantTap> vivoxTaps =  new List<VivoxParticipantTap>();
+        foreach (var id in presentersID)
+        {
+                GameObject tapObject = new GameObject("PresenterAudioTap");
+                tapObject.transform.SetParent(transform);
+                tapObject.AddComponent<AudioSource>();
+                VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
+                vivoxTaps.Add(presenterTap);
+                presenterTap.ParticipantName = id.ToString();
+        }
+                        
+        // Route to streaming (virtual audio cable, etc.)
+        //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
+    }
     
 
 

@@ -73,5 +73,19 @@ public class NetworkRoleRegistry : NetworkBehaviour
             }
         }
     }
+    
+    public List<FixedString64Bytes> GetPresentersIDList(Role targetRole)
+    {
+        var result  =  new List<FixedString64Bytes>();
+        foreach (var userRole in userRoles)
+        {
+            if (userRole.role == targetRole)
+            {
+                result.Add(userRole.playerId);
+            }
+        }
+        return result;
+         
+    }
 
 }
