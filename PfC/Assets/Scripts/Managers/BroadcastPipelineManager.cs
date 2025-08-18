@@ -343,22 +343,32 @@ public class BroadcastPipelineManager : MonoBehaviour
 
                 if (pipelineType == PipelineType.TVLive)
                 {
-                    //move it to ObsSceneSourceOperation
-                    //add code to remove the item
-                    //to do it, use RemoveSceneItem()
                     OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
+                    
                     
                     string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, "Dedicated NDI® output",
                         "ndi_filter_ndiname",
                         source.receiver.ndiName);
                     
                     ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
+                    
+                    //clean obs stream live scene
+                    
+                    ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
+                    //add subtitles
+                    obsScene.ConfigureAndExecute("StreamLive", "TVSuper", false, "TVSuper");
+
                     obsScene.ConfigureAndExecute("StreamLive", name, true, name);
                     
                     // add audio tap if presenter
                     if (RoleManager.Instance.currentRole == Role.Director)
                     {
-                        CommunicationManager.Instance.SetupPresenterAudioTaps();
+                        var taps = CommunicationManager.Instance.SetupPresenterAudioTaps();
+                        if (taps.Count > 0)
+                        {
+                            ObsNdiSourceOperation obsNdi = new ObsNdiSourceOperation();
+                            obsNdi.ConfigureAndExecute("StreamLive", "PresenterAudio", CommunicationManager.Instance.vivoxAudioToNdi.transform.GetComponent<NdiSender>().name, "", false);
+                        }
                     }
                 }
             }

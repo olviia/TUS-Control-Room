@@ -253,6 +253,29 @@ public static class ObsUtilities
         }
     }
     
+    /// <summary>
+    /// Remove everything from the scene
+    /// </summary>
+    public static void ClearScene(OBSWebsocket obsWebSocket, string sceneName)
+    {
+        if (obsWebSocket == null || !obsWebSocket.IsConnected)
+            throw new InvalidOperationException("OBS WebSocket is not connected");
+            
+        try
+        {
+            // Get the scene item ID first
+            var sceneItemList = obsWebSocket.GetSceneItemList(sceneName);
+            foreach (var sceneItem in sceneItemList)
+            {
+                obsWebSocket.RemoveSceneItem(sceneName, sceneItem.ItemId);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error clearing scene: {e.Message}");
+        }
+    }
+    
     #endregion
     
     #region Filter Operations

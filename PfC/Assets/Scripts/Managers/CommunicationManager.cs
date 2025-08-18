@@ -22,6 +22,7 @@ public class CommunicationManager : MonoBehaviour
     private string currentChannelName;
     private bool isInitialized = false;
     private bool isJoiningChannel = false;
+    public GameObject vivoxAudioToNdi;
 
     
     private NetworkRoleRegistry roleRegistry;
@@ -192,7 +193,7 @@ public class CommunicationManager : MonoBehaviour
 
     #endregion
 
-    public void SetupPresenterAudioTaps()
+    public List<VivoxParticipantTap> SetupPresenterAudioTaps()
     {         
         // Configure to capture only presenter's audio
         var presentersID = NetworkRoleRegistry.Instance.GetPresentersIDList(Role.Presenter);
@@ -200,16 +201,18 @@ public class CommunicationManager : MonoBehaviour
         foreach (var id in presentersID)
         {
                 GameObject tapObject = new GameObject("PresenterAudioTap");
-                tapObject.transform.SetParent(transform);
+                tapObject.transform.SetParent(vivoxAudioToNdi.transform);
                 tapObject.AddComponent<AudioSource>();
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
                 vivoxTaps.Add(presenterTap);
                 presenterTap.ParticipantName = id.ToString();
         }
-                        
+             
+        return vivoxTaps;
         // Route to streaming (virtual audio cable, etc.)
         //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
     }
+    
     
 
 

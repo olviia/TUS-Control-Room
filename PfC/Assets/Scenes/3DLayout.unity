@@ -1308,6 +1308,86 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d53c27fe5e22ae44bbdf765f23ec77e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &967353554
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 967353555}
+  - component: {fileID: 967353558}
+  - component: {fileID: 967353557}
+  - component: {fileID: 967353556}
+  m_Layer: 0
+  m_Name: Roles
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &967353555
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967353554}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1596512535}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &967353556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967353554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 2570328269
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+--- !u!114 &967353557
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967353554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc6b4555c0c391641bdc62ecca6171c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &967353558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967353554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27127e208e1b604409939d104b3b5ac6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentRole: 0
 --- !u!1001 &974505709
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1402,6 +1482,83 @@ Transform:
   - {fileID: 1427056612}
   - {fileID: 1178608581}
   - {fileID: 1709815566}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1014853840
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1014853843}
+  - component: {fileID: 1014853842}
+  - component: {fileID: 1014853841}
+  m_Layer: 0
+  m_Name: VivoxAudioToNdi
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1014853841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014853840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7015dc3f594d04984002f650a16bc8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _settings:
+    nearDistance: 0.1
+    farDistance: 10
+  _connection: {fileID: 0}
+--- !u!114 &1014853842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014853840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2d98e5bfcdff4847ad69efa861a8e7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioOrigin: {fileID: 0}
+  addMissingAudioSourceListenersAtRuntime: 0
+  _ndiName: PresenterAudio
+  playCenteredAudioSourcesOnAllSpeakers: 1
+  audioMode: 1
+  virtualListenerDistance: 4
+  useAudioOriginPositionForVirtualAttenuation: 0
+  maxObjectBasedChannels: 32
+  customSpeakerConfig: {fileID: 0}
+  frameRate: 6
+  setRenderTargetFrameRate: 0
+  _keepAlpha: 0
+  _captureMethod: 2
+  _sourceCamera: {fileID: 0}
+  _sourceTexture: {fileID: 2800000, guid: fb6d096dffa3c124c961b3b476b8b173, type: 3}
+  _resources: {fileID: 11400000, guid: 69304b86950074db7ba8caba75214004, type: 2}
+--- !u!4 &1014853843
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014853840}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -500, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1030235662
@@ -2104,6 +2261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c113353e07d09c47ad4fd0591d08f64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  vivoxAudioToNdi: {fileID: 1014853840}
 --- !u!1001 &1290066748
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4563,6 +4721,7 @@ Transform:
   - {fileID: 427570640}
   - {fileID: 1326396410}
   - {fileID: 1262915594}
+  - {fileID: 967353555}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1597912412
@@ -5732,3 +5891,4 @@ SceneRoots:
   - {fileID: 2075736764}
   - {fileID: 200747723}
   - {fileID: 1013373870}
+  - {fileID: 1014853843}
