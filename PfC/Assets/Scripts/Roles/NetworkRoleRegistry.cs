@@ -22,7 +22,7 @@ public class NetworkRoleRegistry : NetworkBehaviour
     private NetworkList<VivoxUserRole> userRoles;
     
     public static NetworkRoleRegistry Instance { get; private set; }
-    void Awake()
+    void Start()
     {
         // Singleton setup
         if (Instance != null && Instance != this)

@@ -126,8 +126,7 @@ public class CommunicationManager : MonoBehaviour
             await WaitForNetworkConnection();
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
 
-            // After joining, register ourselves in the network registry
-            //
+            
             // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
             //
             // await VivoxService.Instance.JoinEchoChannelAsync(echoChannelName, ChatCapability.AudioOnly);
