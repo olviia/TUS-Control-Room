@@ -24,6 +24,7 @@ public class NetworkRoleRegistry : NetworkBehaviour
     public static NetworkRoleRegistry Instance { get; private set; }
     void Start()
     {
+        Debug.Log("started vivox network role registry");
         // Singleton setup
         if (Instance != null && Instance != this)
         {
