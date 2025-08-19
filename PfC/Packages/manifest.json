@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.pfc.jp.keijiro.klak.ndi": "2.1.3-pfc.3",
+    "com.pfc.jp.keijiro.klak.ndi": "2.1.4-pfc.6",
     "com.unity.collab-proxy": "2.7.1",
     "com.unity.feature.2d": "2.0.1",
     "com.unity.ide.rider": "3.0.31",
@@ -12,7 +12,7 @@
     "com.unity.services.multiplayer": "1.1.2",
     "com.unity.services.vivox": "16.6.2",
     "com.unity.test-framework": "1.1.33",
-    "com.unity.textmeshpro": "3.0.7",
+    "com.unity.textmeshpro": "3.0.9",
     "com.unity.timeline": "1.7.6",
     "com.unity.toolchain.win-x86_64-linux-x86_64": "2.0.10",
     "com.unity.ugui": "1.0.0",
