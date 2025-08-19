@@ -85,9 +85,7 @@ public class SimpleConnectionManager : MonoBehaviour
         }
 
 
-        NetworkRoleRegistry.Instance.RegisterRoleServerRpc(role, AuthenticationService.Instance.PlayerId);
-        RoleManager.Instance.currentRole = role;
-        CommunicationManager.Instance.InitializeAsync(role);
+
     }
 
     private string GetInputFieldIP()
@@ -209,6 +207,10 @@ public class SimpleConnectionManager : MonoBehaviour
         }
 
         StartHostBroadcasting();
+        
+        NetworkRoleRegistry.Instance.RegisterRoleServerRpc(RoleManager.Instance.currentRole, AuthenticationService.Instance.PlayerId);
+        RoleManager.Instance.currentRole = RoleManager.Instance.currentRole;
+        CommunicationManager.Instance.InitializeAsync(RoleManager.Instance.currentRole);
     }
 
     private void OnClientConnected(ulong clientId)
@@ -223,6 +225,10 @@ public class SimpleConnectionManager : MonoBehaviour
                 StopCoroutine(connectionAttemptCoroutine);
                 connectionAttemptCoroutine = null;
             }
+            
+            NetworkRoleRegistry.Instance.RegisterRoleServerRpc(RoleManager.Instance.currentRole, AuthenticationService.Instance.PlayerId);
+            RoleManager.Instance.currentRole = RoleManager.Instance.currentRole;
+            CommunicationManager.Instance.InitializeAsync(RoleManager.Instance.currentRole);
         }
     }
 
