@@ -269,6 +269,10 @@ public static class ObsUtilities
             {
                 obsWebSocket.RemoveSceneItem(sceneName, sceneItem.ItemId);
             }
+            
+            liveSceneItemID = 0;
+        
+            Debug.Log($"Cleared scene '{sceneName}' and reset scene item tracking");
         }
         catch (Exception e)
         {
