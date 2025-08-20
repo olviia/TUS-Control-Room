@@ -4,10 +4,10 @@ using UnityEngine;
 namespace Klak.Ndi
 {
 	[RequireComponent(typeof(AudioSource))]
-	public class AudioSourceBridge : MonoBehaviour
+	internal class AudioSourceBridge : MonoBehaviour
 	{
 		internal bool _isDestroyed;
-		public NdiReceiver _handler;
+		internal NdiReceiver _handler;
 		private int _customChannel = -1;
 		private int _maxChannels = -1;
 		internal static double _lastFrameUpdate = -1;
@@ -17,10 +17,8 @@ namespace Klak.Ndi
 		private bool _noSpatializerPlugin = false;
 		private AudioSource _audioSource;
 		
-		//to grab audio directly
 		public System.Action<float[], int, int> OnWebRTCAudioReady;
 		private int cachedSampleRate;
-
 		
 		private void Awake()
 		{
@@ -96,12 +94,9 @@ namespace Klak.Ndi
 			else
 			{
 				if (!_handler.FillPassthroughData(ref data, channels))
-				{
 					Array.Fill(data, 0f);
-				}
 			}
 			OnWebRTCAudioReady?.Invoke(data, channels, cachedSampleRate);
-
 		}
 
 		private void OnDestroy()
@@ -113,9 +108,6 @@ namespace Klak.Ndi
 
 			if (_handler) _handler.HandleAudioSourceBridgeOnDestroy();
 		}
-
 	}
-	
-	
 	
 }

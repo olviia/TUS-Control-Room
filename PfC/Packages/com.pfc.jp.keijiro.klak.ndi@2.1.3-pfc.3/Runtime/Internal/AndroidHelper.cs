@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using UnityEngine.Networking;
 
 namespace Klak.Ndi {
 
@@ -10,24 +9,20 @@ static class AndroidHelper
 {
     #if UNITY_ANDROID && !UNITY_EDITOR
 
+    static AndroidJavaObject _mcastLock;
     static AndroidJavaObject _nsdManager;
 
     public static void SetupNetwork()
     {
-        // Enable multicasting: This also adds the network permissions to the
-        // application manifest.
-        
-        //this doesn't work anymore
-        //NetworkTransport.SetMulticastLock(true);
-
-        // Create a network service discovery manager object.
+        // Multicast lock acquisition
         var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
         var activity = player.GetStatic<AndroidJavaObject>("currentActivity");
-        _nsdManager = activity.Call<AndroidJavaObject>
-          ("getSystemService", "servicediscovery");
-        
-        AndroidJavaObject multicastLock = _nsdManager.Call<AndroidJavaObject>("createMulticastLock", "multicastLock");
-        multicastLock.Call("acquire");
+        var wifi = activity.Call<AndroidJavaObject>("getSystemService", "wifi");
+        _mcastLock = wifi.Call<AndroidJavaObject>("createMulticastLock", "lock");
+        _mcastLock.Call("acquire");
+
+        // Create a network service discovery manager object.
+        _nsdManager = activity.Call<AndroidJavaObject>("getSystemService", "servicediscovery");
 
         // Get applicationInfo and targetSdkVersion from activity.
         var context = activity.Call<AndroidJavaObject>("getApplicationContext");
@@ -45,9 +40,9 @@ static class AndroidHelper
     }
 
     #else
-    
+
     public static void SetupNetwork() {}
-    
+
     #endif
 }
 

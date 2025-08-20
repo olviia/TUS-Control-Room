@@ -81,9 +81,7 @@ public class NDISourceUI : MonoBehaviour
         options.Add(new NdiOptionData("None"));
 
         foreach (var source in NdiFinder.EnumerateSourceNames())
-        {
             options.Add(new NdiOptionData(source));
-        }
 
         sources.options = options;
     }
