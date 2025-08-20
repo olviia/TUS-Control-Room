@@ -211,7 +211,7 @@ MonoBehaviour:
   addMissingAudioSourceListenersAtRuntime: 0
   _ndiName: VirtualCameraFromUnity
   playCenteredAudioSourcesOnAllSpeakers: 1
-  audioMode: 1
+  audioMode: 0
   virtualListenerDistance: 4
   useAudioOriginPositionForVirtualAttenuation: 0
   maxObjectBasedChannels: 32
