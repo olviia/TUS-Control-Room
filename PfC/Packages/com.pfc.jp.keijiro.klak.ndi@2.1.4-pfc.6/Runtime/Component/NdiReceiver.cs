@@ -29,6 +29,7 @@ public sealed partial class NdiReceiver : MonoBehaviour
 	private ReceiverPerformance _dropped;
 	private ReceiverQueue _queue;
 	private Task audioTask;
+	
 	private Texture _texture;
 	
     void PrepareReceiverObjects()
@@ -274,13 +275,12 @@ public sealed partial class NdiReceiver : MonoBehaviour
 
 		// Copy the metadata if any.
 		metadata = videoFrame.Metadata;
-		_texture = rt;
 
 		// Free the frame up.
 		_recv.FreeVideoFrame(videoFrame);
 
 		if (rt == null) return;
-
+		_texture = rt;
 		// Material property override
 		if (_targetRenderer != null)
 		{
@@ -1271,14 +1271,11 @@ public sealed partial class NdiReceiver : MonoBehaviour
 	}
 
 	#endregion
-	
 	//custom added
 	public Texture GetTexture()
 	{
 		return _texture;
 	}
-
 }
-
 
 } // namespace Klak.Ndi

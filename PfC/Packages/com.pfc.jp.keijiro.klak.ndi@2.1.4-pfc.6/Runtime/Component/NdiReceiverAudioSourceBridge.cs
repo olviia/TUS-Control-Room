@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Klak.Ndi
 {
 	[RequireComponent(typeof(AudioSource))]
-	internal class AudioSourceBridge : MonoBehaviour
+	public class AudioSourceBridge : MonoBehaviour
 	{
 		internal bool _isDestroyed;
 		internal NdiReceiver _handler;
@@ -19,7 +19,6 @@ namespace Klak.Ndi
 		
 		public System.Action<float[], int, int> OnWebRTCAudioReady;
 		private int cachedSampleRate;
-		
 		private void Awake()
 		{
 			hideFlags = HideFlags.NotEditable;

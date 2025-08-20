@@ -1,0 +1,23 @@
+{
+  "author": "prefrontal cortex",
+  "dependencies": {
+    "com.unity.modules.screencapture": "1.0.0",
+    "com.unity.mathematics": "1.2.6",
+    "com.unity.burst": "1.8.0",
+    "com.unity.collections": "1.2.4",
+    "com.unity.textmeshpro": "2.0.0"
+  },
+  "description": "NewTek NDI® plugin for Unity with Video and Audio support",
+  "displayName": "KlakNDI (pfc)",
+  "keywords": [
+    "unity"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
+  "name": "com.pfc.jp.keijiro.klak.ndi",
+  "unity": "2021.3",
+  "unityRelease": "0f1",
+  "version": "2.1.4-pfc.6",
+  "publishConfig": {
+    "registry": "https://package.openupm.com"
+  }
+}
