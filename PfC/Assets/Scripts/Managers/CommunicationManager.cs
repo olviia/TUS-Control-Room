@@ -9,6 +9,7 @@ using Unity.Services.Vivox;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Klak.Ndi.Audio;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Vivox.AudioTaps;
@@ -202,6 +203,7 @@ public class CommunicationManager : MonoBehaviour
                 GameObject tapObject = new GameObject("PresenterAudioTap");
                 tapObject.transform.SetParent(vivoxAudioToNdi.transform);
                 tapObject.AddComponent<AudioSource>();
+                tapObject.AddComponent<AudioSourceListener>();
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
                 vivoxTaps.Add(presenterTap);
                 presenterTap.ParticipantName = id.ToString();
