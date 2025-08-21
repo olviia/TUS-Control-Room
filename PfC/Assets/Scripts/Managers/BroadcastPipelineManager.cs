@@ -356,20 +356,14 @@ public class BroadcastPipelineManager : MonoBehaviour
                     
                     ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
                     //add subtitles
-                    obsScene.ConfigureAndExecute("StreamLive", "TVSuper", false, "TVSuper");
+                    obsScene.ConfigureAndExecute("StreamLive", "TVSuper", true, "TVSuper");
 
                     obsScene.ConfigureAndExecute("StreamLive", name, true, name);
                     
-                    // add audio tap if presenter
-                    if (RoleManager.Instance.currentRole == Role.Director)
-                    {
-                        var taps = CommunicationManager.Instance.SetupPresenterAudioTaps();
-                        if (taps.Count > 0)
-                        {
-                            ObsNdiSourceOperation obsNdi = new ObsNdiSourceOperation();
-                            obsNdi.ConfigureAndExecute("StreamLive", "PresenterAudio", CommunicationManager.Instance.vivoxAudioToNdi.transform.GetComponent<NdiSender>().name, "", false);
-                        }
-                    }
+                    // add audio tap for presenters
+                    obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
+
+
                 }
             }
             else

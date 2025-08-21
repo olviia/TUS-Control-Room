@@ -125,11 +125,6 @@ public class ObsSceneSourceOperation : ObsOperationBase
             return true;
         }
 
-        if (ObsUtilities.liveSceneItemID != 0)
-        {
-            ObsUtilities.RemoveLastAddedSceneSource(obsWebSocket, targetSceneName);
-        }
-
         return ObsUtilities.CreateSceneSource(obsWebSocket, targetSceneName, sourceSceneName, sourceName);
     }
     
