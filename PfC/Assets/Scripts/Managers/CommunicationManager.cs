@@ -127,6 +127,7 @@ public class CommunicationManager : MonoBehaviour
             await WaitForNetworkConnection();
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
 
+            //i should use it to check previous participants
             //VivoxService.Instance.ChannelJoined += SetupPresenterAudioTaps;
             VivoxService.Instance.ParticipantAddedToChannel += SetupPresenterAudioTaps;
             
