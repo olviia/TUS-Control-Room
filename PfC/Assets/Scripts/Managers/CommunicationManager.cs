@@ -211,7 +211,7 @@ public class CommunicationManager : MonoBehaviour
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
             
                 presenterTap.ParticipantName = id.ToString();
-                presenterTap.ParticipantName = currentChannelName;
+                presenterTap.ChannelName = currentChannelName;
                 vivoxTaps.Add(presenterTap);
         }
         
