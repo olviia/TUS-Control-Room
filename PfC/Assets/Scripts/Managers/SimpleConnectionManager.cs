@@ -72,6 +72,8 @@ public class SimpleConnectionManager : MonoBehaviour
         CommunicationManager.Instance.SetRole(role);
         pendingRole = role;
 
+        RoleManager.Instance.currentRole = role;
+        
         if (role == Role.Director)
         {
             WebsocketManager websocketManager = FindAnyObjectByType<WebsocketManager>();
@@ -138,12 +140,15 @@ public class SimpleConnectionManager : MonoBehaviour
     }
 
 
+    //not clean connection to host, has to be fixed
     private void ClientConnectionProcess(string targetIP)
     {
         Debug.Log($"xx_🔧 Attempting to connect as client to {targetIP}:{port}");
         currentState = ConnectionState.ConnectingAsClient;
 
-        SetTransportConnection(targetIP, port);
+        ScanForHosts();
+        
+        SetTransportConnection(hostIP, port);
 
         // Start timeout for regular clients
         if (connectionAttemptCoroutine != null)
@@ -209,7 +214,7 @@ public class SimpleConnectionManager : MonoBehaviour
         StartHostBroadcasting();
         
         NetworkRoleRegistry.Instance.RegisterRoleServerRpc(RoleManager.Instance.currentRole, AuthenticationService.Instance.PlayerId);
-        RoleManager.Instance.currentRole = RoleManager.Instance.currentRole;
+        
         CommunicationManager.Instance.InitializeAsync(RoleManager.Instance.currentRole);
     }
 
@@ -227,7 +232,6 @@ public class SimpleConnectionManager : MonoBehaviour
             }
             
             NetworkRoleRegistry.Instance.RegisterRoleServerRpc(RoleManager.Instance.currentRole, AuthenticationService.Instance.PlayerId);
-            RoleManager.Instance.currentRole = RoleManager.Instance.currentRole;
             CommunicationManager.Instance.InitializeAsync(RoleManager.Instance.currentRole);
         }
     }
