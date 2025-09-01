@@ -127,6 +127,7 @@ public class CommunicationManager : MonoBehaviour
             await WaitForNetworkConnection();
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
 
+            Debug.Log($"[Vivox] Current User id : {AuthenticationService.Instance.PlayerId}");
             //i should use it to check previous participants
             //VivoxService.Instance.ChannelJoined += SetupPresenterAudioTaps;
             VivoxService.Instance.ParticipantAddedToChannel += SetupPresenterAudioTaps;
@@ -213,6 +214,8 @@ public class CommunicationManager : MonoBehaviour
         }
         
         Debug.Log("[Vivox] PresenterAudioTaps setup completed");
+        Debug.Log($"[Vivox] Presenters ID : {presentersID}");
+        Debug.Log($"[Vivox] VivoxTaps: {vivoxTaps.ToString()}");
         // Route to streaming (virtual audio cable, etc.)
         //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
     }
