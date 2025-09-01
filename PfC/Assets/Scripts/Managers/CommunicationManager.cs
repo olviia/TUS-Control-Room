@@ -214,8 +214,13 @@ public class CommunicationManager : MonoBehaviour
         }
         
         Debug.Log("[Vivox] PresenterAudioTaps setup completed");
-        Debug.Log($"[Vivox] Presenters ID : {presentersID}");
-        Debug.Log($"[Vivox] VivoxTaps: {vivoxTaps.ToString()}");
+        Debug.Log($"[Vivox] Presenters ID : {string.Join(", ", presentersID)}");
+        
+        Debug.Log($"[Vivox] VivoxTaps ({vivoxTaps.Count}):");
+        foreach (var tap in vivoxTaps)
+        {
+            Debug.Log($"  - {tap.ParticipantName} on GameObject: {tap.gameObject.name}");
+        }
         // Route to streaming (virtual audio cable, etc.)
         //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
     }
