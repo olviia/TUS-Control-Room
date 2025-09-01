@@ -127,6 +127,7 @@ public class CommunicationManager : MonoBehaviour
             await WaitForNetworkConnection();
             await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
 
+            VivoxService.Instance.ChannelJoined += SetupPresenterAudioTaps;
             
             // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
             //
@@ -193,7 +194,7 @@ public class CommunicationManager : MonoBehaviour
 
     #endregion
 
-    public List<VivoxParticipantTap> SetupPresenterAudioTaps()
+    public void SetupPresenterAudioTaps(string channelJoined)
     {         
         // Configure to capture only presenter's audio
         var presentersID = NetworkRoleRegistry.Instance.GetPresentersIDList(Role.Presenter);
@@ -208,8 +209,8 @@ public class CommunicationManager : MonoBehaviour
                 vivoxTaps.Add(presenterTap);
                 presenterTap.ParticipantName = id.ToString();
         }
-             
-        return vivoxTaps;
+        
+        Debug.Log("[Vivox] PresenterAudioTaps setup completed");
         // Route to streaming (virtual audio cable, etc.)
         //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
     }
