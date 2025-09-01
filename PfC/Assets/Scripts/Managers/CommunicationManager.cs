@@ -20,7 +20,7 @@ public class CommunicationManager : MonoBehaviour
     static object m_Lock = new object();
     static CommunicationManager m_Instance;
     private Role currentRole;
-    private string currentChannelName;
+    private string currentChannelName = "studio-tus-channel";
     private bool isInitialized = false;
     private bool isJoiningChannel = false;
     public GameObject vivoxAudioToNdi;
@@ -182,14 +182,14 @@ public class CommunicationManager : MonoBehaviour
         switch (role)
         {
             case Role.Director:
-                return "studio-tus-channel";
+                return currentChannelName;
             case Role.Presenter:
-                return "studio-tus-channel";
+                return currentChannelName;
             case Role.Audience:
-                return "studio-tus-channel";
+                return currentChannelName;
             default:
                 Debug.LogWarning($"[CommunicationManager] Unknown role: {role}");
-                return "studio-tus-channel";
+                return currentChannelName;
         }
     }
     
@@ -209,8 +209,10 @@ public class CommunicationManager : MonoBehaviour
                 tapObject.AddComponent<AudioSource>();
                 tapObject.AddComponent<AudioSourceListener>();
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
-                vivoxTaps.Add(presenterTap);
+            
                 presenterTap.ParticipantName = id.ToString();
+                presenterTap.ParticipantName = currentChannelName;
+                vivoxTaps.Add(presenterTap);
         }
         
         Debug.Log("[Vivox] PresenterAudioTaps setup completed");
