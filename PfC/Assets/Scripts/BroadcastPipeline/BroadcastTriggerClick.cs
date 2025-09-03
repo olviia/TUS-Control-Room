@@ -14,21 +14,26 @@ public class BroadcastTriggerClick : MonoBehaviour
     private InputAction leftTriggerAction;
     private InputAction rightTriggerAction;
     
+    // NEW: Reference to click controller
+    private ISourceClickController clickController;
+    
     void Awake()
     {
         xriActions = new XRIDefaultInputActions();
         leftTriggerAction = xriActions.XRILeftHandInteraction.Activate;
         rightTriggerAction = xriActions.XRIRightHandInteraction.Activate;
     }
+    
     void Start()
     {
+        // NEW: Get reference to click controller
+        clickController = BroadcastPipelineManager.Instance as ISourceClickController;
+        
         // Find ALL XRRayInteractor components, including inactive ones
         XRRayInteractor[] allRays = FindObjectsOfType<XRRayInteractor>(true);
 
         foreach (var ray in allRays)
         {
-//            Debug.Log($"Ray: {ray.name} on parent: {ray.transform.parent?.name}");
-
             // Check by name patterns (case insensitive)
             string rayName = ray.name.ToLower();
             string parentName = ray.transform.parent?.name.ToLower() ?? "";
@@ -36,12 +41,10 @@ public class BroadcastTriggerClick : MonoBehaviour
             if (rayName.Contains("left") || parentName.Contains("left"))
             {
                 leftHandRay = ray;
-                //Debug.Log($"Assigned LEFT ray: {ray.name}");
             }
             else if (rayName.Contains("right") || parentName.Contains("right"))
             {
                 rightHandRay = ray;
-                //Debug.Log($"Assigned RIGHT ray: {ray.name}");
             }
         }
 
@@ -62,6 +65,7 @@ public class BroadcastTriggerClick : MonoBehaviour
         rightTriggerAction.performed -= OnRightTriggerPressed;
         xriActions.Disable();
     }
+    
     void OnMouseOver()
     {
         if(Input.GetMouseButtonDown(0)) // Left click
@@ -85,6 +89,7 @@ public class BroadcastTriggerClick : MonoBehaviour
         Debug.LogWarning("clicked right");
         CheckRayHit(rightHandRay, "right");
     }
+    
     private void CheckRayHit(XRRayInteractor rayInteractor, String hand)
     {
         if (rayInteractor == null) return;
@@ -102,7 +107,6 @@ public class BroadcastTriggerClick : MonoBehaviour
                 {
                     HandleLeftClick();
                 }
-
                 else if (hand.Equals("right"))
                 {
                     HandleRightClick();
@@ -110,14 +114,50 @@ public class BroadcastTriggerClick : MonoBehaviour
             }
         }
     }
+    
     private void HandleRightClick()
     {
+        // Source right clicks always allowed (go to Studio Preview)
         GetComponentInParent<SourceObject>()?.OnSourceRightClicked();
-        GetComponentInParent<PipelineDestination>()?.OnDestinationRightClicked();
+        
+        // NEW: Check if preview-to-live clicking is blocked for destinations
+        var destination = GetComponentInParent<PipelineDestination>();
+        if (destination != null)
+        {
+            // Right clicks on Studio Preview go to Studio Live - check if allowed
+            if (destination.pipelineType == PipelineType.StudioPreview)
+            {
+                if (clickController != null && !clickController.IsPreviewToLiveClickAllowed())
+                {
+                    Debug.LogWarning($"xx_🔒 Preview-to-Live click blocked - Studio pipeline syncing");
+                    return; // Block the click
+                }
+            }
+            
+            destination.OnDestinationRightClicked();
+        }
     }
+    
     private void HandleLeftClick()
     {
+        // Source left clicks always allowed (go to TV Preview)
         GetComponentInParent<SourceObject>()?.OnSourceLeftClicked();
-        GetComponentInParent<PipelineDestination>()?.OnDestinationLeftClicked();
+        
+        // NEW: Check if preview-to-live clicking is blocked for destinations
+        var destination = GetComponentInParent<PipelineDestination>();
+        if (destination != null)
+        {
+            // Left clicks on TV Preview go to TV Live - check if allowed
+            if (destination.pipelineType == PipelineType.TVPreview)
+            {
+                if (clickController != null && !clickController.IsPreviewToLiveClickAllowed())
+                {
+                    Debug.LogWarning($"xx_🔒 Preview-to-Live click blocked - TV pipeline syncing");
+                    return; // Block the click
+                }
+            }
+            
+            destination.OnDestinationLeftClicked();
+        }
     }
 }

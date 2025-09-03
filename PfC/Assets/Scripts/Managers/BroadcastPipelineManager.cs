@@ -9,7 +9,7 @@ using Unity.Netcode;
 using Unity.Services.Vivox.AudioTaps;
 using UnityEngine;
 
-public class BroadcastPipelineManager : MonoBehaviour 
+public class BroadcastPipelineManager : MonoBehaviour, ISourceClickController 
 {
     [Header("Outline Colors")]
     public Material studioPreviewOutline;  // Blue
@@ -30,13 +30,15 @@ public class BroadcastPipelineManager : MonoBehaviour
     // Track which live pipelines are controlled by network (other directors)
     private Dictionary<PipelineType, bool> networkControlledPipelines = new Dictionary<PipelineType, bool>();
     
+    // NEW: Track which pipelines are currently syncing (blocking clicks)
+    private HashSet<PipelineType> pipelinesCurrentlySyncing = new HashSet<PipelineType>();
+    
     private NetworkStreamCoordinator networkStreamCoordinator;
     
     //ugly workaround
     private bool isStudioStreamedForTheFirstTime = true;
     private bool isTVStreamedForTheFirstTime = true;
     private Coroutine streamedForTheFirstTimeCoroutine;
-    
 
     private void Awake()
     {
@@ -52,11 +54,33 @@ public class BroadcastPipelineManager : MonoBehaviour
         NetworkStreamCoordinator.OnStreamControlChanged += OnNetworkStreamChanged;
     }
 
-
     private void OnDestroy()
     {
         NetworkStreamCoordinator.OnStreamControlChanged -= OnNetworkStreamChanged;
     }
+
+    #region ISourceClickController Implementation
+    
+    public bool IsPreviewToLiveClickAllowed()
+    {
+        // Block if any live pipeline is currently syncing
+        return !pipelinesCurrentlySyncing.Contains(PipelineType.StudioLive) && 
+               !pipelinesCurrentlySyncing.Contains(PipelineType.TVLive);
+    }
+    
+    public void BlockPreviewToLiveClicks(PipelineType pipelineType)
+    {
+        pipelinesCurrentlySyncing.Add(pipelineType);
+        Debug.Log($"xx_🔒 Blocked clicking for {pipelineType} sync");
+    }
+    
+    public void UnblockPreviewToLiveClicks(PipelineType pipelineType)
+    {
+        pipelinesCurrentlySyncing.Remove(pipelineType);
+        Debug.Log($"xx_🔓 Unblocked clicking for {pipelineType} sync complete");
+    }
+    
+    #endregion
 
     public void RegisterSource(SourceObject source) 
     {
@@ -71,23 +95,20 @@ public class BroadcastPipelineManager : MonoBehaviour
     public void OnSourceLeftClicked(SourceObject source)
     {
         Debug.Log($"xx_Pipeline Manager: Left click on {source.gameObject.name}");
-        // Always assign to TV Preview (overwrite if already there)
+        // Always assign to TV Preview (overwrite if already there) - No blocking needed
         AssignSourceToPipeline(source, PipelineType.TVPreview);
     }
 
     public void OnSourceRightClicked(SourceObject source)
     {
         Debug.Log($"xx_Pipeline Manager: Right click on {source.gameObject.name}");
-        // Always assign to Studio Preview (overwrite if already there)
+        // Always assign to Studio Preview (overwrite if already there) - No blocking needed
         AssignSourceToPipeline(source, PipelineType.StudioPreview);
-
-
     }
 
     private IEnumerator Reassign(PipelineType preview, PipelineType destination)
     {
         yield return new WaitForSeconds(1f);
-
         ForwardContentToNextStage(preview, destination);
     }
     
@@ -120,7 +141,6 @@ public class BroadcastPipelineManager : MonoBehaviour
                 StartCoroutine(Reassign(PipelineType.StudioPreview, PipelineType.StudioLive));
                 isStudioStreamedForTheFirstTime =  false;
             }
-            
         }
     }
 
@@ -151,6 +171,7 @@ public class BroadcastPipelineManager : MonoBehaviour
     {
         return activeAssignments[pipelineType];
     }
+    
     private void ForwardContentToNextStage(PipelineType fromStage, PipelineType toStage)
     {
         if (activeAssignments.ContainsKey(fromStage))
@@ -161,10 +182,13 @@ public class BroadcastPipelineManager : MonoBehaviour
             AssignSourceToPipeline(sourceToForward, toStage);
             Debug.Log($"xx_📺 Local assignment: Forwarded content from {fromStage} to {toStage}");
             
-            // Additionally, if going to a Live stage, coordinate with network
+            // Additionally, if going to a Live stage, coordinate with network and block clicks
             if (toStage == PipelineType.StudioLive || toStage == PipelineType.TVLive)
             {
                 Debug.Log($"xx_🌐 Additionally requesting network control for {toStage}");
+                
+                // NEW: Block clicks during network sync
+                BlockPreviewToLiveClicks(toStage);
                 
                 networkStreamCoordinator?.RequestStreamControl(toStage, sourceToForward.receiver);
             }
@@ -182,8 +206,73 @@ public class BroadcastPipelineManager : MonoBehaviour
         UpdateActiveSourceHighlight();
         UpdateDestinationNDI(targetType);
     }
-    
 
+    // ... [Rest of the existing methods remain the same until OnNetworkStreamChanged]
+
+    private void OnNetworkStreamChanged(StreamAssignment assignment, string description)
+    {
+        Debug.Log($"xx_🔄 Network Stream Update: {description}");
+        
+        var pipelineType = assignment.pipelineType;
+        bool isMyStream = false;
+        
+        // Check if this is my stream or someone else's
+        if (NetworkManager.Singleton != null)
+        {
+            var localClientId = NetworkManager.Singleton.LocalClientId;
+            isMyStream = assignment.isActive && assignment.directorClientId == localClientId;
+        }
+        
+        // NEW: Unblock clicks when my stream sync is complete
+        if (assignment.isActive && isMyStream && pipelinesCurrentlySyncing.Contains(pipelineType))
+        {
+            UnblockPreviewToLiveClicks(pipelineType);
+        }
+        
+        // Update network control tracking
+        if (assignment.isActive && !isMyStream)
+        {
+            // Another director is controlling this pipeline
+            networkControlledPipelines[pipelineType] = true;
+            
+            // Remove from active assignments to clear the outline
+            if (activeAssignments.ContainsKey(pipelineType))
+            {
+                Debug.Log($"xx_Removing {pipelineType} from active assignments - controlled by another director");
+                activeAssignments.Remove(pipelineType);
+            }
+            Debug.Log($"xx_📡 {pipelineType} now controlled by Director {assignment.directorClientId}");
+        }
+        else if (assignment.isActive && isMyStream)
+        {
+            // I am controlling this pipeline
+            networkControlledPipelines[pipelineType] = false;
+            Debug.Log($"xx_📡 I am now controlling {pipelineType}");
+        }
+        else if (!assignment.isActive)
+        {
+            // No one is controlling this pipeline
+            networkControlledPipelines[pipelineType] = false;
+            Debug.Log($"xx_📺 {pipelineType} returned to local control");
+            
+            // NEW: Also unblock if stream becomes inactive
+            if (pipelinesCurrentlySyncing.Contains(pipelineType))
+            {
+                UnblockPreviewToLiveClicks(pipelineType);
+            }
+        }
+        
+        // Update the visual highlighting based on new network state
+        UpdateActiveSourceHighlight();
+        
+        // Log the details
+        if (assignment.isActive)
+        {
+            Debug.Log($"xx_📡 Source: {assignment.streamSourceName}");
+        }
+    }
+
+    // ... [All other existing methods remain exactly the same]
     private void UpdateActiveSourceHighlight()
     {
         // Remove all outlines first
@@ -345,7 +434,6 @@ public class BroadcastPipelineManager : MonoBehaviour
                 {
                     OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
                     
-                    
                     string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, "Dedicated NDI® output",
                         "ndi_filter_ndiname",
                         source.receiver.ndiName);
@@ -353,7 +441,6 @@ public class BroadcastPipelineManager : MonoBehaviour
                     ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
                     
                     //clean obs stream live scene
-                    
                     ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
                     //add subtitles
                     obsScene.ConfigureAndExecute("StreamLive", "TVSuper", true, "TVSuper");
@@ -362,65 +449,12 @@ public class BroadcastPipelineManager : MonoBehaviour
                     
                     // add audio tap for presenters
                     obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
-
-
                 }
             }
             else
             {
                 dest.receiver.ndiName = "";
             }
-        }
-    }
-    
-    private void OnNetworkStreamChanged(StreamAssignment assignment, string description)
-    {
-        Debug.Log($"xx_🔄 Network Stream Update: {description}");
-        
-        var pipelineType = assignment.pipelineType;
-        bool isMyStream = false;
-        
-        // Check if this is my stream or someone else's
-        if (NetworkManager.Singleton != null)
-        {
-            var localClientId = NetworkManager.Singleton.LocalClientId;
-            isMyStream = assignment.isActive && assignment.directorClientId == localClientId;
-        }
-        
-        // Update network control tracking
-        if (assignment.isActive && !isMyStream)
-        {
-            // Another director is controlling this pipeline
-            networkControlledPipelines[pipelineType] = true;
-            
-            // Remove from active assignments to clear the outline
-            if (activeAssignments.ContainsKey(pipelineType))
-            {
-                Debug.Log($"xx_Removing {pipelineType} from active assignments - controlled by another director");
-                activeAssignments.Remove(pipelineType);
-            }
-            Debug.Log($"xx_📡 {pipelineType} now controlled by Director {assignment.directorClientId}");
-        }
-        else if (assignment.isActive && isMyStream)
-        {
-            // I am controlling this pipeline
-            networkControlledPipelines[pipelineType] = false;
-            Debug.Log($"xx_📡 I am now controlling {pipelineType}");
-        }
-        else if (!assignment.isActive)
-        {
-            // No one is controlling this pipeline
-            networkControlledPipelines[pipelineType] = false;
-            Debug.Log($"xx_📺 {pipelineType} returned to local control");
-        }
-        
-        // Update the visual highlighting based on new network state
-        UpdateActiveSourceHighlight();
-        
-        // Log the details
-        if (assignment.isActive)
-        {
-            Debug.Log($"xx_📡 Source: {assignment.streamSourceName}");
         }
     }
 }
