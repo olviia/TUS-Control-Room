@@ -4,12 +4,12 @@ using System.Collections.Generic;
 using BroadcastPipeline;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.XR.Interaction.Toolkit;
+
 
 public class BroadcastTriggerClick : MonoBehaviour
 {
-    private XRRayInteractor leftHandRay;
-    private XRRayInteractor rightHandRay;
+    private UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor leftHandRay;
+    private UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor rightHandRay;
     private XRIDefaultInputActions xriActions;
     private InputAction leftTriggerAction;
     private InputAction rightTriggerAction;
@@ -23,7 +23,7 @@ public class BroadcastTriggerClick : MonoBehaviour
     void Start()
     {
         // Find ALL XRRayInteractor components, including inactive ones
-        XRRayInteractor[] allRays = FindObjectsOfType<XRRayInteractor>(true);
+        UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor[] allRays = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>(true);
 
         foreach (var ray in allRays)
         {
@@ -85,7 +85,7 @@ public class BroadcastTriggerClick : MonoBehaviour
         Debug.LogWarning("clicked right");
         CheckRayHit(rightHandRay, "right");
     }
-    private void CheckRayHit(XRRayInteractor rayInteractor, String hand)
+    private void CheckRayHit(UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor rayInteractor, String hand)
     {
         if (rayInteractor == null) return;
         

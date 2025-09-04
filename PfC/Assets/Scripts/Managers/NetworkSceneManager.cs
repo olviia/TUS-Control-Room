@@ -14,7 +14,7 @@ using UnityEditor;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Interaction.Toolkit.Utilities;
 using UnityEngine.XR.Interaction.Toolkit.Utilities.Curves;
-using UnityEngine.XR.Interaction.Toolkit;
+
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -59,16 +59,16 @@ public class NetworkSceneManager : NetworkBehaviour
             //Selecting who can interact with what object
             //Likely director only one that will need to interact (??)
             //Keeping it here for reference if needed
-            leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
-            rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
+            leftRayInteractor.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>().raycastMask |= (1 << layerMask);
+            rightRayInteractor.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>().raycastMask |= (1 << layerMask);
         } 
         else
         {
             Debug.Log("Loading client Scene");
             var layerMask = LayerMask.NameToLayer("Studio");
             Camera.main.cullingMask |= (1 << layerMask);
-            leftRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
-            rightRayInteractor.GetComponent<XRRayInteractor>().raycastMask |= (1 << layerMask);
+            leftRayInteractor.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>().raycastMask |= (1 << layerMask);
+            rightRayInteractor.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>().raycastMask |= (1 << layerMask);
         }
         
         //load the scene after assigning the layer masks
