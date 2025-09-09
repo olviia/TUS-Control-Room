@@ -70,19 +70,19 @@ public class NdiAudioInterceptor : MonoBehaviour
         {
             audioStreamTrack.SetData(audioData, channels, sampleRate);
         
-            if (rms > 0.001f)
-            {
-                Debug.Log($"aabb_[🔍AudioInterceptor] ✅ SetData SUCCESS: RMS={rms:F3}, Channels={channels}");
-            }
-            else
-            {
-                Debug.Log($"aabb_[🔍AudioInterceptor] ⚠️ SetData called with SILENT data: RMS={rms:F3}");
-            }
+            // if (rms > 0.001f)
+            // {
+            //     Debug.Log($"aabb_[🔍AudioInterceptor] ✅ SetData SUCCESS: RMS={rms:F3}, Channels={channels}");
+            // }
+            // else
+            // {
+            //     Debug.Log($"aabb_[🔍AudioInterceptor] ⚠️ SetData called with SILENT data: RMS={rms:F3}");
+            // }
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"aabb_[🔍AudioInterceptor] ❌ SetData FAILED: {e.Message}");
-            Debug.LogError($"aabb_[🔍AudioInterceptor] Track state - Disposed: {audioStreamTrack == null}");
+            // Debug.LogError($"aabb_[🔍AudioInterceptor] ❌ SetData FAILED: {e.Message}");
+            // Debug.LogError($"aabb_[🔍AudioInterceptor] Track state - Disposed: {audioStreamTrack == null}");
         }
     }
     
