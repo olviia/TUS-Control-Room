@@ -14,6 +14,7 @@ public static class ObsUtilities
 {
 
     public static int liveSceneItemID;
+    public static int test = 3;
 
     #region Scene Operations
     
@@ -149,14 +150,6 @@ public static class ObsUtilities
         //     Debug.LogError($"Error creating scene source: {e.Message}");
         //     return false;
         // }
-    }
-/// <summary>
-/// remove previously added scene source 
-/// </summary>
-/// <param name="sceneName"></param>
-    public static void RemoveLastAddedSceneSource(OBSWebsocket obsWebsocket, string sceneName)
-    {
-        obsWebsocket.RemoveSceneItem(sceneName, liveSceneItemID);
     }
     
     /// <summary>
@@ -422,6 +415,93 @@ public static string FindSceneBySourceFilter(OBSWebsocket obsWebSocket, string f
         return null;
     }
 }
+
+/// <summary>
+/// Find a scene that has a specific filter with a property value
+/// </summary>
+public static string FindSceneBySceneFilter(OBSWebsocket obsWebSocket, string filterName, string propertyName, string propertyValue)
+{
+    if (obsWebSocket == null || !obsWebSocket.IsConnected)
+        throw new InvalidOperationException("OBS WebSocket is not connected");
+        
+    try
+    {
+        var sceneList = obsWebSocket.GetSceneList();
+        //got all scenes in obs
+        
+        foreach (var scene in sceneList.Scenes)
+        {
+            try
+            {
+                // Get filters directly on the scene itself
+                var sceneFilters = obsWebSocket.GetSourceFilterList(scene.Name);
+                
+                foreach (var filter in sceneFilters)
+                {
+
+                    if (filter.Name == filterName)
+                    {
+                        var filterSettings = obsWebSocket.GetSourceFilter(scene.Name, filterName);
+
+
+                        if (filterSettings.Settings.ContainsKey(propertyName))
+                        {
+                            string currentValue = filterSettings.Settings[propertyName]?.ToString();
+
+                            Debug.LogError($"abc obs currentValue {currentValue}");
+                            Debug.LogError($"abc obs propertyValue {propertyValue}");
+
+                            if (propertyValue.Contains(currentValue))
+                            {
+
+                                Debug.Log($"Found scene '{scene.Name}' with filter '{filterName}' having {propertyName}='{currentValue}'");
+                                return scene.Name;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception sceneEx)
+            {
+                Debug.LogWarning($"Error checking filters for scene '{scene.Name}': {sceneEx.Message}");
+                continue;
+            }
+        }
+        
+        Debug.Log($"No scene found with filter '{filterName}' having {propertyName}='{propertyValue}'");
+        return null;
+    }
+    catch (Exception e)
+    {
+        Debug.LogError($"Error searching for scene by scene filter: {e.Message}");
+        return null;
+    }
+}
+
+#endregion
+
+#region Source Finding Operations
+
+/// <summary>
+/// Get the source names in a scene
+/// </summary>
+public static List<string> GetSourceNamesInScene(OBSWebsocket obsWebSocket, string sceneName)
+{
+    if (obsWebSocket == null || !obsWebSocket.IsConnected)
+        throw new InvalidOperationException("OBS WebSocket is not connected");
+        
+    try
+    {
+        var sceneItemList = obsWebSocket.GetSceneItemList(sceneName);
+        return sceneItemList.Select(item => item.SourceName).ToList();
+    }
+    catch (Exception e)
+    {
+        Debug.LogError($"Error getting source names for scene '{sceneName}': {e.Message}");
+        return new List<string>();
+    }
+}
+
 
 #endregion
     

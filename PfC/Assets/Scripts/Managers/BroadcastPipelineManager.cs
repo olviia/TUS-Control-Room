@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using BroadcastPipeline;
 using Klak.Ndi;
+using NUnit.Framework.Internal;
 using OBSWebsocketDotNet;
 using Unity.Netcode;
 using Unity.Services.Vivox.AudioTaps;
 using UnityEngine;
+using Util.MergedScreen;
 
 public class BroadcastPipelineManager : MonoBehaviour 
 {
@@ -50,8 +52,13 @@ public class BroadcastPipelineManager : MonoBehaviour
     {
         networkStreamCoordinator = FindObjectOfType<NetworkStreamCoordinator>();
         NetworkStreamCoordinator.OnStreamControlChanged += OnNetworkStreamChanged;
+        IMergedScreenSelectionButton.OnMergedScreenButtonClicked += testmethod;
     }
 
+    private void testmethod(string arg1, IMergedScreenSelectionButton button)
+    {
+        Debug.Log($"button clicked with the scene name {arg1}");
+    }
 
     private void OnDestroy()
     {
