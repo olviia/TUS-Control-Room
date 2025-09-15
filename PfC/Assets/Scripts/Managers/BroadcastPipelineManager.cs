@@ -215,10 +215,27 @@ public class BroadcastPipelineManager : MonoBehaviour
                 continue;
             }
             
-            source.ApplyHighlight(pipelineType);
-            source.ApplyConflictHighlight();
+            if (HasConflicts(source))
+            {
+                source.ApplyConflictHighlight();
+            }
+            else
+            {
+                source.ApplyHighlight(pipelineType);
+            }
         }
     
+    }
+    private bool HasConflicts(IPipelineSource source)
+    {
+        // Get all pipeline types this source is assigned to
+        var sourcePipelineTypes = activeAssignments
+            .Where(assignment => assignment.Value == source)
+            .Select(assignment => assignment.Key)
+            .ToList();
+        
+        // Use the source's own conflict logic
+        return source.HasConflictingAssignments(sourcePipelineTypes);
     }
     
     
