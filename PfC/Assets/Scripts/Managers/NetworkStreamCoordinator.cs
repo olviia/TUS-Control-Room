@@ -75,11 +75,11 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     #region Public Interface
 
-    public void RequestStreamControl(PipelineType pipeline, NdiReceiver localNdiSource)
+    public void RequestStreamControl(PipelineType pipeline, string localNdiName)
     {
-        if (!ValidateRequest(pipeline, localNdiSource)) return;
+        if (!ValidateRequest(pipeline, localNdiName)) return;
 
-        RequestStreamControlServerRpc(pipeline, localNdiSource.ndiName, NetworkManager.Singleton.LocalClientId);
+        RequestStreamControlServerRpc(pipeline, localNdiName, NetworkManager.Singleton.LocalClientId);
     }
 
     public void ReleaseStreamControl(PipelineType pipeline)
@@ -110,7 +110,7 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     #region Validation
 
-    private bool ValidateRequest(PipelineType pipeline, NdiReceiver localNdiSource)
+    private bool ValidateRequest(PipelineType pipeline, string localNdiName)
     {
         if (!IsNetworkReady()) return false;
         
@@ -120,7 +120,7 @@ public class NetworkStreamCoordinator : NetworkBehaviour
             return false;
         }
         
-        if (localNdiSource == null)
+        if (localNdiName == null)
         {
             Debug.LogError("[🎬StreamCoordinator] No NDI source provided");
             return false;

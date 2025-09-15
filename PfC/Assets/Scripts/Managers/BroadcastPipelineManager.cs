@@ -14,17 +14,17 @@ using Util.MergedScreen;
 public class BroadcastPipelineManager : MonoBehaviour 
 {
     [Header("Outline Colors")]
-    public Material studioPreviewOutline;  // Blue
-    public Material studioLiveOutline;     // Orange  
-    public Material tvPreviewOutline;      // Green
-    public Material tvLiveOutline;         // Magenta
-    public Material conflictOutline;       // Bright Red
+    public Color studioPreviewOutline;  // Blue
+    public Color studioLiveOutline;     // Orange  
+    public Color tvPreviewOutline;      // Green
+    public Color tvLiveOutline;         // Magenta
+    public Color conflictOutline;       // Bright Red
     
     public static BroadcastPipelineManager Instance { get; private set; }
-    private List<SourceObject> registeredSources = new List<SourceObject>();
+    private List<IPipelineSource> registeredSources = new List<IPipelineSource>();
     
-    private Dictionary<PipelineType, SourceObject> activeAssignments 
-                = new Dictionary<PipelineType, SourceObject>();
+    private Dictionary<PipelineType, IPipelineSource> activeAssignments 
+                = new Dictionary<PipelineType, IPipelineSource>();
     
     private Dictionary<PipelineType, List<PipelineDestination>> registeredDestinations 
         = new Dictionary<PipelineType, List<PipelineDestination>>();
@@ -33,6 +33,9 @@ public class BroadcastPipelineManager : MonoBehaviour
     private Dictionary<PipelineType, bool> networkControlledPipelines = new Dictionary<PipelineType, bool>();
     
     private NetworkStreamCoordinator networkStreamCoordinator;
+    
+    public static event Action<HashSet<string>> OnActiveSourcesChanged;
+
     
     //ugly workaround
     private bool isStudioStreamedForTheFirstTime = true;
@@ -52,12 +55,6 @@ public class BroadcastPipelineManager : MonoBehaviour
     {
         networkStreamCoordinator = FindObjectOfType<NetworkStreamCoordinator>();
         NetworkStreamCoordinator.OnStreamControlChanged += OnNetworkStreamChanged;
-        IMergedScreenSelectionButton.OnMergedScreenButtonClicked += testmethod;
-    }
-
-    private void testmethod(string arg1, IMergedScreenSelectionButton button)
-    {
-        Debug.Log($"button clicked with the scene name {arg1}");
     }
 
     private void OnDestroy()
@@ -65,26 +62,24 @@ public class BroadcastPipelineManager : MonoBehaviour
         NetworkStreamCoordinator.OnStreamControlChanged -= OnNetworkStreamChanged;
     }
 
-    public void RegisterSource(SourceObject source) 
+    public void RegisterSource(IPipelineSource source) 
     {
         registeredSources.Add(source);
     }
     
-    public void UnregisterSource(SourceObject source) 
+    public void UnregisterSource(IPipelineSource source) 
     {
         registeredSources.Remove(source);
     }
 
-    public void OnSourceLeftClicked(SourceObject source)
+    public void OnSourceLeftClicked(IPipelineSource source)
     {
-        Debug.Log($"xx_Pipeline Manager: Left click on {source.gameObject.name}");
         // Always assign to TV Preview (overwrite if already there)
         AssignSourceToPipeline(source, PipelineType.TVPreview);
     }
 
-    public void OnSourceRightClicked(SourceObject source)
+    public void OnSourceRightClicked(IPipelineSource source)
     {
-        Debug.Log($"xx_Pipeline Manager: Right click on {source.gameObject.name}");
         // Always assign to Studio Preview (overwrite if already there)
         AssignSourceToPipeline(source, PipelineType.StudioPreview);
 
@@ -154,7 +149,7 @@ public class BroadcastPipelineManager : MonoBehaviour
         }
     }
 
-    public SourceObject GetActiveAssignment(PipelineType pipelineType)
+    public IPipelineSource GetActiveAssignment(PipelineType pipelineType)
     {
         return activeAssignments[pipelineType];
     }
@@ -162,7 +157,7 @@ public class BroadcastPipelineManager : MonoBehaviour
     {
         if (activeAssignments.ContainsKey(fromStage))
         {
-            SourceObject sourceToForward = activeAssignments[fromStage];
+            IPipelineSource sourceToForward = activeAssignments[fromStage];
             
             // ALWAYS assign locally first for immediate visual feedback
             AssignSourceToPipeline(sourceToForward, toStage);
@@ -173,7 +168,7 @@ public class BroadcastPipelineManager : MonoBehaviour
             {
                 Debug.Log($"xx_🌐 Additionally requesting network control for {toStage}");
                 
-                networkStreamCoordinator?.RequestStreamControl(toStage, sourceToForward.receiver);
+                networkStreamCoordinator?.RequestStreamControl(toStage, sourceToForward.ndiName);
             }
         }
         else
@@ -182,10 +177,16 @@ public class BroadcastPipelineManager : MonoBehaviour
         }
     }
 
-    private void AssignSourceToPipeline(SourceObject source, PipelineType targetType)
+    private void AssignSourceToPipeline(IPipelineSource source, PipelineType targetType)
     {
+        Debug.Log($"Before assignment - activeAssignments count: {activeAssignments.Count}");
         activeAssignments[targetType] = source;
-        Debug.Log($"xx_Assigned {source.gameObject.name} to {targetType}");
+       // Debug.Log($"After assignment - assigned {source.GetType().Name} with ndiName '{source.ndiName}' to {targetType}");
+        
+        //to add or remove ndi filter in MergedScreenSource
+        var activeNdiNames = new HashSet<string>(activeAssignments.Values.Select(s => s.ndiName));
+        OnActiveSourcesChanged?.Invoke(activeNdiNames);
+        
         UpdateActiveSourceHighlight();
         UpdateDestinationNDI(targetType);
     }
@@ -194,16 +195,16 @@ public class BroadcastPipelineManager : MonoBehaviour
     private void UpdateActiveSourceHighlight()
     {
         // Remove all outlines first
-        foreach(SourceObject source in registeredSources)
+        foreach(IPipelineSource source in registeredSources)
         {
-            RemoveOutline(source);
+            source.RemoveHighlight();
         }
         
         // Apply outlines based on assignments, but skip network-controlled live pipelines
         foreach(var assignment in activeAssignments)
         {
             PipelineType pipelineType = assignment.Key;
-            SourceObject source = assignment.Value;
+            IPipelineSource source = assignment.Value;
             
             // Skip outline for live pipelines that are controlled by other directors
             bool isLivePipeline = (pipelineType == PipelineType.StudioLive || pipelineType == PipelineType.TVLive);
@@ -211,132 +212,20 @@ public class BroadcastPipelineManager : MonoBehaviour
             
             if (isLivePipeline && isNetworkControlled)
             {
-                Debug.Log($"xx_Skipping outline for {pipelineType} - controlled by another director");
                 continue;
             }
             
-            Material outlineMaterial = GetOutlineMaterialForPipelineType(pipelineType);
-            if (outlineMaterial != null)
-            {
-                SetOutline(source, outlineMaterial);
-            }
+            source.ApplyHighlight(pipelineType);
+            source.ApplyConflictHighlight();
         }
     
-        // Check for conflicts and apply warning outlines
-        CheckAndApplyConflictHighlights();
     }
     
-    private Material GetOutlineMaterialForPipelineType(PipelineType pipelineType)
-    {
-        switch(pipelineType)
-        {
-            case PipelineType.StudioPreview: return studioPreviewOutline;
-            case PipelineType.StudioLive: return studioLiveOutline;
-            case PipelineType.TVPreview: return tvPreviewOutline;
-            case PipelineType.TVLive: return tvLiveOutline;
-            default: return null;
-        }
-    }
-    
-    private void SetOutline(SourceObject source, Material outlineMaterial)
-    {
-        MeshRenderer renderer = source.screenGameObject;
-    
-        // Remove any existing outline first
-        RemoveOutline(source);
-    
-        // Add outline material to the array
-        Material[] materials = renderer.materials;
-        Material[] newMaterials = new Material[materials.Length + 1];
-    
-        // Copy existing materials
-        for(int i = 0; i < materials.Length; i++)
-        {
-            newMaterials[i] = materials[i];
-        }
-    
-        // Add outline material at the end
-        newMaterials[materials.Length] = outlineMaterial;
-        renderer.materials = newMaterials;
-    }
-    
-    private void RemoveOutline(SourceObject source)
-    {
-        MeshRenderer renderer = source.screenGameObject;
-        Material[] materials = renderer.materials;
-    
-        // If only one material, no outline to remove
-        if(materials.Length <= 1) return;
-    
-        // Remove last material (outline)
-        Material[] newMaterials = new Material[materials.Length - 1];
-        for(int i = 0; i < newMaterials.Length; i++)
-        {
-            newMaterials[i] = materials[i];
-        }
-    
-        renderer.materials = newMaterials;
-    }
-    
-    private void CheckAndApplyConflictHighlights()
-    {
-        // Group sources by how many assignments they have
-        Dictionary<SourceObject, List<PipelineType>> sourceAssignments = new Dictionary<SourceObject, List<PipelineType>>();
-    
-        foreach(var assignment in activeAssignments)
-        {
-            SourceObject source = assignment.Value;
-            PipelineType pipelineType = assignment.Key;
-            
-            // Skip network-controlled live pipelines for conflict detection
-            bool isLivePipeline = (pipelineType == PipelineType.StudioLive || pipelineType == PipelineType.TVLive);
-            bool isNetworkControlled = networkControlledPipelines.ContainsKey(pipelineType) && networkControlledPipelines[pipelineType];
-            
-            if (isLivePipeline && isNetworkControlled)
-            {
-                continue; // Don't count network-controlled pipelines in conflicts
-            }
-        
-            if(!sourceAssignments.ContainsKey(source))
-                sourceAssignments[source] = new List<PipelineType>();
-            
-            sourceAssignments[source].Add(pipelineType);
-        }
-    
-        // Check for conflicts and apply red warning outline
-        foreach(var sourceGroup in sourceAssignments)
-        {
-            SourceObject source = sourceGroup.Key;
-            List<PipelineType> assignments = sourceGroup.Value;
-        
-            if(HasConflict(assignments))
-            {
-                Debug.Log($"xx_CONFLICT: {source.gameObject.name} assigned to conflicting pipelines");
-                RemoveOutline(source);
-                SetOutline(source, conflictOutline);
-            }
-        }
-    }
-
-    private bool HasConflict(List<PipelineType> assignments)
-    {
-        bool hasStudioPreview = assignments.Contains(PipelineType.StudioPreview);
-        bool hasStudioLive = assignments.Contains(PipelineType.StudioLive);
-        bool hasTVPreview = assignments.Contains(PipelineType.TVPreview);
-        bool hasTVLive = assignments.Contains(PipelineType.TVLive);
-    
-        // Conflict scenarios 
-        return (hasStudioPreview && hasTVPreview) ||    // Same source in both previews
-               (hasStudioLive && hasTVLive) ||          // Same source in both live
-               (hasStudioPreview && hasTVLive) ||       // Studio preview + TV live
-               (hasStudioLive && hasTVPreview);         // Studio live + TV preview
-    }
     
     private void UpdateDestinationNDI(PipelineType pipelineType)
     {
         if (!registeredDestinations.ContainsKey(pipelineType))
         {
-            Debug.Log($"xx_No destination registered for {pipelineType}");
             return;
         }
     
@@ -345,8 +234,8 @@ public class BroadcastPipelineManager : MonoBehaviour
         {
             if (activeAssignments.ContainsKey(pipelineType))
             {
-                SourceObject source = activeAssignments[pipelineType];
-                dest.receiver.ndiName = source.receiver.ndiName;
+                IPipelineSource source = activeAssignments[pipelineType];
+                dest.receiver.ndiName = source.ndiName;
 
                 if (pipelineType == PipelineType.TVLive)
                 {
@@ -355,7 +244,7 @@ public class BroadcastPipelineManager : MonoBehaviour
                     
                     string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, "Dedicated NDI® output",
                         "ndi_filter_ndiname",
-                        source.receiver.ndiName);
+                        source.ndiName);
                     
                     ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
                     
@@ -382,8 +271,6 @@ public class BroadcastPipelineManager : MonoBehaviour
     
     private void OnNetworkStreamChanged(StreamAssignment assignment, string description)
     {
-        Debug.Log($"xx_🔄 Network Stream Update: {description}");
-        
         var pipelineType = assignment.pipelineType;
         bool isMyStream = false;
         
@@ -403,10 +290,8 @@ public class BroadcastPipelineManager : MonoBehaviour
             // Remove from active assignments to clear the outline
             if (activeAssignments.ContainsKey(pipelineType))
             {
-                Debug.Log($"xx_Removing {pipelineType} from active assignments - controlled by another director");
                 activeAssignments.Remove(pipelineType);
             }
-            Debug.Log($"xx_📡 {pipelineType} now controlled by Director {assignment.directorClientId}");
         }
         else if (assignment.isActive && isMyStream)
         {

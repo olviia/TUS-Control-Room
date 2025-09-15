@@ -302,6 +302,8 @@ public static class ObsUtilities
     /// </summary>
     public static bool CreateNdiOutputFilter(OBSWebsocket obsWebSocket, string sourceName, string filterName, string ndiOutputName, string ndiPropertyName = "ndi_filter_ndiname")
     {
+        Debug.Log($"gggg_Added NDI output filter '{filterName}' to source '{sourceName}' with output name '{ndiOutputName}'");
+
         if (obsWebSocket == null || !obsWebSocket.IsConnected)
             throw new InvalidOperationException("OBS WebSocket is not connected");
             
@@ -351,6 +353,28 @@ public static class ObsUtilities
         catch (Exception e)
         {
             Debug.LogError($"Error updating NDI output filter: {e.Message}");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Remove NDI output filter
+    /// </summary>
+    public static bool RemoveNdiOutputFilter(OBSWebsocket obsWebSocket, string sourceName, string filterName)
+    {
+        if (obsWebSocket == null || !obsWebSocket.IsConnected)
+            throw new InvalidOperationException("OBS WebSocket is not connected");
+        
+        try
+        {
+            obsWebSocket.RemoveSourceFilter(sourceName, filterName);
+        
+            Debug.Log($"Removed NDI output filter '{filterName}' from source '{sourceName}'");
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error removing NDI output filter: {e.Message}");
             return false;
         }
     }
