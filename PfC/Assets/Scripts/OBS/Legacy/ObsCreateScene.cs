@@ -27,7 +27,7 @@ public class ObsCreateScene : NetworkBehaviour
     private NdiSender ndiSender;
     private WebsocketManager webSocketManager;
     private bool isServer;
-    private string filterName = "Dedicated NDI® output";
+    private string filterName = Constants.DEDICATED_NDI_OUTPUT;
     private string filterType = "ndi_filter";
     private string ndiPropertyName = "ndi_filter_ndiname";
     

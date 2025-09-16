@@ -259,7 +259,7 @@ public class BroadcastPipelineManager : MonoBehaviour
                     OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
                     
                     
-                    string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, "Dedicated NDI® output",
+                    string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
                         "ndi_filter_ndiname",
                         source.ndiName);
                     

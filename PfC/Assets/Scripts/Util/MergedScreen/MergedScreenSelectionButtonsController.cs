@@ -27,7 +27,7 @@ public class MergedScreenSelectionButtonsController : MonoBehaviour
             //firstTimeClicked = false;
 
             var sceneName = ObsUtilities.FindSceneBySceneFilter(ObsOperationBase.SharedObsWebSocket,
-                "Dedicated NDI® output",
+                Constants.DEDICATED_NDI_OUTPUT,
                 "ndi_filter_ndiname",
                 ndiReceiver.ndiName);
             

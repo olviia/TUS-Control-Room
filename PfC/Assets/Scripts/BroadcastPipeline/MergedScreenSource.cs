@@ -79,16 +79,24 @@ namespace BroadcastPipeline
 
         private void CheckAndChangeFilterInObs(HashSet<string> activeNdiNames)
         {
-            Debug.Log("scene assigned event is fired");
-            bool isActive = activeNdiNames.Contains(obsSceneName);
+            bool isActive = false;
+            foreach (var ndi in activeNdiNames)
+            {
+               isActive = ndi.Contains(obsSceneName);
+                if (isActive)
+                    break;
 
+            }
+            Debug.Log($"single sours: {singleSource}, name: {obsSceneName}");
             if (isActive && !ObsUtilities.FilterExists(websocket, singleSource, obsSceneName))
             {
-                ObsUtilities.CreateNdiOutputFilter(websocket, singleSource, "Dedicated NDI® output", obsSceneName, "ndi_filter_ndiname");
+                ObsUtilities.CreateNdiOutputFilter(websocket, singleSource, Constants.DEDICATED_NDI_OUTPUT, obsSceneName, "ndi_filter_ndiname");
             }
             else if (!isActive && ObsUtilities.FilterExists(websocket, singleSource, obsSceneName))
             {
-                ObsUtilities.RemoveNdiOutputFilter(websocket, singleSource, "Dedicated NDI® output");
+                Debug.Log($"removed filter from {obsSceneName}");
+
+                ObsUtilities.RemoveNdiOutputFilter(websocket, singleSource, Constants.DEDICATED_NDI_OUTPUT);
             }
         }
 

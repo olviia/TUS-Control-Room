@@ -288,7 +288,8 @@ public static class ObsUtilities
         try
         {
             var filters = obsWebSocket.GetSourceFilterList(sourceName);
-            return filters.Any(filter => filter.Name == filterName);
+
+            return filters.Any(filter => filter.Name == Constants.DEDICATED_NDI_OUTPUT);
         }
         catch (Exception e)
         {

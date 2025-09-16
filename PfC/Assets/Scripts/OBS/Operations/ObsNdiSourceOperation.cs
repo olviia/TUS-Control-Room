@@ -22,7 +22,7 @@ public class ObsNdiSourceOperation : ObsOperationBase
     
     [Header("Advanced Settings")]
     [SerializeField] private bool createSceneIfMissing = true;
-    [SerializeField] private string filterName = "Dedicated NDI® output";
+    [SerializeField] private string filterName = Constants.DEDICATED_NDI_OUTPUT;
     [SerializeField] private string filterType = "ndi_filter";
     [SerializeField] private string ndiPropertyName = "ndi_filter_ndiname";
     

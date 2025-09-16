@@ -17,7 +17,7 @@ public class ObsSceneSourceOperation : ObsOperationBase
     
      private bool createTargetSceneIfMissing = true;
     
-    private string searchFilterName = "Dedicated NDI® output";
+    private string searchFilterName = Constants.DEDICATED_NDI_OUTPUT;
     private string searchPropertyName = "ndi_filter_ndiname";
     private string searchPropertyValue = "";
     /// <summary>
@@ -219,7 +219,7 @@ public class ObsSceneSourceOperation : ObsOperationBase
         //add code to remove the item
         //to do it, use RemoveSceneItem()
         
-        string name = ObsUtilities.FindSceneBySourceFilter(SharedObsWebSocket, "Dedicated NDI® output",
+        string name = ObsUtilities.FindSceneBySourceFilter(SharedObsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
             "ndi_filter_ndiname",
             ndiName);
             
