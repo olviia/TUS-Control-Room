@@ -1,0 +1,1 @@
+The buttons in unity automatically assign themselves to corresponding scene in obs merged scene. The assignment is reverse: first button gets the lowest subscene from merged scene. last button gets the highest subscene from the merged scene hierarchy
