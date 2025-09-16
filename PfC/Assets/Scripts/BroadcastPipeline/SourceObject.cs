@@ -28,12 +28,14 @@ public class SourceObject : MonoBehaviour, IPipelineSource
 
     public void OnSourceLeftClicked()
     {
+        ndiName = receiver.ndiName;
         Debug.Log($"Left clicked source: {gameObject.name}");
         BroadcastPipelineManager.Instance?.OnSourceLeftClicked(this);
     }
 
     public void OnSourceRightClicked()
     {
+        ndiName = receiver.ndiName;
         Debug.Log($"Right clicked source: {gameObject.name}");
         BroadcastPipelineManager.Instance?.OnSourceRightClicked(this);
     }
@@ -62,4 +64,5 @@ public class SourceObject : MonoBehaviour, IPipelineSource
     {
         BroadcastPipelineManager.Instance?.UnregisterSource(this);
     }
+
 }

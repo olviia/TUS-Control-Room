@@ -93,7 +93,7 @@ public class BroadcastTriggerClick : MonoBehaviour
         if (rayInteractor.TryGetCurrent3DRaycastHit(out RaycastHit hit))
         {
             // Check if we hit an object with our clickable tag
-            if (hit.collider == this.GetComponent<Collider>())
+            if (hit.collider.gameObject == this.gameObject)
             {
                 Debug.Log($"XR Trigger pressed on clickable object: {hit.collider.name}");
                 

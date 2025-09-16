@@ -6,6 +6,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 using Util.MergedScreen;
 
 public class MergedScreenSelectionButton : MonoBehaviour, IMergedScreenSelectionButton, IPointerClickHandler
@@ -13,50 +15,44 @@ public class MergedScreenSelectionButton : MonoBehaviour, IMergedScreenSelection
     public string sceneName;
 
     public Button button;
+    
 
     private void Awake()
     {
         button = GetComponent<Button>();
-    }
-
-
-    void OnMouseOver()
-    {
-        if (Input.GetMouseButtonDown(0)) // Left click
-        {
-            HandleLeftClick();
-        }
-        else if (Input.GetMouseButtonDown(1)) // Right click  
-        {
-            HandleRightClick();
-        }
-    }
-//add proper trigger
-
-    private void OnLeftTriggerPressed(InputAction.CallbackContext context)
-    {
-        Debug.LogWarning("clicked left");
-        // CheckRayHit(leftHandRay, "left");
-    }
-
-    private void OnRightTriggerPressed(InputAction.CallbackContext context)
-    {
-        Debug.LogWarning("clicked right");
-        //  CheckRayHit(rightHandRay, "right");
+        
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (eventData.button == PointerEventData.InputButton.Left)
-            HandleLeftClick();
-        else if (eventData.button == PointerEventData.InputButton.Right)
-            HandleRightClick();
+        // for mouse input
+        if (eventData.pointerId == -1) // Mouse
+                HandleLeftClick();
+        else if (eventData.pointerId == -2)
+                HandleRightClick();
+        // XR Controllers - check which ray interactor is hitting
+        else if (eventData.pointerId >= 0)
+        {
+            var rayInteractors = FindObjectsOfType<XRRayInteractor>();
+            foreach (var ray in rayInteractors)
+            {
+                if (ray.TryGetCurrentUIRaycastResult(out var hit) && 
+                    hit.gameObject == this.gameObject)
+                {
+                    // This is the key - Unity names them predictably!
+                    string name = ray.transform.name.ToLower();
+                    
+                    if (name.Contains("left"))
+                        HandleLeftClick();
+                    else if (name.Contains("right"))
+                        HandleRightClick();
+                    
+                    break;
+                }
+            }
+        }
     }
 
-    // private void OnButtonClicked()
-    // {
-    //     IMergedScreenSelectionButton.TriggerEvent(sceneName, this);
-    // }
 
     public void HandleLeftClick()
     {
