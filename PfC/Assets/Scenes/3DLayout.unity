@@ -2255,11 +2255,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 2763d768e37357a4cad79b22a5a2bf04, type: 3}
---- !u!4 &1197414994 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1489845691695991013, guid: 2763d768e37357a4cad79b22a5a2bf04, type: 3}
-  m_PrefabInstance: {fileID: 1197414992}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1199530566
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7229,6 +7224,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3689669414424504593, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
+      propertyPath: spawnLocations.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3689669414424504593, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
+      propertyPath: spawnLocations.Array.data[2].role
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3689669414424504593, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
       propertyPath: spawnLocations.Array.data[0].spawnPoint
       value: 
       objectReference: {fileID: 1323068257}
@@ -7239,7 +7242,7 @@ PrefabInstance:
     - target: {fileID: 3689669414424504593, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
       propertyPath: spawnLocations.Array.data[2].spawnPoint
       value: 
-      objectReference: {fileID: 1197414994}
+      objectReference: {fileID: 596359276}
     - target: {fileID: 3689669414424504593, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
       propertyPath: spawnLocations.Array.data[3].spawnPoint
       value: 
