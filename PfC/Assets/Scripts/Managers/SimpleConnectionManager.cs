@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using Unity.Services.Authentication;
 
 public class SimpleConnectionManager : MonoBehaviour
@@ -59,7 +60,7 @@ public class SimpleConnectionManager : MonoBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
     }
 
-    private void LoadBasedOnRole(Role role)
+    private async void LoadBasedOnRole(Role role)
     {
         if (currentState != ConnectionState.Idle)
         {
@@ -71,24 +72,83 @@ public class SimpleConnectionManager : MonoBehaviour
         SetLocation(role);
         CommunicationManager.Instance.SetRole(role);
         pendingRole = role;
-
         RoleManager.Instance.currentRole = role;
-        
+    
         if (role == Role.Director)
         {
             WebsocketManager websocketManager = FindAnyObjectByType<WebsocketManager>();
             websocketManager.SetDefaultWsAdress(GetLocalIPAddress());
             websocketManager.AutoConnectToServer();
-            DirectorConnectionProcess(targetIP);
+        }
+
+        await UnifiedConnectionProcess(role, targetIP);
+    }
+    
+    private async Task UnifiedConnectionProcess(Role role, string targetIP)
+    {
+        currentState = ConnectionState.ConnectingAsClient;
+    
+        var (hostFound, hostIP) = await ScanForHostsAsync();
+    
+        if (role == Role.Director && !hostFound)
+        {
+            // Become host
+            SetTransportConnection(GetLocalIPAddress(), port);
+            NetworkManager.Singleton.StartHost();
+        }
+        else if (hostFound)
+        {
+            // Connect as client
+            SetTransportConnection(hostIP, port);
+            if (connectionAttemptCoroutine != null)
+                StopCoroutine(connectionAttemptCoroutine);
+            connectionAttemptCoroutine = StartCoroutine(ClientConnectionTimeout());
+            NetworkManager.Singleton.StartClient();
         }
         else
         {
-            ClientConnectionProcess(targetIP);
+            // No host found and not director
+            Debug.LogWarning("No host available for connection");
+            HandleConnectionFailure();
+        }
+    }
+    private async Task<(bool found, string ip)> ScanForHostsAsync()
+    {
+        Debug.Log("xx_🔧 🔍 Scanning for hosts on local network...");
+        scanForHostsButton.interactable = false;
+
+        if (!SetupUDPListener() || !SendBroadcastRequest())
+        {
+            FinalizeScan(false, "");
+            return (false, "");
         }
 
+        // Convert the coroutine logic to async
+        float scanTime = 0f;
+        while (scanTime < 3f)
+        {
+            await Task.Delay(100); // Replace WaitForSeconds
+            scanTime += 0.1f;
 
+            if (udpListener.Available > 0)
+            {
+                var result = TryReceiveHostResponse();
+                if (result.found)
+                {
+                    Debug.Log($"xx_🔧 ✅ Found host at: {result.ip}");
+                    hostAlreadyRunning = true;
+                    FinalizeScan(true, result.ip);
+                    return (true, result.ip);
+                }
+            }
+        }
 
+        Debug.Log("xx_🔧 ⚠️ No hosts found");
+        hostAlreadyRunning = false;
+        FinalizeScan(false, "");
+        return (false, "");
     }
+
 
     private string GetInputFieldIP()
     {
@@ -114,48 +174,6 @@ public class SimpleConnectionManager : MonoBehaviour
         }
 
         return "127.0.0.1"; // Fallback to localhost
-    }
-
-    #region Connection Logic
-
-    private void DirectorConnectionProcess(string targetIP)
-    {
-        Debug.Log($"xx_🔧 Director attempting to connect to {targetIP}:{port}");
-        currentState = ConnectionState.ConnectingAsClient;
-
-        ScanForHosts();
-
-
-        if (!hostAlreadyRunning)
-        {
-            SetTransportConnection(GetLocalIPAddress(), port);
-
-            NetworkManager.Singleton.StartHost();
-        }
-        else
-        {
-            SetTransportConnection(hostIP, port);
-            NetworkManager.Singleton.StartClient();
-        }
-    }
-
-
-    //not clean connection to host, has to be fixed
-    private void ClientConnectionProcess(string targetIP)
-    {
-        Debug.Log($"xx_🔧 Attempting to connect as client to {targetIP}:{port}");
-        currentState = ConnectionState.ConnectingAsClient;
-
-        ScanForHosts();
-        
-        SetTransportConnection(hostIP, port);
-
-        // Start timeout for regular clients
-        if (connectionAttemptCoroutine != null)
-            StopCoroutine(connectionAttemptCoroutine);
-        connectionAttemptCoroutine = StartCoroutine(ClientConnectionTimeout());
-
-        NetworkManager.Singleton.StartClient();
     }
 
     private IEnumerator ClientConnectionTimeout()
@@ -195,8 +213,7 @@ public class SimpleConnectionManager : MonoBehaviour
         currentState = ConnectionState.Idle;
         ShowInitialSetup();
     }
-
-    #endregion
+    
 
     #region Connection Callbacks with Enhanced Debugging
 
