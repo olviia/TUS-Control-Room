@@ -81,7 +81,7 @@ public class BroadcastPipelineManager : MonoBehaviour
     public void OnSourceRightClicked(IPipelineSource source)
     {
         // Always assign to Studio Preview (overwrite if already there)
-        A  Debug.Log($"🔵 SOURCE RIGHT-CLICK: Assigning {source.ndiName} to StudioPreview ONLY");
+        Debug.Log($"🔵 SOURCE RIGHT-CLICK: Assigning {source.ndiName} to StudioPreview ONLY");
         AssignSourceToPipeline(source, PipelineType.StudioPreview);
         Debug.Log($"🔵 SOURCE RIGHT-CLICK: Assignment complete, NO forwarding should happen");
 
