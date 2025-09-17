@@ -191,33 +191,32 @@ public class StreamManager : MonoBehaviour
     
     private void StartStreaming(PipelineType pipeline, StreamAssignment assignment, StreamSource source)
     {
-        Debug.Log($"Looking for streamSourceName: '{assignment.streamSourceName}'");
-        // Log all available SourceObjects
-        var allSourceObjects = FindObjectsOfType<SourceObject>();
-        Debug.Log($"Found {allSourceObjects.Length} SourceObjects in scene:");
-    
-        foreach (var so in allSourceObjects)
-        {
-            string ndiName = so.receiver?.ndiName ?? "NULL";
-            Debug.Log($"  - SourceObject: {so.gameObject.name}, ndiName: '{ndiName}'");
-        }
- 
-        var sourceObject = FindSourceByName(assignment.streamSourceName);
+        var pipelineSource = FindPipelineSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
         isStreaming = true;
         
-        if (sourceObject?.receiver == null || streamer == null)
+
+    
+        if (pipelineSource == null || streamer == null)
         {            
+            Debug.LogError($"pipelineSource {pipelineSource} streamer {streamer} looks for {assignment.streamSourceName}");
             Debug.LogError($"[🎯StreamManager] Cannot start streaming {pipeline} - missing components");
             ShowLocalContent(source);
             return;
         }
         
         // Update NDI source for both video 
-        streamer.ndiReceiverSource = sourceObject.receiver;
+        var ndiReceiver = FindNdiReceiverByName(pipelineSource.ndiName);
+        if (ndiReceiver != null)
+            streamer.ndiReceiverSource = ndiReceiver;
         
         streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
+    }
+    private NdiReceiver FindNdiReceiverByName(string ndiName)
+    {
+        var allReceivers = FindObjectsOfType<NdiReceiver>();
+        return allReceivers.FirstOrDefault(r => r.ndiName == ndiName);
     }
     
     private void StartReceiving(PipelineType pipeline, string sessionId)
@@ -290,12 +289,12 @@ public class StreamManager : MonoBehaviour
         return streamSources.Where(s => s.isActive && s.renderer != null).ToArray();
     }
     
-    private SourceObject FindSourceByName(string sourceName)
+    private IPipelineSource FindPipelineSourceByName(string sourceName)
     {
         if (string.IsNullOrEmpty(sourceName)) return null;
         
-        return FindObjectsOfType<SourceObject>()
-            .FirstOrDefault(s => s.receiver?.ndiName == sourceName);
+        var allSources = FindObjectsOfType<MonoBehaviour>().OfType<IPipelineSource>();
+        return allSources.FirstOrDefault(s => s.ndiName == sourceName);
     }
     
     private StreamSource GetSourceForPipeline(PipelineType pipeline)
