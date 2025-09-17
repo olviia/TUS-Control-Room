@@ -203,20 +203,20 @@ public class StreamManager : MonoBehaviour
         }
         
         // Update NDI source for both video 
-        var ndiReceiver = FindNdiReceiverByName(pipelineSource.ndiName);
-        if (ndiReceiver != null)
-            streamer.ndiReceiverSource = ndiReceiver;
-        
-        Debug.LogError($"ndiReceiver {ndiReceiver.ndiName} ");
-
+        var liveDestinationReceiver = FindLiveDestinationReceiver(pipeline);
+        if (liveDestinationReceiver != null)
+            streamer.ndiReceiverSource = liveDestinationReceiver;
         
         streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
     }
-    private NdiReceiver FindNdiReceiverByName(string ndiName)
+    private NdiReceiver FindLiveDestinationReceiver(PipelineType pipeline)
     {
-        var allReceivers = FindObjectsOfType<NdiReceiver>();
-        return allReceivers.FirstOrDefault(r => r.ndiName == ndiName);
+        // Find the Live destination for this pipeline
+        var liveDestinations = FindObjectsOfType<PipelineDestination>()
+            .Where(dest => dest.pipelineType == pipeline);
+    
+        return liveDestinations.FirstOrDefault()?.receiver;
     }
     
     private void StartReceiving(PipelineType pipeline, string sessionId)
