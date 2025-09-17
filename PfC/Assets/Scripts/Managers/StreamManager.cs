@@ -97,7 +97,9 @@ public class StreamManager : MonoBehaviour
         streamer.targetRenderer = source.renderer;
         streamer.ndiReceiverSource = source.ndiReceiverSource;
         streamer.audioInterceptor = source.ndiReceiverSource.GetComponent<NdiAudioInterceptor>();
-        streamer.ndiReceiverCaptions = source.ndiReceiverCaptions;
+        
+        if(source.ndiReceiverSource != null)
+            streamer.ndiReceiverCaptions = source.ndiReceiverCaptions;
         
         // Store references
         streamers[source.pipelineType] = streamer;
@@ -109,10 +111,11 @@ public class StreamManager : MonoBehaviour
     
     private void ConfigureRenderer(StreamSource source)
     {
-        if (source.renderer != null && source.ndiReceiverSource != null && source.ndiReceiverCaptions != null)
+        if (source.renderer != null && source.ndiReceiverSource != null)
         {
             source.renderer.localNdiReceiver = source.ndiReceiverSource;
-            source.renderer.localNdiReceiverCaptions = source.ndiReceiverCaptions;
+            if(source.ndiReceiverCaptions != null)
+                source.renderer.localNdiReceiverCaptions = source.ndiReceiverCaptions;
             source.renderer.pipelineType = source.pipelineType;
             
         }

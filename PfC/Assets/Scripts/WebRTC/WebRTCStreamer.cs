@@ -358,7 +358,8 @@ public class WebRTCStreamer : MonoBehaviour
         }
         
         ActivateNdiReceiver(ndiReceiverSource);
-        ActivateNdiReceiver(ndiReceiverCaptions);
+        if (ndiReceiverSource != null)
+            ActivateNdiReceiver(ndiReceiverCaptions);
         return HasValidNdiTexture();
     }
     
@@ -420,12 +421,16 @@ public class WebRTCStreamer : MonoBehaviour
                 compositeRT.Create();
             }
             
-            if (ndiTexture != null && webRtcTexture != null && ndiTextureCaptions != null)
+            if (ndiTexture != null && webRtcTexture != null)
             {
                 blendMaterial.SetTexture("_MainTex", ndiTexture);
-                blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
+                if (ndiTextureCaptions != null)
+                {
+                    blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
+                    Graphics.Blit(null, compositeRT, blendMaterial);
 
-                Graphics.Blit(null, compositeRT, blendMaterial);
+                }
+
                 Graphics.Blit(compositeRT, webRtcTexture);
             }
             
