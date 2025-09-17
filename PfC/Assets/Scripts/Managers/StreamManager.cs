@@ -194,12 +194,9 @@ public class StreamManager : MonoBehaviour
         var pipelineSource = FindPipelineSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
         isStreaming = true;
-        
-
     
         if (pipelineSource == null || streamer == null)
         {            
-            Debug.LogError($"pipelineSource {pipelineSource} streamer {streamer} looks for {assignment.streamSourceName}");
             Debug.LogError($"[🎯StreamManager] Cannot start streaming {pipeline} - missing components");
             ShowLocalContent(source);
             return;
@@ -209,6 +206,9 @@ public class StreamManager : MonoBehaviour
         var ndiReceiver = FindNdiReceiverByName(pipelineSource.ndiName);
         if (ndiReceiver != null)
             streamer.ndiReceiverSource = ndiReceiver;
+        
+        Debug.LogError($"ndiReceiver {ndiReceiver.ndiName} ");
+
         
         streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
