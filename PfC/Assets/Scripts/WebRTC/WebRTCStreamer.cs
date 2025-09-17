@@ -430,8 +430,8 @@ public class WebRTCStreamer : MonoBehaviour
                     Graphics.Blit(null, compositeRT, blendMaterial);
 
                 }
-
                 Graphics.Blit(compositeRT, webRtcTexture);
+
             }
             
             yield return new WaitForEndOfFrame();

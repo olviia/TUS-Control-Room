@@ -191,14 +191,23 @@ public class StreamManager : MonoBehaviour
     
     private void StartStreaming(PipelineType pipeline, StreamAssignment assignment, StreamSource source)
     {
+        Debug.Log($"Looking for streamSourceName: '{assignment.streamSourceName}'");
+        // Log all available SourceObjects
+        var allSourceObjects = FindObjectsOfType<SourceObject>();
+        Debug.Log($"Found {allSourceObjects.Length} SourceObjects in scene:");
+    
+        foreach (var so in allSourceObjects)
+        {
+            string ndiName = so.receiver?.ndiName ?? "NULL";
+            Debug.Log($"  - SourceObject: {so.gameObject.name}, ndiName: '{ndiName}'");
+        }
+ 
         var sourceObject = FindSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
         isStreaming = true;
         
         if (sourceObject?.receiver == null || streamer == null)
         {            
-            Debug.LogError($"sourceObject {sourceObject.receiver} streamer {streamer} looks for {assignment.streamSourceName}");
-
             Debug.LogError($"[🎯StreamManager] Cannot start streaming {pipeline} - missing components");
             ShowLocalContent(source);
             return;
