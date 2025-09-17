@@ -205,8 +205,21 @@ public class StreamManager : MonoBehaviour
         // Update NDI source for both video 
         var liveDestinationReceiver = FindLiveDestinationReceiver(pipeline);
         if (liveDestinationReceiver != null)
+        {
             streamer.ndiReceiverSource = liveDestinationReceiver;
         
+            // CRITICAL: Also update the audio interceptor
+            var liveAudioInterceptor = liveDestinationReceiver.GetComponent<NdiAudioInterceptor>();
+            if (liveAudioInterceptor != null)
+            {
+                streamer.audioInterceptor = liveAudioInterceptor;
+                Debug.Log($"[Audio] Updated audio interceptor to Live destination");
+            }
+            else
+            {
+                Debug.LogError($"[Audio] No NdiAudioInterceptor found on Live destination receiver!");
+            }
+        }
         streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
     }
