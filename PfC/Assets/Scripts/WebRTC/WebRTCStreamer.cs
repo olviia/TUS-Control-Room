@@ -413,29 +413,35 @@ public class WebRTCStreamer : MonoBehaviour
         while (IsStreamingOrConnecting())
         {
             var ndiTexture = ndiReceiverSource?.GetTexture();
-            var ndiTextureCaptions = ndiReceiverCaptions?.GetTexture();
-            
-            if (compositeRT == null && ndiTexture != null)
-            {
-                compositeRT = new RenderTexture(ndiTexture.width, ndiTexture.height, depth: 0);
-                compositeRT.Create();
-            }
-            
+        
             if (ndiTexture != null && webRtcTexture != null)
             {
-                blendMaterial.SetTexture("_MainTex", ndiTexture);
+                var ndiTextureCaptions = ndiReceiverCaptions?.GetTexture();
+            
+                // Try caption compositing if captions are available
                 if (ndiTextureCaptions != null)
                 {
+                    if (compositeRT == null)
+                    {
+                        compositeRT = new RenderTexture(ndiTexture.width, ndiTexture.height, 0);
+                        compositeRT.Create();
+                    }
+                
+                    blendMaterial.SetTexture("_MainTex", ndiTexture);
                     blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
                     Graphics.Blit(null, compositeRT, blendMaterial);
-
+                    Graphics.Blit(compositeRT, webRtcTexture);
                 }
-                Graphics.Blit(compositeRT, webRtcTexture);
-
+                else
+                {
+                    // Direct blit - no captions
+                    Graphics.Blit(ndiTexture, webRtcTexture);
+                }
             }
-            
+        
             yield return new WaitForEndOfFrame();
         }
+    
     }
 
     private bool IsStreamingOrConnecting()
