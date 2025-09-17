@@ -193,7 +193,9 @@ public class StreamManager : MonoBehaviour
         isStreaming = true;
         
         if (sourceObject?.receiver == null || streamer == null)
-        {
+        {            
+            Debug.LogError($"sourceObject {sourceObject.receiver} streamer {streamer} looks for {assignment.streamSourceName}");
+
             Debug.LogError($"[🎯StreamManager] Cannot start streaming {pipeline} - missing components");
             ShowLocalContent(source);
             return;
