@@ -76,13 +76,11 @@ public class BroadcastTriggerClick : MonoBehaviour
         
     private void OnLeftTriggerPressed(InputAction.CallbackContext context)
     {
-        Debug.LogWarning("clicked left");
         CheckRayHit(leftHandRay, "left");
     }
     
     private void OnRightTriggerPressed(InputAction.CallbackContext context)
     {
-        Debug.LogWarning("clicked right");
         CheckRayHit(rightHandRay, "right");
     }
     private void CheckRayHit(UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor rayInteractor, String hand)

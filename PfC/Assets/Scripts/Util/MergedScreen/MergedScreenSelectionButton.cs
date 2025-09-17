@@ -25,13 +25,21 @@ public class MergedScreenSelectionButton : MonoBehaviour, IMergedScreenSelection
 
     public void OnPointerClick(PointerEventData eventData)
     {
+
         // for mouse input
-        if (eventData.pointerId == -1) // Mouse
+        if (eventData.pointerId == 0) // Mouse
+        {
+
+            if (eventData.button == PointerEventData.InputButton.Left)
+            {
                 HandleLeftClick();
-        else if (eventData.pointerId == -2)
+            } else if (eventData.button == PointerEventData.InputButton.Right)
+            {
                 HandleRightClick();
+            }
+        }
         // XR Controllers - check which ray interactor is hitting
-        else if (eventData.pointerId >= 0)
+        else if (eventData.pointerId > 0)
         {
             var rayInteractors = FindObjectsOfType<XRRayInteractor>();
             foreach (var ray in rayInteractors)
@@ -56,13 +64,11 @@ public class MergedScreenSelectionButton : MonoBehaviour, IMergedScreenSelection
 
     public void HandleLeftClick()
     {
-        Debug.Log($"Left clicked source: {gameObject.name}");
         BroadcastPipelineManager.Instance?.OnSourceLeftClicked(GetComponent<MergedScreenSource>());
     }
 
     public void HandleRightClick()
     {
-        Debug.Log($"Right clicked source: {gameObject.name}");
         BroadcastPipelineManager.Instance?.OnSourceRightClicked(GetComponent<MergedScreenSource>());
     }
 
