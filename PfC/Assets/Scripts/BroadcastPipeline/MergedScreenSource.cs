@@ -87,7 +87,6 @@ namespace BroadcastPipeline
                     break;
 
             }
-            Debug.Log($"single sours: {singleSource}, name: {obsSceneName}");
             if (isActive && !ObsUtilities.FilterExists(websocket, singleSource, obsSceneName))
             {
                 ObsUtilities.CreateNdiOutputFilter(websocket, singleSource, Constants.DEDICATED_NDI_OUTPUT, obsSceneName, "ndi_filter_ndiname");

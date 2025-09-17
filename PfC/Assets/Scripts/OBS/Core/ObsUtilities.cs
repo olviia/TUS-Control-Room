@@ -303,8 +303,6 @@ public static class ObsUtilities
     /// </summary>
     public static bool CreateNdiOutputFilter(OBSWebsocket obsWebSocket, string sourceName, string filterName, string ndiOutputName, string ndiPropertyName = "ndi_filter_ndiname")
     {
-        Debug.Log($"gggg_Added NDI output filter '{filterName}' to source '{sourceName}' with output name '{ndiOutputName}'");
-
         if (obsWebSocket == null || !obsWebSocket.IsConnected)
             throw new InvalidOperationException("OBS WebSocket is not connected");
             

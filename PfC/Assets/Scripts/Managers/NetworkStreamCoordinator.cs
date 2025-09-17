@@ -77,6 +77,8 @@ public class NetworkStreamCoordinator : NetworkBehaviour
 
     public void RequestStreamControl(PipelineType pipeline, string localNdiName)
     {
+        Debug.Log($"REQUEST STREAM CONTROL CALLED: {pipeline}, NDI: {localNdiName}");
+        Debug.Log($"CALL STACK:\n{System.Environment.StackTrace}");
         if (!ValidateRequest(pipeline, localNdiName)) return;
 
         RequestStreamControlServerRpc(pipeline, localNdiName, NetworkManager.Singleton.LocalClientId);
