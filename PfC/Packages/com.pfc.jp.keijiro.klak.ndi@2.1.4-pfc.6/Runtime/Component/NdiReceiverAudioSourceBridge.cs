@@ -66,10 +66,17 @@ namespace Klak.Ndi
 		{
 			if (!_handler)
 			{
-				Array.Fill(data, 0f);	
+				Array.Fill(data, 0f);
 				return;
 			}
-			
+
+			// FIX: Stop playback when audio receiving is disabled
+			if (!_handler.receiveAudio)
+			{
+				Array.Fill(data, 0f);
+				return;
+			}
+
 			if (_customChannel != -1)
 			{
 				// We have multiple AudioSource to simulate multiple speakers,

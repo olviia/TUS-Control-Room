@@ -74,6 +74,7 @@ public sealed partial class NdiReceiver : MonoBehaviour
 		ResetAudioBuffer();
 		ReleaseReceiverObjects();
 		ResetBufferStatistics();
+		CleanupParkedVirtualSpeakers(); // FIX: Clean up accumulated inactive speakers
 	}
 
 	void Awake()
@@ -324,8 +325,9 @@ public sealed partial class NdiReceiver : MonoBehaviour
 	private readonly object					audioBufferLock = new object();
 	private readonly object					channelVisualisationLock = new object();
 	//
-	private const int						_MaxBufferSampleSize = 48000 / 5;
-	private const int						_MinBufferSampleSize = 48000 / 10;
+	// Increased buffer sizes for Intel Core Ultra 9 - prevents underruns from thread scheduling delays
+	private const int						_MaxBufferSampleSize = 48000 / 2;  // 500ms (was 200ms)
+	private const int						_MinBufferSampleSize = 48000 / 4;  // 250ms (was 100ms)
 	//
 	
 	private int _expectedAudioSampleRate;
@@ -451,9 +453,16 @@ public sealed partial class NdiReceiver : MonoBehaviour
 		if ((object)_audioSourceBridge != null)
 			return;
 
+		// FIX: Stop playback when audio receiving is disabled
+		if (!_receiveAudio)
+		{
+			Array.Fill(data, 0f);
+			return;
+		}
+
 		if (channels != _receivedAudioChannels)
 			return;
-		
+
 		if (!FillPassthroughData(ref data, channels))
 			Array.Fill(data, 0f);
 	}
@@ -600,7 +609,8 @@ public sealed partial class NdiReceiver : MonoBehaviour
 							_currentAudioFrame.channelSamplesReaded[i] += samplesToCopy;
 						
 						var channelDataPtr = (float*)audioFrameData.GetUnsafePtr();
-						BurstMethods.PlanarToInterleaved(channelDataPtr, audioFrameSamplesReaded, _currentAudioFrame.noChannels,  destPtr, samplesCopied * channelCountInData, channelCountInData, samplesToCopy );
+						// FIX: Use correct stride (samplesPerChannel) to prevent right channel corruption
+						BurstMethods.PlanarToInterleavedWithStride(channelDataPtr, audioFrameSamplesReaded, _currentAudioFrame.noChannels, _currentAudioFrame.samplesPerChannel, destPtr, samplesCopied * channelCountInData, channelCountInData, samplesToCopy);
 
 						samplesCopied += samplesToCopy;
 						frameIndex++;
@@ -899,6 +909,22 @@ public sealed partial class NdiReceiver : MonoBehaviour
 			_virtualSpeakers[0].DestroyAudioSourceBridge();
 			Destroy(_virtualSpeakers[0].speakerAudio.gameObject);
 			_virtualSpeakers.RemoveAt(0);
+		}
+	}
+
+	void CleanupParkedVirtualSpeakers()
+	{
+		// FIX: Destroy all parked (inactive) virtual speakers to prevent accumulation
+		while (_parkedVirtualSpeakers.Count > 0)
+		{
+			var speaker = _parkedVirtualSpeakers[_parkedVirtualSpeakers.Count - 1];
+			_parkedVirtualSpeakers.RemoveAt(_parkedVirtualSpeakers.Count - 1);
+
+			if (speaker != null && speaker.speakerAudio != null)
+			{
+				speaker.DestroyAudioSourceBridge();
+				Destroy(speaker.speakerAudio.gameObject);
+			}
 		}
 	}
 

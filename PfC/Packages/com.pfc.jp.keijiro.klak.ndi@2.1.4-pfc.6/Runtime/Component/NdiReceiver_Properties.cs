@@ -56,7 +56,17 @@ public sealed partial class NdiReceiver : MonoBehaviour, IAdmDataProvider
     [SerializeField] AudioSource _audioSource = null;
     [Tooltip("When receiving more audio channels than the current audio device is capable of , create virtual speakers for each channel.")]
     [SerializeField] bool _createVirtualSpeakers = true;
-    
+
+    public bool receiveAudio
+      { get => _receiveAudio;
+        set {
+            if (_receiveAudio != value) {
+                _receiveAudio = value;
+                if (!value) ResetAudioBuffer(); // Clear buffer when disabling audio
+            }
+        }
+      }
+
     public AudioSource audioSource
       { get => _audioSource;
         set { _audioSource = value; CheckPassthroughAudioSource(); } }

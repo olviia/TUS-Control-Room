@@ -94,11 +94,28 @@ namespace Klak.Ndi
             public static unsafe void PlanarToInterleaved(float* planarData, int planarOffset, int planarChannels, float* destData, int destOffset, int destChannels, int length)
             {
                 int channels = math.min(planarChannels, destChannels);
-                
+
                 for (int i = 0; i < length; i++)
                 {
                     for (int c = 0; c < channels; c++)
                         destData[destOffset + (i * destChannels + c)] = planarData[planarOffset + (length * c + i)];
+                    for (int c = channels; c < destChannels; c++)
+                        destData[destOffset + (i * destChannels + c)] = 0f;
+                }
+            }
+
+            [BurstCompile]
+            public static unsafe void PlanarToInterleavedWithStride(float* planarData, int planarOffset, int planarChannels, int planarStride, float* destData, int destOffset, int destChannels, int length)
+            {
+                // FIX: Use correct stride for multi-channel planar data
+                // planarStride = samplesPerChannel (total samples in each channel buffer)
+                // length = how many samples to copy
+                int channels = math.min(planarChannels, destChannels);
+
+                for (int i = 0; i < length; i++)
+                {
+                    for (int c = 0; c < channels; c++)
+                        destData[destOffset + (i * destChannels + c)] = planarData[planarOffset + (planarStride * c + i)];
                     for (int c = channels; c < destChannels; c++)
                         destData[destOffset + (i * destChannels + c)] = 0f;
                 }
