@@ -1,5 +1,6 @@
 # KlakNDI Audio Fixes - Complete Changelog
 
+**AI assisted**
 **Date:** October 15, 2025
 **System:** Dell ThinkPad with Intel Core Ultra 9 185H (22 cores), NVIDIA RTX 4070
 **Issue:** Choppy and distorted NDI audio on new laptop (worked fine on old laptop)
@@ -322,32 +323,6 @@ BurstMethods.PlanarToInterleavedWithStride(channelDataPtr, audioFrameSamplesRead
 
 ---
 
-## Testing & Verification
-
-### Tests Performed
-
-1. ✅ **Switch between NDI sources multiple times**
-   - No buffer underruns
-   - No stuttering
-   - Virtual speakers properly cleaned up
-
-2. ✅ **Toggle audio reception on/off repeatedly**
-   - Clean silence when disabled
-   - No lingering choppy audio
-   - Instant recovery when re-enabled
-
-3. ✅ **Right channel audio quality**
-   - No distortion or noise in right channel
-   - Left and right channels balanced
-   - Clear stereo separation
-
-4. ✅ **Long-running stability test**
-   - Buffer remains healthy (250-400ms range)
-   - No underrun accumulation
-   - No memory leaks from virtual speakers
-
----
-
 ## Technical Details
 
 ### Buffer Statistics Before/After
@@ -403,26 +378,6 @@ When planarOffset=0, samplesPerChannel=1600, i=0:
 4. `Packages/com.pfc.jp.keijiro.klak.ndi@2.1.4-pfc.6/Runtime/Internal/BurstMethods.cs`
    - Added `PlanarToInterleavedWithStride()` method
 
----
-
-## Recommendations
-
-### For Production Use
-
-1. **Keep the increased buffer sizes** - They provide necessary headroom for modern heterogeneous CPUs
-
-2. **Update KlakNDI package carefully** - These fixes modify the package code directly. Document them clearly if updating to newer versions.
-
-3. **Test on multiple machines** - Verify the fixes work on both old and new laptops
-
-### For Reporting to KlakNDI Maintainers
-
-The **right channel corruption bug (Fix #4)** is a serious issue that affects the original KlakNDI package and should be reported upstream:
-
-- **Issue:** Planar-to-interleaved conversion uses wrong stride for partial frame copies
-- **Affected file:** `Runtime/Internal/BurstMethods.cs` line 101
-- **Impact:** Right channel corruption when Unity buffer size doesn't align with NDI frame size
-- **Fix:** Use `samplesPerChannel` stride instead of `length` for channel offset calculation
 
 ---
 
@@ -437,7 +392,7 @@ The **right channel corruption bug (Fix #4)** is a serious issue that affects th
 
 ## Version History
 
-**v1.0 - October 15, 2025**
+**October 15, 2025**
 - Initial fixes for audio issues on Intel Core Ultra 9
 - Fixed critical right channel corruption bug
 - Added buffer size improvements
