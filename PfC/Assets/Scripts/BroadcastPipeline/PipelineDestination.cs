@@ -7,6 +7,7 @@ namespace BroadcastPipeline
     public class PipelineDestination: MonoBehaviour
     {
         public NdiReceiver receiver;
+        public MeshRenderer meshRenderer;
         public PipelineType pipelineType;
 
         void Start()

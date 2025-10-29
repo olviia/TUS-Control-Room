@@ -9,13 +9,10 @@ public class SourceObject : MonoBehaviour, IPipelineSource
     //string name
     public NdiReceiver receiver;
     public MeshRenderer screenGameObject;
-    private IHighlightStrategy highlightStrategy;
-    public string ndiName { get; private set; }
+    protected IHighlightStrategy highlightStrategy;
+    public string ndiName { get; protected set; }
 
-    
-    
-    
-    void Start() {
+    protected virtual void Start() {
         highlightStrategy = new MaterialHighlightStrategy(screenGameObject, BroadcastPipelineManager.Instance);
 
         ndiName = receiver.ndiName;
@@ -26,20 +23,19 @@ public class SourceObject : MonoBehaviour, IPipelineSource
         BroadcastPipelineManager.Instance?.UnregisterSource(this);
     }
 
-    public void OnSourceLeftClicked()
+    public virtual void OnSourceLeftClicked()
     {
         ndiName = receiver.ndiName;
         Debug.Log($"Left clicked source: {gameObject.name}");
         BroadcastPipelineManager.Instance?.OnSourceLeftClicked(this);
     }
 
-    public void OnSourceRightClicked()
+    public virtual void OnSourceRightClicked()
     {
         ndiName = receiver.ndiName;
         Debug.Log($"Right clicked source: {gameObject.name}");
         BroadcastPipelineManager.Instance?.OnSourceRightClicked(this);
     }
-
 
     public void ApplyHighlight(PipelineType pipelineType)
     {

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Klak.Ndi;
+using UnityEngine;
 
 namespace BroadcastPipeline
 {
@@ -27,6 +28,7 @@ namespace BroadcastPipeline
             /// Name of ndi source that will be populated into broadcast pipeline
             /// </summary>
             string ndiName { get; }
+
 
             /// <summary>
             /// Apply visual highlight for the given pipeline type

@@ -8,12 +8,14 @@ namespace BroadcastPipeline
     private MeshRenderer targetRenderer;
     private BroadcastPipelineManager pipelineManager;
     private int originalMaterialCount;
-    
+    private Color originalColor;
+
     public MaterialHighlightStrategy(MeshRenderer renderer, BroadcastPipelineManager manager)
     {
         targetRenderer = renderer;
         pipelineManager = manager;
         originalMaterialCount = renderer.materials.Length;
+        originalColor = renderer.material.color;  // Store original color
     }
     
     public void ApplyHighlight(PipelineType pipelineType)
@@ -38,6 +40,9 @@ namespace BroadcastPipeline
             }
             targetRenderer.materials = newMaterials;
         }
+
+        // Reset color to original
+        targetRenderer.material.color = originalColor;
     }
 
     public void ApplyConflictHighlight()

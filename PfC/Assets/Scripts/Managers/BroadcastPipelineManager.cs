@@ -187,7 +187,10 @@ public class BroadcastPipelineManager : MonoBehaviour
        // Debug.Log($"After assignment - assigned {source.GetType().Name} with ndiName '{source.ndiName}' to {targetType}");
         
         //to add or remove ndi filter in MergedScreenSource
-        var activeNdiNames = new HashSet<string>(activeAssignments.Values.Select(s => s.ndiName));
+        // Only include MergedScreenSource in the HashSet (not SourceObject or TextureSourceObject)
+        var activeNdiNames = new HashSet<string>(activeAssignments.Values
+            .OfType<MergedScreenSource>()
+            .Select(s => s.ndiName));
         OnActiveSourcesChanged?.Invoke(activeNdiNames);
         
         UpdateActiveSourceHighlight();
@@ -248,43 +251,93 @@ public class BroadcastPipelineManager : MonoBehaviour
         {
             return;
         }
-    
+
         List<PipelineDestination> destinations = registeredDestinations[pipelineType];
         foreach(var dest in destinations)
         {
             if (activeAssignments.ContainsKey(pipelineType))
             {
                 IPipelineSource source = activeAssignments[pipelineType];
-                dest.receiver.ndiName = source.ndiName;
 
-                if (pipelineType == PipelineType.TVLive)
+                // Check if source is TextureSourceObject
+                if (source is TextureSourceObject textureSource)
                 {
-                    OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
-                    
-                    
-                    string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
-                        "ndi_filter_ndiname",
-                        source.ndiName);
-                    
-                    ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
-                    
-                    //clean obs stream live scene
-                    
-                    ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
-                    //add subtitles
-                    obsScene.ConfigureAndExecute("StreamLive", "TVSuper", true, "TVSuper");
+                    // Use texture directly, disable NDI (follow WebRTC pattern exactly)
+                    Texture texture = textureSource.GetTexture();
 
-                    obsScene.ConfigureAndExecute("StreamLive", name, true, name);
-                    
-                    // add audio tap for presenters
-                    obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
+                    if (texture != null && dest.receiver != null)
+                    {
+                        // Disable NDI receiver (like WebRTC does)
+                        dest.receiver.enabled = false;
 
+                        // Get MeshRenderer from receiver GameObject (NDI receiver and mesh are on same GameObject)
+                        MeshRenderer meshRenderer = dest.meshRenderer;
 
+                        if (meshRenderer != null)
+                        {
+                            // Apply texture using property block (WebRTC SetTextureInstant pattern)
+                            MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                            meshRenderer.GetPropertyBlock(propertyBlock);
+                            propertyBlock.SetTexture("_BaseMap", texture);
+                            propertyBlock.SetTexture("_MainTex", texture);
+                            meshRenderer.SetPropertyBlock(propertyBlock);
+
+                            Debug.Log($"[BroadcastPipelineManager] Texture assigned to {pipelineType}");
+                        }
+                        else
+                        {
+                            Debug.LogError($"[BroadcastPipelineManager] No MeshRenderer on receiver for {pipelineType}");
+                        }
+                    }
+                }
+                else
+                {
+                    // Use NDI (original behavior) - enable receiver and clear texture override
+                    if (dest.receiver != null)
+                    {
+                        // Enable NDI receiver (like WebRTC ShowLocalNDI)
+                        dest.receiver.enabled = true;
+                        dest.receiver.ndiName = source.ndiName;
+
+                        // Clear property block to revert to NDI texture
+                        MeshRenderer meshRenderer = dest.meshRenderer;
+                        if (meshRenderer != null)
+                        {
+                            MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                            propertyBlock.Clear();
+                            meshRenderer.SetPropertyBlock(propertyBlock);
+                        }
+                    }
+
+                    if (pipelineType == PipelineType.TVLive)
+                    {
+                        OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
+
+                        string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
+                            "ndi_filter_ndiname",
+                            source.ndiName);
+
+                        ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
+
+                        //clean obs stream live scene
+                        ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
+                        //add subtitles
+                        obsScene.ConfigureAndExecute("StreamLive", "TVSuper", true, "TVSuper");
+
+                        obsScene.ConfigureAndExecute("StreamLive", name, true, name);
+
+                        // add audio tap for presenters
+                        obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
+                    }
                 }
             }
             else
             {
-                dest.receiver.ndiName = "";
+                // Clear assignment
+                if (dest.receiver != null)
+                {
+                    dest.receiver.ndiName = "";
+                }
             }
         }
     }

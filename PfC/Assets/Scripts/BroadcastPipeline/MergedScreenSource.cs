@@ -16,9 +16,9 @@ namespace BroadcastPipeline
 
         private OBSWebsocket websocket;
         private string singleSource;
-        
+
         public string ndiName { get; private set; }
-        
+
         public void Initialize(string sceneName, Button button, BroadcastPipelineManager manager)
         {
             obsSceneName = sceneName;
@@ -75,7 +75,6 @@ namespace BroadcastPipeline
         {
             BroadcastPipelineManager.Instance?.UnregisterSource(this);
         }
-
 
         private void CheckAndChangeFilterInObs(HashSet<string> activeNdiNames)
         {
