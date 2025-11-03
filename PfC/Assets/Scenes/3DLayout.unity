@@ -190,6 +190,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
   m_PrefabInstance: {fileID: 1122037061}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &75149943 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6371207911352957473, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+  m_PrefabInstance: {fileID: 1323068256}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &121674979
 GameObject:
   m_ObjectHideFlags: 0
@@ -237,6 +242,11 @@ MonoBehaviour:
   defaultWsAdress: 
   defaultWsPort: 32419
   defaultWsPassword: 
+--- !u!23 &149170472 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4632600319432640925, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+  m_PrefabInstance: {fileID: 1323068256}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &195961566 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
@@ -905,6 +915,11 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!23 &463337860 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6243135505358570862, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+  m_PrefabInstance: {fileID: 1323068256}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &469267701
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3331,6 +3346,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2664375115038251313, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: ndiReceiver
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2721025086268556392, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_Color.a
       value: 1
@@ -3390,6 +3409,10 @@ PrefabInstance:
     - target: {fileID: 2938561440040926070, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: SceneMigrationSynchronization
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3041832384692610686, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: ndiReceiver
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 3053460191279606602, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.y
@@ -3815,6 +3838,10 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4384427582263913101, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: ndiReceiver
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4430078781203054115, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_Color.a
       value: 1
@@ -3926,6 +3953,10 @@ PrefabInstance:
     - target: {fileID: 4692386050500389845, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4704209591057301293, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: ndiReceiver
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4899662334622463046, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.y
@@ -4543,6 +4574,10 @@ PrefabInstance:
       propertyPath: receiver
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 7510086786886105278, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7633893002916051919, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -4698,6 +4733,10 @@ PrefabInstance:
     - target: {fileID: 8077327430086183682, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: receiver
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8077327430086183682, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8088769441472245817, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.y
@@ -5039,6 +5078,10 @@ PrefabInstance:
       propertyPath: receiver
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 9139897098891785293, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9222602733163995657, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: buttons.Array.size
       value: 12
@@ -5077,6 +5120,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 1560805402625715486, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+    - {fileID: 7510086786886105278, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+    - {fileID: 9139897098891785293, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+    - {fileID: 8077327430086183682, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
     m_RemovedGameObjects:
     - {fileID: 6057350316394438358, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
     - {fileID: 4716689581612791447, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
@@ -5112,9 +5158,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7463959650411178856, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
-    - targetCorrespondingSourceObject: {fileID: 7204434775706132578, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1628562970}
     - targetCorrespondingSourceObject: {fileID: 7204434775706132578, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1628562971}
@@ -5171,7 +5214,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TextureSourceObject
   receiver: {fileID: 0}
-  screenGameObject: {fileID: 0}
+  screenGameObject: {fileID: 149170472}
 --- !u!114 &1323068264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5185,7 +5228,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TextureSourceObject
   receiver: {fileID: 0}
-  screenGameObject: {fileID: 0}
+  screenGameObject: {fileID: 463337860}
 --- !u!114 &1323068265
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5199,7 +5242,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TextureSourceObject
   receiver: {fileID: 0}
-  screenGameObject: {fileID: 0}
+  screenGameObject: {fileID: 75149943}
 --- !u!1 &1323976474
 GameObject:
   m_ObjectHideFlags: 0
@@ -6326,27 +6369,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 7204434775706132578, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
   m_PrefabInstance: {fileID: 1323068256}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1628562970
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628562963}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dd05c11a8d85b23478f8fb659c9e9181, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BroadcastPipeline.MeshRenderTextureSource
-  sourceName: MeshCamera
-  sceneCamera: {fileID: 0}
-  outputTexture: {fileID: 8400000, guid: abbb4ff18182ce84598a763520163f5c, type: 2}
-  autoCreateTexture: 0
-  textureWidth: 1920
-  textureHeight: 1080
-  meshRenderer: {fileID: 695413663}
-  ndiSender: {fileID: 0}
-  <ndiName>k__BackingField: 
 --- !u!114 &1628562971
 MonoBehaviour:
   m_ObjectHideFlags: 0
