@@ -816,7 +816,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3435044014
+  GlobalObjectIdHash: 2848733649
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -902,7 +902,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3121483600
+  GlobalObjectIdHash: 3216286195
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1416,7 +1416,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2570328269
+  GlobalObjectIdHash: 3076607797
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1642,7 +1642,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3972570661
+  GlobalObjectIdHash: 700955857
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -5430,7 +5430,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3058320426
+  GlobalObjectIdHash: 25578806
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -7345,7 +7345,12 @@ PrefabInstance:
       addedObject: {fileID: 1323976475}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
---- !u!1001 &1886760815
+--- !u!4 &1904158271 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
+  m_PrefabInstance: {fileID: 342053257}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &2023679810
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -7357,25 +7362,17 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 315266836338442853, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
-      propertyPath: rabbitmq_ip
-      value: 192.168.0.26
-      objectReference: {fileID: 0}
-    - target: {fileID: 909346103697401775, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1802673889491725743, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -4.36
+      value: -0.78
       objectReference: {fileID: 0}
     - target: {fileID: 1802673889491725743, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -14.06
+      value: -16.22
       objectReference: {fileID: 0}
     - target: {fileID: 1802673889491725743, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.97
+      value: 1.27
       objectReference: {fileID: 0}
     - target: {fileID: 1802673889491725743, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
       propertyPath: m_LocalRotation.w
@@ -7418,11 +7415,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
---- !u!4 &1904158271 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8164705571879959090, guid: fad94b617f0540568dbf4c9c4011248c, type: 3}
-  m_PrefabInstance: {fileID: 342053257}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2040510017 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6088848042595214141, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
@@ -7920,4 +7912,4 @@ SceneRoots:
   - {fileID: 200747723}
   - {fileID: 1013373870}
   - {fileID: 1014853843}
-  - {fileID: 1886760815}
+  - {fileID: 2023679810}
