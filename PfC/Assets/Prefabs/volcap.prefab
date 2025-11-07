@@ -18,7 +18,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7680977499647112062
 Transform:
   m_ObjectHideFlags: 0
@@ -184,7 +184,7 @@ MonoBehaviour:
   multiViewMaterial: {fileID: 2100000, guid: 00938e1dc28d61349b3ed2a16014de69, type: 2}
   rabbitmq_username: volumetric
   rabbitmq_password: capture
-  rabbitmq_ip: 195.251.117.76
+  rabbitmq_ip: 192.168.0.26
   exchange_name_id: 1
   audioClip: {fileID: 0}
   sampleRate: 44100
@@ -240,7 +240,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4192346255747852870
 Transform:
   m_ObjectHideFlags: 0
@@ -397,7 +397,7 @@ MonoBehaviour:
   multiViewMaterial: {fileID: 2100000, guid: f28fc72ed11638942830617193e01869, type: 2}
   rabbitmq_username: volumetric
   rabbitmq_password: capture
-  rabbitmq_ip: 195.251.117.76
+  rabbitmq_ip: 192.168.0.26
   exchange_name_id: 0
   audioClip: {fileID: 0}
   sampleRate: 44100
