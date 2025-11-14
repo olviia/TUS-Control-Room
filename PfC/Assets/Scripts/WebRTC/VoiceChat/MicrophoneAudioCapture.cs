@@ -103,6 +103,7 @@ namespace TUS.WebRTC.VoiceChat
 
             IsCapturing = true;
             Debug.Log($"[MicrophoneAudioCapture] Started capturing from microphone: {deviceName}");
+            Debug.Log($"[MicrophoneAudioCapture] AudioTrack created - Enabled: {AudioTrack.Enabled}, ReadyState: {AudioTrack.ReadyState}");
             OnCaptureStarted?.Invoke();
         }
 

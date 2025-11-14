@@ -243,14 +243,25 @@ namespace TUS.WebRTC.VoiceChat
 
             if (trackEvent.Track is AudioStreamTrack audioTrack)
             {
+                Debug.Log($"[VoicePeerConnection] Audio track - Enabled: {audioTrack.Enabled}, ReadyState: {audioTrack.ReadyState}");
+
                 // Create audio receiver object
                 _audioReceiverObject = new GameObject($"VoiceAudioReceiver_Client{RemoteClientId}");
                 var audioSource = _audioReceiverObject.AddComponent<AudioSource>();
-                audioSource.SetTrack(audioTrack);
+
+                // Configure audio source
+                audioSource.playOnAwake = false;
                 audioSource.loop = true;
+                audioSource.volume = 1.0f;
+                audioSource.spatialBlend = 0f; // 2D audio
+
+                // Set the WebRTC audio track
+                audioSource.SetTrack(audioTrack);
+
+                // Start playback
                 audioSource.Play();
 
-                Debug.Log($"[VoicePeerConnection] Playing remote audio from client {RemoteClientId}");
+                Debug.Log($"[VoicePeerConnection] AudioSource created - Playing: {audioSource.isPlaying}, Volume: {audioSource.volume}");
                 OnRemoteAudioTrackAdded?.Invoke(audioTrack);
             }
         }
