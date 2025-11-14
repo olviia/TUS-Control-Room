@@ -4894,6 +4894,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1262915594}
   - component: {fileID: 1262915595}
+  - component: {fileID: 1262915598}
+  - component: {fileID: 1262915597}
+  - component: {fileID: 1262915596}
   m_Layer: 0
   m_Name: CommunicationManager
   m_TagString: Untagged
@@ -4923,12 +4926,66 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1262915593}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0c113353e07d09c47ad4fd0591d08f64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   vivoxAudioToNdi: {fileID: 1014853840}
+--- !u!114 &1262915596
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1262915593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 4041249568
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &1262915597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1262915593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34bc9ca7a4a87c24887939257be5d98c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TUS.WebRTC.VoiceChat.WebRTCVoiceSignaling
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1262915598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1262915593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af78276b77e9a364581ddef81958efa8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TUS.WebRTC.VoiceChat.WebRTCVoiceChatManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  microphoneCapture: {fileID: 0}
+  autoJoinOnStart: 1
+  reconnectDelay: 2
 --- !u!1001 &1290066748
 PrefabInstance:
   m_ObjectHideFlags: 0
