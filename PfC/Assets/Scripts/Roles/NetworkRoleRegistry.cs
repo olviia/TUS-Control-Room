@@ -8,13 +8,15 @@ public struct VivoxUserRole : INetworkSerializable, System.IEquatable<VivoxUserR
 {
     public FixedString64Bytes  playerId;
     public Role role;
-    
+    public ulong clientId; // Network client ID for peer connections
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref playerId);
         serializer.SerializeValue(ref role);
+        serializer.SerializeValue(ref clientId);
     }
-    
+
     public bool Equals(VivoxUserRole other) => playerId.Equals(other.playerId);
 }
 public class NetworkRoleRegistry : NetworkBehaviour
@@ -41,21 +43,25 @@ public class NetworkRoleRegistry : NetworkBehaviour
     }
     
     [ServerRpc(RequireOwnership = false)]
-    public void RegisterRoleServerRpc(Role role, string playerId)
+    public void RegisterRoleServerRpc(Role role, string playerId, ServerRpcParams serverRpcParams = default)
     {
+        // Get the client ID from the RPC sender
+        ulong senderClientId = serverRpcParams.Receive.SenderClientId;
+
         // First, remove any existing role for this player
         RemovePlayerFromList(playerId);
-        
-        // Then add the new role
-        var newUserRole = new VivoxUserRole 
-        { 
-            playerId = playerId, 
-            role = role 
+
+        // Then add the new role with client ID
+        var newUserRole = new VivoxUserRole
+        {
+            playerId = playerId,
+            role = role,
+            clientId = senderClientId
         };
-        
+
         userRoles.Add(newUserRole); // Add to NetworkList
-        Debug.Log($"Registered {playerId} as {role}");
-       
+        Debug.Log($"Registered {playerId} (ClientID: {senderClientId}) as {role}");
+
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -100,6 +106,21 @@ public class NetworkRoleRegistry : NetworkBehaviour
         foreach (var userRole in userRoles)
         {
             if (userRole.playerId.ToString() == playerId)
+            {
+                return userRole;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Get a specific user's role by their client ID
+    /// </summary>
+    public VivoxUserRole? GetUserRoleByClientId(ulong clientId)
+    {
+        foreach (var userRole in userRoles)
+        {
+            if (userRole.clientId == clientId)
             {
                 return userRole;
             }

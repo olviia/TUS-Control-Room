@@ -229,7 +229,7 @@ namespace TUS.WebRTC.VoiceChat
 
             foreach (var userRole in allUsers)
             {
-                ulong clientId = ulong.Parse(userRole.playerId.ToString());
+                ulong clientId = userRole.clientId;
 
                 // Skip self
                 if (clientId == myClientId)
@@ -362,7 +362,7 @@ namespace TUS.WebRTC.VoiceChat
             if (NetworkRoleRegistry.Instance == null)
                 return;
 
-            var theirRole = NetworkRoleRegistry.Instance.GetUserRole(fromClientId.ToString());
+            var theirRole = NetworkRoleRegistry.Instance.GetUserRoleByClientId(fromClientId);
             if (!theirRole.HasValue)
             {
                 Debug.LogWarning($"[WebRTCVoiceChatManager] Could not find role for client {fromClientId}");
@@ -445,7 +445,7 @@ namespace TUS.WebRTC.VoiceChat
 
             foreach (var userRole in allUsers)
             {
-                ulong clientId = ulong.Parse(userRole.playerId.ToString());
+                ulong clientId = userRole.clientId;
                 if (clientId == myClientId)
                     continue;
 
@@ -475,7 +475,7 @@ namespace TUS.WebRTC.VoiceChat
             {
                 if (!_peerConnections.ContainsKey(clientId))
                 {
-                    var userRole = NetworkRoleRegistry.Instance.GetUserRole(clientId.ToString());
+                    var userRole = NetworkRoleRegistry.Instance.GetUserRoleByClientId(clientId);
                     if (userRole.HasValue)
                     {
                         ShouldConnectToPeer(MyRole, userRole.Value.role, out bool sendAudio, out bool receiveAudio);
@@ -499,7 +499,7 @@ namespace TUS.WebRTC.VoiceChat
             RemovePeerConnection(remoteClientId);
 
             // Check if we should still be connected
-            var theirRole = NetworkRoleRegistry.Instance?.GetUserRole(remoteClientId.ToString());
+            var theirRole = NetworkRoleRegistry.Instance?.GetUserRoleByClientId(remoteClientId);
             if (theirRole.HasValue && ShouldConnectToPeer(MyRole, theirRole.Value.role, out bool sendAudio, out bool receiveAudio))
             {
                 CreatePeerConnection(remoteClientId, sendAudio, receiveAudio);
