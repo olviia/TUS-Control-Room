@@ -44,6 +44,23 @@ public class WebRTCEngineManager : MonoBehaviour
             Debug.Log($"[⚙️WebRTCEngine] Registered {pipeline}, active: {_activeStreamers}");
         }
     }
+
+    /// <summary>
+    /// Register a new streamer without pipeline type (e.g., for voice chat) - starts engine if first streamer
+    /// </summary>
+    public void RegisterStreamer()
+    {
+        lock (_lock)
+        {
+            if (_activeStreamers == 0)
+            {
+                _updateCoroutine = StartCoroutine(WebRTC.Update());
+                Debug.Log("[⚙️WebRTCEngine] Started WebRTC engine");
+            }
+            _activeStreamers++;
+            Debug.Log($"[⚙️WebRTCEngine] Registered streamer, active: {_activeStreamers}");
+        }
+    }
     
     /// <summary>
     /// Unregister a streamer - stops engine if last streamer
@@ -54,7 +71,26 @@ public class WebRTCEngineManager : MonoBehaviour
         {
             _activeStreamers = Mathf.Max(0, _activeStreamers - 1);
             Debug.Log($"[⚙️WebRTCEngine] Unregistered {pipeline}, active: {_activeStreamers}");
-            
+
+            if (_activeStreamers == 0 && _updateCoroutine != null)
+            {
+                StopCoroutine(_updateCoroutine);
+                _updateCoroutine = null;
+                Debug.Log("[⚙️WebRTCEngine] Stopped WebRTC engine");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unregister a streamer without pipeline type (e.g., for voice chat) - stops engine if last streamer
+    /// </summary>
+    public void UnregisterStreamer()
+    {
+        lock (_lock)
+        {
+            _activeStreamers = Mathf.Max(0, _activeStreamers - 1);
+            Debug.Log($"[⚙️WebRTCEngine] Unregistered streamer, active: {_activeStreamers}");
+
             if (_activeStreamers == 0 && _updateCoroutine != null)
             {
                 StopCoroutine(_updateCoroutine);

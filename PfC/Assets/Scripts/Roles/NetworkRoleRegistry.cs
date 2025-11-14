@@ -20,8 +20,11 @@ public struct VivoxUserRole : INetworkSerializable, System.IEquatable<VivoxUserR
 public class NetworkRoleRegistry : NetworkBehaviour
 {
     private NetworkList<VivoxUserRole> userRoles;
-    
+
     public static NetworkRoleRegistry Instance { get; private set; }
+
+    // Public accessor for user roles
+    public NetworkList<VivoxUserRole> UserRoles => userRoles;
     void Start()
     {
         Debug.Log("started vivox network role registry");
@@ -86,7 +89,22 @@ public class NetworkRoleRegistry : NetworkBehaviour
             }
         }
         return result;
-         
+
+    }
+
+    /// <summary>
+    /// Get a specific user's role by their player ID
+    /// </summary>
+    public VivoxUserRole? GetUserRole(string playerId)
+    {
+        foreach (var userRole in userRoles)
+        {
+            if (userRole.playerId.ToString() == playerId)
+            {
+                return userRole;
+            }
+        }
+        return null;
     }
 
 }
