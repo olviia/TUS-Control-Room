@@ -14,6 +14,7 @@ public class WebRTCSignaling : NetworkBehaviour
     public static event Action<PipelineType, RTCSessionDescription, ulong, string> OnOfferReceived;
     public static event Action<PipelineType, RTCSessionDescription, ulong, string> OnAnswerReceived;
     public static event Action<PipelineType, RTCIceCandidate, ulong, string> OnIceCandidateReceived;
+    public static event Action<PipelineType, ulong, string> OnOfferRequested; // New: Late joiner requests offer
 
     #region Public Interface
 
@@ -47,9 +48,20 @@ public class WebRTCSignaling : NetworkBehaviour
     public void SendIceCandidate(PipelineType pipeline, RTCIceCandidate candidate, string sessionId)
     {
         if (!IsNetworkReady()) return;
-        
+
         SendIceCandidateServerRpc(pipeline, candidate.Candidate, candidate.SdpMid,
                                  candidate.SdpMLineIndex ?? 0, NetworkManager.Singleton.LocalClientId, sessionId);
+    }
+
+    /// <summary>
+    /// Request a fresh offer from the streamer (for late joiners)
+    /// </summary>
+    public void RequestOffer(PipelineType pipeline, string sessionId)
+    {
+        if (!IsNetworkReady()) return;
+
+        Debug.Log($"[🔗Signaling] RequestOffer {pipeline}:{sessionId}");
+        RequestOfferServerRpc(pipeline, NetworkManager.Singleton.LocalClientId, sessionId);
     }
 
     #endregion
@@ -75,6 +87,12 @@ public class WebRTCSignaling : NetworkBehaviour
                                           int sdpMLineIndex, ulong fromClient, string sessionId)
     {
         BroadcastIceCandidateClientRpc(pipeline, candidate, sdpMid, sdpMLineIndex, fromClient, sessionId);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestOfferServerRpc(PipelineType pipeline, ulong requestingClient, string sessionId)
+    {
+        NotifyOfferRequestClientRpc(pipeline, requestingClient, sessionId);
     }
 
     #endregion
@@ -116,7 +134,7 @@ public class WebRTCSignaling : NetworkBehaviour
                                                int sdpMLineIndex, ulong fromClient, string sessionId)
     {
         if (ShouldIgnoreMessage(fromClient)) return;
-        
+
         try
         {
             var iceCandidate = CreateIceCandidate(candidate, sdpMid, sdpMLineIndex);
@@ -126,6 +144,13 @@ public class WebRTCSignaling : NetworkBehaviour
         {
             Debug.LogError($"[🔗Signaling] Failed to process ICE candidate: {e.Message}");
         }
+    }
+
+    [ClientRpc]
+    private void NotifyOfferRequestClientRpc(PipelineType pipeline, ulong requestingClient, string sessionId)
+    {
+        Debug.Log($"[🔗Signaling] Offer requested by {requestingClient} for {pipeline}:{sessionId}");
+        OnOfferRequested?.Invoke(pipeline, requestingClient, sessionId);
     }
 
     #endregion

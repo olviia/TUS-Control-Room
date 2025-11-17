@@ -144,10 +144,11 @@ public class WebRTCStreamer : MonoBehaviour
             Debug.LogError($"[📡{instanceId}] No WebRTCSignaling found");
             return;
         }
-        
+
         WebRTCSignaling.OnOfferReceived += HandleOfferReceived;
         WebRTCSignaling.OnAnswerReceived += HandleAnswerReceived;
         WebRTCSignaling.OnIceCandidateReceived += HandleIceCandidateReceived;
+        WebRTCSignaling.OnOfferRequested += HandleOfferRequested; // New: Handle late joiner requests
     }
     
     private void DisconnectFromSignaling()
@@ -157,6 +158,7 @@ public class WebRTCStreamer : MonoBehaviour
             WebRTCSignaling.OnOfferReceived -= HandleOfferReceived;
             WebRTCSignaling.OnAnswerReceived -= HandleAnswerReceived;
             WebRTCSignaling.OnIceCandidateReceived -= HandleIceCandidateReceived;
+            WebRTCSignaling.OnOfferRequested -= HandleOfferRequested;
         }
     }
     
@@ -175,16 +177,20 @@ public class WebRTCStreamer : MonoBehaviour
     }
     
     /// <summary>
-    /// Start receiving for the given session  
+    /// Start receiving for the given session
     /// </summary>
     public void StartReceiving(string sessionId)
     {
         Debug.Log($"aabb_[🔍Timing] Receiving started at: {Time.time}");
-        
+
         PrepareForNewSessionSync(sessionId);
         isOfferer = false;
         SetupReceivingConnection();
-        
+
+        // Request a fresh offer from the streamer (for late joiners)
+        Debug.Log($"[📡{instanceId}] Requesting offer from streamer for: {sessionId}");
+        signaling?.RequestOffer(pipelineType, sessionId);
+
         Debug.Log($"[📡{instanceId}] Receiver ready immediately for: {sessionId}");
         StartConnectionTimeout();
     }
@@ -635,7 +641,20 @@ public class WebRTCStreamer : MonoBehaviour
     {
         return pipeline == this.pipelineType && sessionId == this.currentSessionId;
     }
-    
+
+    /// <summary>
+    /// Handle offer request from late-joining clients (only for streamers/offerers)
+    /// </summary>
+    private void HandleOfferRequested(PipelineType pipeline, ulong requestingClient, string sessionId)
+    {
+        if (!IsForThisInstance(pipeline, sessionId) || !isOfferer) return;
+
+        Debug.Log($"[📡{instanceId}] Offer requested by late-joining client {requestingClient} - sending new offer");
+
+        // Send a fresh offer to the late-joining client
+        StartCoroutine(CreateOffer());
+    }
+
     #endregion
     
     #region Event Handlers - WebRTC
