@@ -67,8 +67,40 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     {
         studioLiveStream.OnValueChanged += (prev, curr) => OnStreamChanged(prev, curr, "Studio Live");
         tvLiveStream.OnValueChanged += (prev, curr) => OnStreamChanged(prev, curr, "TV Live");
-        
+
         Debug.Log($"[🎬StreamCoordinator] Network spawned with {supportedPipelines.Length} pipelines");
+
+        // Check for active streams when client joins (late joiner support)
+        if (IsClient && !IsServer)
+        {
+            StartCoroutine(CheckExistingStreamsOnJoin());
+        }
+    }
+
+    /// <summary>
+    /// When a client joins, check if streams are already active and trigger receiving
+    /// </summary>
+    private IEnumerator CheckExistingStreamsOnJoin()
+    {
+        // Wait a frame to ensure NetworkVariables are fully synchronized
+        yield return new WaitForEndOfFrame();
+
+        Debug.Log("[🎬StreamCoordinator] Checking for existing active streams...");
+
+        foreach (var kvp in pipelineStreams)
+        {
+            var pipeline = kvp.Key;
+            var assignment = kvp.Value.Value;
+
+            if (assignment.isActive)
+            {
+                Debug.Log($"[🎬StreamCoordinator] Found active stream for {pipeline} - auto-starting receive");
+                // Trigger the stream change event manually for late joiners
+                OnStreamChanged(new StreamAssignment { isActive = false, pipelineType = pipeline },
+                               assignment,
+                               $"{pipeline} (Late Join)");
+            }
+        }
     }
 
     #endregion
