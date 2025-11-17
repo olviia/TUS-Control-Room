@@ -20,13 +20,18 @@ public class CommunicationManager : MonoBehaviour
     static object m_Lock = new object();
     static CommunicationManager m_Instance;
     private Role currentRole;
-    private string currentChannelName = "studio-tus-channel";
+    private string directorChannelName = "studio-tus-channel";
+    private string audienceChannelName = "audience-tus-channel";
     private bool isInitialized = false;
     private bool isJoiningChannel = false;
     public GameObject vivoxAudioToNdi;
 
-    
+    [Header("Audience Control")]
+    [Tooltip("When enabled, all audience members will be muted")]
+    public bool muteAudience = false;
+
     private NetworkRoleRegistry roleRegistry;
+    private List<string> joinedChannels = new List<string>();
 
 
     public static CommunicationManager Instance
@@ -115,33 +120,60 @@ public class CommunicationManager : MonoBehaviour
     {
         try
         {
-            // Determine channel name based on role
-            string channelName = GetChannelNameForRole(currentRole);
-
-            currentChannelName = channelName;
-            var channelOptions = new ChannelOptions
-            {
-                MakeActiveChannelUponJoining = true
-            };
             //to 1000% finish login
             await WaitForNetworkConnection();
-            await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
 
             Debug.Log($"[Vivox] Current User id : {AuthenticationService.Instance.PlayerId}");
-            //i should use it to check previous participants
-            //VivoxService.Instance.ChannelJoined += SetupPresenterAudioTaps;
-            VivoxService.Instance.ParticipantAddedToChannel += SetupPresenterAudioTaps;
-            
-            // string echoChannelName = "echo_test_" + System.DateTime.Now.Ticks; // Unique echo channel
-            //
-            // await VivoxService.Instance.JoinEchoChannelAsync(echoChannelName, ChatCapability.AudioOnly);
 
-            Debug.Log($"[CommunicationManager] Successfully joined channel: {channelName}");
+            // Join channels based on role
+            switch (currentRole)
+            {
+                case Role.Director:
+                    // Director joins only the director channel
+                    await JoinChannel(directorChannelName, true);
+                    break;
+
+                case Role.Presenter:
+                    // Presenter joins BOTH director and audience channels
+                    await JoinChannel(directorChannelName, true);  // Make director channel active
+                    await JoinChannel(audienceChannelName, false); // Audience channel non-active
+                    VivoxService.Instance.ParticipantAddedToChannel += SetupPresenterAudioTaps;
+                    break;
+
+                case Role.Audience:
+                    // Audience joins only the audience channel
+                    await JoinChannel(audienceChannelName, true);
+                    // Apply mute if the setting is enabled
+                    if (muteAudience)
+                    {
+                        VivoxService.Instance.MuteInputDevice();
+                        Debug.Log("[Vivox] Audience member muted on join");
+                    }
+                    break;
+
+                default:
+                    Debug.LogWarning($"[CommunicationManager] Unknown role: {currentRole}");
+                    break;
+            }
+
+            Debug.Log($"[CommunicationManager] Successfully joined channels for role: {currentRole}");
         }
         catch (Exception e)
         {
             Debug.LogError($"[CommunicationManager] Failed to join channel: {e.Message}");
         }
+    }
+
+    private async Task JoinChannel(string channelName, bool makeActive)
+    {
+        var channelOptions = new ChannelOptions
+        {
+            MakeActiveChannelUponJoining = makeActive
+        };
+
+        await VivoxService.Instance.JoinGroupChannelAsync(channelName, ChatCapability.AudioOnly, channelOptions);
+        joinedChannels.Add(channelName);
+        Debug.Log($"[CommunicationManager] Joined channel: {channelName} (Active: {makeActive})");
     }
 
 
@@ -176,30 +208,22 @@ public class CommunicationManager : MonoBehaviour
     {
         currentRole = role;
     }
-    private string GetChannelNameForRole(Role role)
-    {
-        // Define your channel naming logic here
-        switch (role)
-        {
-            case Role.Director:
-                return currentChannelName;
-            case Role.Presenter:
-                return currentChannelName;
-            case Role.Audience:
-                return currentChannelName;
-            default:
-                Debug.LogWarning($"[CommunicationManager] Unknown role: {role}");
-                return currentChannelName;
-        }
-    }
-    
 
+    public string GetDirectorChannelName()
+    {
+        return directorChannelName;
+    }
+
+    public string GetAudienceChannelName()
+    {
+        return audienceChannelName;
+    }
 
     #endregion
 
     public void SetupPresenterAudioTaps(VivoxParticipant vivoxParticipant)
-    {         
-        // Configure to capture only presenter's audio
+    {
+        // Configure to capture only presenter's audio from the director channel
         var presentersID = NetworkRoleRegistry.Instance.GetPresentersIDList(Role.Presenter);
         List<VivoxParticipantTap> vivoxTaps =  new List<VivoxParticipantTap>();
         foreach (var id in presentersID)
@@ -209,15 +233,15 @@ public class CommunicationManager : MonoBehaviour
                 tapObject.AddComponent<AudioSource>();
                 tapObject.AddComponent<AudioSourceListener>();
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
-            
+
                 presenterTap.ParticipantName = id.ToString();
-                presenterTap.ChannelName = currentChannelName;
+                presenterTap.ChannelName = directorChannelName; // Capture from studio-tus-channel
                 vivoxTaps.Add(presenterTap);
         }
-        
+
         Debug.Log("[Vivox] PresenterAudioTaps setup completed");
         Debug.Log($"[Vivox] Presenters ID : {string.Join(", ", presentersID)}");
-        
+
         Debug.Log($"[Vivox] VivoxTaps ({vivoxTaps.Count}):");
         foreach (var tap in vivoxTaps)
         {
@@ -241,4 +265,53 @@ public class CommunicationManager : MonoBehaviour
         Debug.Log($"[Audio Status] Input Volume: {VivoxService.Instance.InputDeviceVolume}");
         Debug.Log($"[Audio Status] Output Volume: {VivoxService.Instance.OutputDeviceVolume}");
     }
+
+    #region Audience Muting
+
+    /// <summary>
+    /// Apply the mute setting to audience members. Call this when muteAudience boolean changes.
+    /// </summary>
+    [ContextMenu("Apply Audience Mute Setting")]
+    public void ApplyAudienceMuteSetting()
+    {
+        if (currentRole == Role.Audience)
+        {
+            if (muteAudience)
+            {
+                VivoxService.Instance.MuteInputDevice();
+                Debug.Log("[Vivox] Audience muted");
+            }
+            else
+            {
+                VivoxService.Instance.UnmuteInputDevice();
+                Debug.Log("[Vivox] Audience unmuted");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[Vivox] ApplyAudienceMuteSetting called but current role is not Audience");
+        }
+    }
+
+    /// <summary>
+    /// Toggle the audience mute setting and apply it immediately.
+    /// </summary>
+    [ContextMenu("Toggle Audience Mute")]
+    public void ToggleAudienceMute()
+    {
+        muteAudience = !muteAudience;
+        ApplyAudienceMuteSetting();
+    }
+
+    /// <summary>
+    /// Set the audience mute state.
+    /// </summary>
+    /// <param name="shouldMute">True to mute audience, false to unmute</param>
+    public void SetAudienceMute(bool shouldMute)
+    {
+        muteAudience = shouldMute;
+        ApplyAudienceMuteSetting();
+    }
+
+    #endregion
 }
