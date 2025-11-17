@@ -49,15 +49,16 @@ public class WebRTCStreamer : MonoBehaviour
     private AudioStreamTrack receivedAudioTrack;
     
     // WebRTC objects
-    private RTCPeerConnection peerConnection;
+    private RTCPeerConnection peerConnection;  // For receiving (client side)
+    private Dictionary<ulong, RTCPeerConnection> peerConnections = new Dictionary<ulong, RTCPeerConnection>();  // For streaming (server side - multiple clients)
     private VideoStreamTrack videoTrack;
     private RenderTexture webRtcTexture;
     private MediaStream receiveMediaStream;
-    
+
     // Blending captions and media source
     private RenderTexture compositeRT;
     private Material blendMaterial;
-    
+
     // State
     private WebRTCSignaling signaling;
     private StreamerState currentState = StreamerState.Idle;
@@ -66,6 +67,10 @@ public class WebRTCStreamer : MonoBehaviour
     private int retryCount = 0;
     private bool isOfferer = false;
     private bool isRemoteDescriptionSet = false;
+
+    // Per-client state tracking
+    private Dictionary<ulong, bool> clientRemoteDescriptionSet = new Dictionary<ulong, bool>();
+    private Dictionary<ulong, List<RTCIceCandidate>> clientPendingIceCandidates = new Dictionary<ulong, List<RTCIceCandidate>>();
     
     // Coroutines
     private Coroutine connectionTimeoutCoroutine;
@@ -416,14 +421,17 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator UpdateTextureFromNdi()
     {
+        Debug.Log($"[📡{instanceId}] UpdateTextureFromNdi coroutine STARTED");
+        int frameCount = 0;
+
         while (IsStreamingOrConnecting())
         {
             var ndiTexture = ndiReceiverSource?.GetTexture();
-        
+
             if (ndiTexture != null && webRtcTexture != null)
             {
                 var ndiTextureCaptions = ndiReceiverCaptions?.GetTexture();
-            
+
                 // Try caption compositing if captions are available
                 if (ndiTextureCaptions != null)
                 {
@@ -432,7 +440,7 @@ public class WebRTCStreamer : MonoBehaviour
                         compositeRT = new RenderTexture(ndiTexture.width, ndiTexture.height, 0);
                         compositeRT.Create();
                     }
-                
+
                     blendMaterial.SetTexture("_MainTex", ndiTexture);
                     blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
                     Graphics.Blit(null, compositeRT, blendMaterial);
@@ -443,11 +451,25 @@ public class WebRTCStreamer : MonoBehaviour
                     // Direct blit - no captions
                     Graphics.Blit(ndiTexture, webRtcTexture);
                 }
+
+                frameCount++;
+                if (frameCount % 60 == 0)  // Log every 60 frames
+                {
+                    Debug.Log($"[📡{instanceId}] Streaming frame {frameCount}, State: {currentState}");
+                }
             }
-        
+            else
+            {
+                if (frameCount == 0 || frameCount % 60 == 0)
+                {
+                    Debug.LogWarning($"[📡{instanceId}] Missing texture! NDI: {ndiTexture != null}, WebRTC: {webRtcTexture != null}");
+                }
+            }
+
             yield return new WaitForEndOfFrame();
         }
-    
+
+        Debug.LogWarning($"[📡{instanceId}] UpdateTextureFromNdi coroutine STOPPED after {frameCount} frames. Final state: {currentState}");
     }
 
     private bool IsStreamingOrConnecting()
