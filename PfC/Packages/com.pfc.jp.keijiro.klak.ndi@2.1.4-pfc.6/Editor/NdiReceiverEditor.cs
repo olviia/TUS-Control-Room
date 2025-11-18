@@ -28,6 +28,7 @@ sealed class NdiReceiverEditor : UnityEditor.Editor
 	private AutoProperty overrideReceivedSpeakerDistances;
     private AutoProperty virtualSpeakerDistances;
     private AutoProperty receivedVirtualSpeakerPositionAsWorldPosition;
+    private AutoProperty _audioDistance;
     
     #pragma warning restore
     private bool _foldOutChannelIncome = true;
@@ -117,6 +118,7 @@ sealed class NdiReceiverEditor : UnityEditor.Editor
             MaterialPropertySelector.
               DropdownList(_targetRenderer, _targetMaterialProperty);
         }
+        EditorGUILayout.PropertyField(_audioDistance);
 
         EditorGUI.indentLevel--;
 

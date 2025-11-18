@@ -15,11 +15,14 @@ public class BroadcastPipelineManager : MonoBehaviour
 {
     [Header("Outline Colors")]
     public Color studioPreviewOutline;  // Blue
-    public Color studioLiveOutline;     // Orange  
+    public Color studioLiveOutline;     // Orange
     public Color tvPreviewOutline;      // Green
     public Color tvLiveOutline;         // Magenta
     public Color conflictOutline;       // Bright Red
-    
+
+    [Header("TVLive Output")]
+    public MeshToRenderTextureBridge tvLiveBridge;
+
     public static BroadcastPipelineManager Instance { get; private set; }
     private List<IPipelineSource> registeredSources = new List<IPipelineSource>();
     
@@ -283,6 +286,12 @@ public class BroadcastPipelineManager : MonoBehaviour
                             meshRenderer.SetPropertyBlock(propertyBlock);
 
                             Debug.Log($"[BroadcastPipelineManager] Texture assigned to {pipelineType}");
+
+                            // If TVLive, notify bridge
+                            if (pipelineType == PipelineType.TVLive && tvLiveBridge != null)
+                            {
+                                tvLiveBridge.SetSourceTexture(texture);
+                            }
                         }
                         else
                         {
@@ -299,6 +308,12 @@ public class BroadcastPipelineManager : MonoBehaviour
                         dest.receiver.enabled = true;
                         dest.receiver.ndiName = source.ndiName;
 
+                        // If TVLive, notify bridge with NDI receiver
+                        if (pipelineType == PipelineType.TVLive && tvLiveBridge != null)
+                        {
+                            tvLiveBridge.SetSourceReceiver(dest.receiver);
+                        }
+
                         // Clear property block to revert to NDI texture
                         MeshRenderer meshRenderer = dest.meshRenderer;
                         if (meshRenderer != null)
@@ -311,23 +326,24 @@ public class BroadcastPipelineManager : MonoBehaviour
 
                     if (pipelineType == PipelineType.TVLive)
                     {
-                        OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
-
-                        string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
-                            "ndi_filter_ndiname",
-                            source.ndiName);
-
-                        ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
-
-                        //clean obs stream live scene
-                        ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
-                        //add subtitles
-                        obsScene.ConfigureAndExecute("StreamLive", "TVSuper", true, "TVSuper");
-
-                        obsScene.ConfigureAndExecute("StreamLive", name, true, name);
-
-                        // add audio tap for presenters
-                        obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
+                        // TEMPORARILY COMMENTED OUT - OBS scene switching disabled
+                        // OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
+                        //
+                        // string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
+                        //     "ndi_filter_ndiname",
+                        //     source.ndiName);
+                        //
+                        // ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
+                        //
+                        // //clean obs stream live scene
+                        // ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
+                        // //add subtitles
+                        // obsScene.ConfigureAndExecute("StreamLive", "TVSuper", true, "TVSuper");
+                        //
+                        // obsScene.ConfigureAndExecute("StreamLive", name, true, name);
+                        //
+                        // // add audio tap for presenters
+                        // obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
                     }
                 }
             }

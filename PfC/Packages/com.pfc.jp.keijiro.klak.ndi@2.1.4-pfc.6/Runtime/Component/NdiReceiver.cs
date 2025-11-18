@@ -19,6 +19,7 @@ namespace Klak.Ndi {
 //[ExecuteInEditMode]
 public sealed partial class NdiReceiver : MonoBehaviour
 {
+	
     #region Receiver objects
 
 	Interop.Recv _recv;
@@ -398,7 +399,9 @@ public sealed partial class NdiReceiver : MonoBehaviour
 			// create a fallback AudioSource for passthrough of matching channel counts
 			var newSource = new GameObject("Passthrough Audio Source", typeof(AudioSource)).GetComponent<AudioSource>();
 			newSource.dopplerLevel = 0;
-			newSource.spatialBlend = 0;
+			newSource.spatialBlend = 1f; // Changed to 1 for spatial audio isolation
+			newSource.maxDistance = audioDistance; // Only audible within 100 units
+			newSource.rolloffMode = AudioRolloffMode.Linear;
 			newSource.bypassListenerEffects = true;
 			newSource.transform.SetParent(transform, false);
 			newSource.hideFlags = HideFlags.DontSave;

@@ -114,6 +114,21 @@ public sealed partial class NdiReceiver : MonoBehaviour, IAdmDataProvider
     public float virtualSpeakerDistances = 10f;
     [Tooltip("When disabled, the virtual speaker positions will be set locally to the world position of the receiver.")]
     public bool receivedVirtualSpeakerPositionAsWorldPosition = false;
+    
+    [SerializeField] int _audioDistance = 100;
+    int _audioDistanceRuntime;
+
+    public int audioDistance
+    { get => _audioDistanceRuntime;
+        set => SetAudioDistance(value); }
+
+    void SetAudioDistance(int distance)
+    {
+        if (_audioDistanceRuntime == distance) return;
+        _audioDistance = _audioDistanceRuntime = distance;
+        
+    }
+    
     #endregion
   
     	
@@ -136,6 +151,8 @@ public sealed partial class NdiReceiver : MonoBehaviour, IAdmDataProvider
       lock (_admEventLock)
         _onAdmDataChanged -= callback;
     }
+    
+
 }
 
 } // namespace Klak.Ndi
