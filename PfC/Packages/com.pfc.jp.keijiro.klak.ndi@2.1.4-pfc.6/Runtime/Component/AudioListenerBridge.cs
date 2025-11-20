@@ -25,11 +25,15 @@ namespace Klak.Ndi
         private int _channels = 2;
         private int _sampleRate = 48000;
 
+        // Tracked read position for continuous consumption
+        private int _readIndex;
+        private bool _readStarted;
+
         // Diagnostic timed capture (kept, now reads from ring buffer)
         private static bool _isCapturing = false;
         private static float _captureTimer = 0f;
-        private const float CAPTURE_INTERVAL = 30f;
-        private const float CAPTURE_DURATION = 2f;
+        private const float CAPTURE_INTERVAL = 20f;
+        private const float CAPTURE_DURATION = 5f;
 
         // Per-frame analysis control
         private const float JumpThreshold = 0.1f;
@@ -74,14 +78,27 @@ namespace Klak.Ndi
             // Write incoming frame into ring buffer
             WriteToRing(data);
 
-            // Optional per-frame discontinuity analysis
-            if (LogPerFrameDiscontinuities)
-                AnalyzeFrame(data);
+            // Create buffer for reading from ring
+            float[] bufferedData = new float[data.Length];
+            bool hasBufferedData = ReadFromRing(bufferedData);
 
-            // Forward to external listener
+            // Optional per-frame discontinuity analysis on buffered data
+            if (LogPerFrameDiscontinuities && hasBufferedData)
+                AnalyzeFrame(bufferedData);
+
+            // Forward buffered data to external listener (NDI callback)
             lock (_lock)
             {
-                _onAudioFilterReadEvent?.Invoke(data, channels);
+                if (hasBufferedData)
+                {
+                    // Send buffered data to NDI (not original data!)
+                    _onAudioFilterReadEvent?.Invoke(bufferedData, channels);
+                }
+                else
+                {
+                    // Still filling buffer, send original data temporarily
+                    _onAudioFilterReadEvent?.Invoke(data, channels);
+                }
             }
         }
 
@@ -95,6 +112,41 @@ namespace Klak.Ndi
                 _writeIndex = (_writeIndex + 1) % capacity;
             }
             _availableSamples = Math.Min(_availableSamples + data.Length, capacity);
+        }
+
+        private bool ReadFromRing(float[] outputBuffer)
+        {
+            if (_ringBuffer == null) return false;
+
+            int capacity = _ringBuffer.Length;
+
+            // Initial setup: establish 100ms delay once buffer is half-full
+            if (!_readStarted && _availableSamples >= capacity / 2)
+            {
+                int delay = capacity / 2;
+                _readIndex = (_writeIndex - delay + capacity) % capacity;
+                _readStarted = true;
+                Debug.Log($"[AudioListenerBridge] Reading started at index {_readIndex}, write at {_writeIndex} (delay={delay} samples, {delay/(float)(_sampleRate*_channels)*1000:F1}ms)");
+            }
+
+            if (!_readStarted) return false;  // Still filling initial buffer
+
+            // Check if enough samples available between read and write positions
+            int available = (_writeIndex - _readIndex + capacity) % capacity;
+            if (available < outputBuffer.Length)
+            {
+                Debug.LogWarning($"[AudioListenerBridge] Buffer underrun! Available={available}, Need={outputBuffer.Length}");
+                return false;
+            }
+
+            // Read from tracked position (continuous consumption!)
+            for (int i = 0; i < outputBuffer.Length; i++)
+            {
+                outputBuffer[i] = _ringBuffer[_readIndex];
+                _readIndex = (_readIndex + 1) % capacity;
+            }
+
+            return true;
         }
 
         private void WriteCapturedAudio()

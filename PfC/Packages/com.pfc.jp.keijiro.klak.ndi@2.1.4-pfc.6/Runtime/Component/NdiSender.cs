@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -24,9 +25,6 @@ public sealed partial class NdiSender : MonoBehaviour
     ReadbackPool _pool;
     FormatConverter _converter;
     System.Action<AsyncGPUReadbackRequest> _onReadback;
-    
-    
-    
 
     void PrepareSenderObjects()
     {
@@ -86,17 +84,6 @@ public sealed partial class NdiSender : MonoBehaviour
     private List<NativeArray<float>> _objectBasedChannels = new List<NativeArray<float>>();
     private List<Vector3> _objectBasedPositions = new List<Vector3>();
     private List<float> _objectBasedGains = new List<float>();
-    
-    // Ring buffer config (optional)
-    private const int AudioRingMs = 200;
-    private bool useAudioRingBuffer = true; // toggle
-    private float[] _audioRing;
-    private int _audioRingWrite;
-    private int _audioRingAvail;
-    private int _audioRingChannels;
-    private int _audioRingSampleRate;
-    private int _targetBlockSamples; // per channel
-
     
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
@@ -287,52 +274,6 @@ public sealed partial class NdiSender : MonoBehaviour
         lock (_channelObjectLock)
             return _objectBasedPositions.ToArray();
     }
-    private void InitAudioRing(int channels)
-    {
-        _audioRingChannels = channels;
-        _audioRingSampleRate = sampleRate; // cached on main thread
-        int capacity = (_audioRingSampleRate * channels * AudioRingMs) / 1000;
-        if (capacity <= 0) capacity = channels; // safety
-        _audioRing = new float[capacity];
-        _audioRingWrite = 0;
-        _audioRingAvail = 0;
-
-        // Choose block size (e.g. 10 ms)
-        int blockMs = 10;
-        _targetBlockSamples = (_audioRingSampleRate * blockMs) / 1000;
-        if (_targetBlockSamples <= 0) _targetBlockSamples = 128;
-    }
-
-    private void WriteAudioRing(float[] interleaved, int channels)
-    {
-        if (_audioRing == null || channels != _audioRingChannels) return;
-        int cap = _audioRing.Length;
-        for (int i = 0; i < interleaved.Length; i++)
-        {
-            _audioRing[_audioRingWrite] = interleaved[i];
-            _audioRingWrite = (_audioRingWrite + 1) % cap;
-        }
-        _audioRingAvail = Math.Min(_audioRingAvail + interleaved.Length, cap);
-    }
-
-    private bool TryDequeueBlock(out float[] block, out int channels)
-    {
-        block = null;
-        channels = _audioRingChannels;
-        if (_audioRing == null) return false;
-
-        int needed = _targetBlockSamples * channels;
-        if (_audioRingAvail < needed) return false;
-
-        block = new float[needed];
-        int cap = _audioRing.Length;
-        int readStart = (_audioRingWrite - _audioRingAvail + cap) % cap;
-        for (int i = 0; i < needed; i++)
-            block[i] = _audioRing[(readStart + i) % cap];
-
-        _audioRingAvail -= needed;
-        return true;
-    }
 
     private void OnAudioFilterRead(float[] data, int channels)
     {
@@ -341,22 +282,7 @@ public sealed partial class NdiSender : MonoBehaviour
         
         if (_audioMode == AudioMode.AudioListener)
         {
-            if (useAudioRingBuffer)
-            {
-                if (_audioRing == null || channels != _audioRingChannels)
-                    InitAudioRing(channels);
-
-                WriteAudioRing(data, channels);
-
-                // Drain uniform blocks (e.g., 10 ms) from the ring and send
-                while (TryDequeueBlock(out var block, out var ch))
-                    SendAudioListenerData(block, ch);
-            }
-            else
-            {
-                // Fallback: original immediate path
-                SendAudioListenerData(data, channels);
-            }
+            SendAudioListenerData(data, channels);
         }
         else
         if (_audioMode == AudioMode.ObjectBased)
@@ -754,8 +680,6 @@ public sealed partial class NdiSender : MonoBehaviour
     internal void ResetState(bool willBeActive)
     {
         _audioMode = audioMode;
-        // Main-thread safe: cache sample rate for audio thread usage
-        sampleRate = AudioSettings.outputSampleRate;
         if (Application.isPlaying)
         {
             CheckAudioListener(willBeActive && _audioMode != AudioMode.None);
