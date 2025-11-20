@@ -77,7 +77,8 @@ public class SimpleConnectionManager : MonoBehaviour
         if (role == Role.Director)
         {
             WebsocketManager websocketManager = FindAnyObjectByType<WebsocketManager>();
-            websocketManager.SetDefaultWsAdress(GetLocalIPAddress());
+            websocketManager.SetDefaultWsAdress("127.0.0.1");
+           // websocketManager.SetDefaultWsAdress(GetLocalIPAddress());
             websocketManager.AutoConnectToServer();
         }
 

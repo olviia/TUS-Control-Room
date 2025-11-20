@@ -8,7 +8,6 @@ using Debug = UnityEngine.Debug;
 
 using System.Runtime.InteropServices; // Required for DllImport
 using UnityEditor;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
