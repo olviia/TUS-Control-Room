@@ -17,6 +17,53 @@ namespace Klak.Ndi
             set { lock (_lock) { _onAudioFilterReadEvent = value; } }
         }
 
+        // Public method for NdiSender to get accumulated buffered audio (uses separate read index)
+        private readonly object _bufferAccessLock = new object();
+        public bool GetAccumulatedAudio(out float[] audioData, out int channels)
+        {
+            audioData = null;
+            channels = _channels;
+
+            lock (_bufferAccessLock)
+            {
+                if (_ringBuffer == null)
+                    return false;
+
+                int capacity = _ringBuffer.Length;
+
+                // Initialize NdiSender read position on first call (when buffer is half full)
+                if (!_ndiReadStarted && _availableSamples >= capacity / 2)
+                {
+                    int delay = capacity / 2;
+                    _ndiReadIndex = (_writeIndex - delay + capacity) % capacity;
+                    _ndiReadStarted = true;
+                    Debug.Log($"[AudioListenerBridge] NdiSender read started at index {_ndiReadIndex}, write at {_writeIndex}");
+                }
+
+                if (!_ndiReadStarted)
+                    return false;
+
+                int available = (_writeIndex - _ndiReadIndex + capacity) % capacity;
+
+                if (available <= 0)
+                    return false;
+
+                // Create array with accumulated data
+                audioData = new float[available];
+
+                // Copy from ring buffer
+                for (int i = 0; i < available; i++)
+                {
+                    audioData[i] = _ringBuffer[(_ndiReadIndex + i) % capacity];
+                }
+
+                // Update NdiSender read index
+                _ndiReadIndex = (_ndiReadIndex + available) % capacity;
+
+                return true;
+            }
+        }
+
         // Ring buffer (intermediate audio storage)
         private const int BufferLengthMS = 200;
         private float[] _ringBuffer;
@@ -25,9 +72,13 @@ namespace Klak.Ndi
         private int _channels = 2;
         private int _sampleRate = 48000;
 
-        // Tracked read position for continuous consumption
+        // Tracked read position for continuous consumption (diagnostics)
         private int _readIndex;
         private bool _readStarted;
+
+        // Separate read position for NdiSender
+        private int _ndiReadIndex;
+        private bool _ndiReadStarted;
 
         // Diagnostic timed capture (kept, now reads from ring buffer)
         private static bool _isCapturing = false;
@@ -88,10 +139,7 @@ namespace Klak.Ndi
             try
             {
                 _logWriter = new StreamWriter(_logFilePath, false);
-                _logWriter.AutoFlush = true;
-                LogToFile($"[AudioListenerBridge] Session started at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                LogToFile($"Init sampleRate={_sampleRate}Hz channels={_channels} ringCapacity={_ringBuffer.Length}");
-            }
+                _logWriter.AutoFlush = true;  }
             catch (Exception ex)
             {
                 Debug.LogError($"[AudioListenerBridge] Failed to create log file: {ex.Message}");
@@ -140,14 +188,7 @@ namespace Klak.Ndi
                 _readOutputCaptureTimer = 0f;
                 WriteReadFromRingCapture();
             }
-
-            // Log buffer diagnostics periodically
-            _diagnosticLogTimer += Time.deltaTime;
-            if (_diagnosticLogTimer >= DIAGNOSTIC_LOG_INTERVAL)
-            {
-                _diagnosticLogTimer = 0f;
-                LogBufferDiagnostics();
-            }
+            
         }
 
         private void OnAudioFilterRead(float[] data, int channels)
@@ -159,11 +200,7 @@ namespace Klak.Ndi
 
             // Create buffer for reading from ring (for diagnostics)
             float[] bufferedData = new float[data.Length];
-            bool hasBufferedData = ReadFromRing(bufferedData);
 
-            // Optional per-frame discontinuity analysis on buffered data
-            if (LogPerFrameDiscontinuities && hasBufferedData)
-                AnalyzeFrame(bufferedData);
 
             // Send ORIGINAL unbuffered data to NdiSender
             // NdiSender will do its own buffering!
@@ -192,9 +229,9 @@ namespace Klak.Ndi
         private bool ReadFromRing(float[] outputBuffer)
         {
             if (_ringBuffer == null) return false;
-
+        
             int capacity = _ringBuffer.Length;
-
+        
             // Initial setup: establish 100ms delay once buffer is half-full
             if (!_readStarted && _availableSamples >= capacity / 2)
             {
@@ -202,14 +239,14 @@ namespace Klak.Ndi
                 _readIndex = (_writeIndex - delay + capacity) % capacity;
                 _readStarted = true;
                 string msg = $"Reading started at index {_readIndex}, write at {_writeIndex} (delay={delay} samples, {delay/(float)(_sampleRate*_channels)*1000:F1}ms)";
-                LogToFile(msg);
+               // LogToFile(msg);
                 Debug.Log($"[AudioListenerBridge] {msg}");
             }
-
+        
             if (!_readStarted) return false;  // Still filling initial buffer
-
+        
             _totalReadCalls++;
-
+        
             // Check if enough samples available between read and write positions
             // NOTE: This calculation has a potential issue - when _writeIndex == _readIndex,
             // it can't distinguish between "buffer empty" and "buffer full"
@@ -218,18 +255,18 @@ namespace Klak.Ndi
             {
                 _underrunCount++;
                 string msg = $"UNDERRUN #{_underrunCount}! Available={available}, Need={outputBuffer.Length}, ReadIdx={_readIndex}, WriteIdx={_writeIndex}";
-                LogToFile(msg);
+                //LogToFile(msg);
                 Debug.LogWarning($"[AudioListenerBridge] Buffer underrun #{_underrunCount}! Available={available}, Need={outputBuffer.Length}, ReadIdx={_readIndex}, WriteIdx={_writeIndex}");
                 return false;
             }
-
+        
             // Read from tracked position (continuous consumption!)
             for (int i = 0; i < outputBuffer.Length; i++)
             {
                 outputBuffer[i] = _ringBuffer[_readIndex];
                 _readIndex = (_readIndex + 1) % capacity;
             }
-
+        
             // Capture the read output if capturing is enabled
             if (_isCapturingReadOutput)
             {
@@ -238,7 +275,7 @@ namespace Klak.Ndi
                     _readFromRingCapture.AddRange(outputBuffer);
                 }
             }
-
+        
             return true;
         }
 
@@ -273,7 +310,7 @@ namespace Klak.Ndi
                     float durationSec = snapshot.Length / (float)(_channels * _sampleRate);
                     Debug.Log($"[AudioListenerBridge] Duration: {durationSec:F2}s");
 
-                    AnalyzeCorruption(snapshot);
+                  
                 }
                 catch (Exception ex)
                 {
@@ -323,7 +360,7 @@ namespace Klak.Ndi
                     float durationSec = capturedData.Length / (float)(_channels * _sampleRate);
                     Debug.Log($"[AudioListenerBridge] Duration: {durationSec:F2}s");
 
-                    AnalyzeCorruption(capturedData);
+
                 }
                 catch (Exception ex)
                 {
@@ -334,105 +371,17 @@ namespace Klak.Ndi
             writeThread.IsBackground = true;
             writeThread.Start();
         }
+        
 
-        private void LogBufferDiagnostics()
-        {
-            if (!_readStarted)
-            {
-                Debug.Log($"[AudioListenerBridge] Buffer still filling... Available={_availableSamples}/{_ringBuffer?.Length ?? 0}");
-                return;
-            }
 
-            int capacity = _ringBuffer.Length;
-            int available = (_writeIndex - _readIndex + capacity) % capacity;
-            float underrunRate = _totalReadCalls > 0 ? (_underrunCount / (float)_totalReadCalls * 100f) : 0f;
-            float availableMs = available / (float)(_sampleRate * _channels) * 1000f;
 
-            string diagnostics = $"Buffer: ReadIdx={_readIndex}, WriteIdx={_writeIndex}, Available={available}/{capacity} ({availableMs:F1}ms), Underruns={_underrunCount}/{_totalReadCalls} ({underrunRate:F2}%), UnbufferedSends={_unbufferedSendCount}";
-            LogToFile(diagnostics);
-
-            Debug.Log($"[AudioListenerBridge] Buffer diagnostics:");
-            Debug.Log($"  ReadIdx={_readIndex}, WriteIdx={_writeIndex}");
-            Debug.Log($"  Available={available}/{capacity} samples ({availableMs:F1}ms)");
-            Debug.Log($"  Underruns={_underrunCount}/{_totalReadCalls} ({underrunRate:F2}%)");
-        }
-
-        // Frame-level quick discontinuity check (not cumulative)
-        private void AnalyzeFrame(float[] data)
-        {
-            if (data == null || data.Length < 2) return;
-            int jumps = 0;
-            float maxJump = 0f;
-            float prev = data[0];
-            for (int i = 1; i < data.Length; i++)
-            {
-                float diff = Mathf.Abs(data[i] - prev);
-                if (diff > JumpThreshold)
-                {
-                    jumps++;
-                    if (diff > maxJump) maxJump = diff;
-                }
-                prev = data[i];
-            }
-            if (jumps > 0)
-                Debug.Log($"[AudioListenerBridge] Frame jumps={jumps} max={maxJump:F4}");
-        }
-
-        // Post-capture aggregate analysis
-        private void AnalyzeCorruption(float[] data)
-        {
-            if (data.Length < 2) return;
-            int largeJumps = 0;
-            float maxJump = 0f;
-
-            for (int i = 1; i < data.Length; i++)
-            {
-                float diff = Mathf.Abs(data[i] - data[i - 1]);
-                if (diff > JumpThreshold)
-                {
-                    largeJumps++;
-                    if (diff > maxJump) maxJump = diff;
-                }
-            }
-
-            float percent = largeJumps / (float)data.Length * 100f;
-            Debug.Log("[AudioListenerBridge] Corruption analysis:");
-            Debug.Log($"  Large jumps (>{JumpThreshold}): {largeJumps} / {data.Length} ({percent:F2}%)");
-            Debug.Log($"  Max jump: {maxJump:F4}");
-
-            if (percent > 0.1f)
-                Debug.LogWarning($"  WARNING: {percent:F2}% discontinuities");
-            else
-                Debug.Log("  Audio appears clean");
-        }
-
-        private void LogToFile(string message)
-        {
-            if (_logWriter == null) return;
-
-            lock (_logLock)
-            {
-                try
-                {
-                    string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                    _logWriter.WriteLine($"[{timestamp}] {message}");
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[AudioListenerBridge] Log write error: {ex.Message}");
-                }
-            }
-        }
 
         private void OnDestroy()
         {
             if (_logWriter != null)
             {
                 try
-                {
-                    LogToFile($"Session ended at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                    LogToFile($"Final stats - Total reads: {_totalReadCalls}, Underruns: {_underrunCount}, Unbuffered sends: {_unbufferedSendCount}");
-                    lock (_logLock)
+                {    lock (_logLock)
                     {
                         _logWriter.Close();
                         _logWriter = null;

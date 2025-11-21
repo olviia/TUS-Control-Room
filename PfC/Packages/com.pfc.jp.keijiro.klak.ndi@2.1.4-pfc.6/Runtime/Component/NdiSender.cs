@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -13,12 +12,17 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Debug = UnityEngine.Debug;
+using System.IO; // Added for raw file output
 
 namespace Klak.Ndi {
 
 [ExecuteInEditMode]
 public sealed partial class NdiSender : MonoBehaviour
 {
+    // Verbose audio debug controls
+    public bool audioDebugVerbose = false; // expose in inspector to toggle
+    [Range(0.0f,1.0f)] public float initialBufferFillFraction = 0.5f; // fraction of ring capacity to collect before starting playback
+
     #region Sender objects
 
     Interop.Send _send;
@@ -104,6 +108,13 @@ public sealed partial class NdiSender : MonoBehaviour
     private int _audioChannels = 2;
     private int _audioSampleRate = 48000;
     private readonly object _audioBufferLock = new object();
+
+    // Debug raw output of what is actually sent to NDI (interleaved ring buffer read)
+    private bool _debugWriteRawAudio = true; // toggle to enable/disable raw dump
+    private FileStream _rawAudioFs;
+    private BinaryWriter _rawAudioBw;
+    private int _rawAudioSamplesWritten = 0;
+    private string _rawAudioFilePath;
 
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
@@ -256,13 +267,34 @@ public sealed partial class NdiSender : MonoBehaviour
             ResetState();
         }
 
+        // Ensure sender objects exist for audio-only usage (they were only created for video before)
+        if (Application.isPlaying && _send == null && audioMode != AudioMode.None)
+        {
+            PrepareSenderObjects();
+        }
+
+        // Ensure ring buffer initialized if audio listener mode active but buffer missing
+        if (Application.isPlaying && audioMode == AudioMode.AudioListener && _audioRingBuffer == null)
+        {
+            sampleRate = AudioSettings.outputSampleRate;
+            _audioSampleRate = sampleRate;
+            _audioChannels = Mathf.Max(_audioChannels, 2); // default assumption, corrected in OnAudioFilterRead
+            int capacity = (_audioSampleRate * _audioChannels * AUDIO_BUFFER_LENGTH_MS) / 1000;
+            _audioRingBuffer = new float[Math.Max(capacity, 1)];
+            _audioWriteIndex = 0;
+            _audioReadIndex = 0;
+            _audioAvailableSamples = 0;
+            _audioReadStarted = false;
+        }
+
         int targetFrameRate = setRenderTargetFrameRate ? frameRate.GetUnityFrameTarget() : -1;
         if (Application.targetFrameRate != targetFrameRate)
             Application.targetFrameRate = targetFrameRate;
 
-        // NDI audio capture diagnostics
+
         if (_audioMode == AudioMode.AudioListener && Application.isPlaying)
         {
+            // NDI audio capture diagnostics
             _ndiCaptureTimer += Time.deltaTime;
             if (_ndiCaptureTimer >= NDI_CAPTURE_INTERVAL && !_isCapturingNdiInput)
             {
@@ -283,25 +315,15 @@ public sealed partial class NdiSender : MonoBehaviour
                 WriteNdiAudioCaptures();
             }
 
-            // Read accumulated buffer from ring and send to NDI (on main thread)
-            if (_audioReadStarted)
+            // Get accumulated audio directly from AudioListenerBridge's ring buffer
+            if (_audioListenerBridge != null)
             {
-                int capacity = _audioRingBuffer.Length;
-                int available;
-                lock (_audioBufferLock)
+                if (_audioListenerBridge.GetAccumulatedAudio(out float[] audioData, out int channels))
                 {
-                    available = (_audioWriteIndex - _audioReadIndex + capacity) % capacity;
-                }
+                    _audioChannels = channels;
 
-                // Read accumulated samples (everything available)
-                if (available > 0)
-                {
-                    float[] accumulatedData = new float[available];
-                    if (ReadFromAudioRing(accumulatedData))
-                    {
-                        // Send accumulated buffer to NDI
-                        SendAudioListenerData(accumulatedData, _audioChannels);
-                    }
+                    // Send to NDI
+                    SendAudioListenerData(audioData, channels);
                 }
             }
         }
@@ -348,32 +370,20 @@ public sealed partial class NdiSender : MonoBehaviour
 
         if (_audioMode == AudioMode.AudioListener)
         {
-            // Update channels if changed
-            if (_audioChannels != channels)
-            {
-                _audioChannels = channels;
-                Debug.Log($"[NdiSender] Audio channels updated to {channels}");
-            }
-
-            // Capture what NdiSender receives from AudioListenerBridge
-            if (_isCapturingNdiInput)
-            {
-                lock (_ndiCaptureLock)
-                {
-                    _ndiInputCapture.AddRange(data);
-                }
-            }
+            _audioChannels = channels;
 
             // Write incoming frame to ring buffer (accumulate for Update)
-            WriteToAudioRing(data);
-        }
-        else
-        if (_audioMode == AudioMode.ObjectBased)
+            WriteToAudioRing(data); }
+        else if (_audioMode == AudioMode.ObjectBased)
         {
+            if (audioDebugVerbose)
+                Debug.Log("[NdiSender][OnAudioFilterRead] ObjectBased mode write.");
             SendObjectBasedChannels();
         }
         else if (VirtualAudio.UseVirtualAudio)
         {
+            if (audioDebugVerbose)
+                Debug.Log("[NdiSender][OnAudioFilterRead] VirtualAudio custom listener mode write.");
             SendCustomListenerData();
         }
     }
@@ -564,14 +574,23 @@ public sealed partial class NdiSender : MonoBehaviour
             {
                 try
                 {
-                    string filename = $"NdiSender_Input_{System.DateTime.Now:HHmmss}.raw";
+                    // Generate unique filename to avoid sharing violations
+                    string baseFilename = $"NdiSender_Input_{System.DateTime.Now:HHmmss}";
+                    string filename = $"{baseFilename}.raw";
+                    int counter = 1;
+                    while (System.IO.File.Exists(filename) && counter < 100)
+                    {
+                        filename = $"{baseFilename}_{counter}.raw";
+                        counter++;
+                    }
+
                     using (var fs = new System.IO.FileStream(filename, System.IO.FileMode.Create))
                     using (var bw = new System.IO.BinaryWriter(fs))
                     {
                         for (int i = 0; i < inputData.Length; i++)
                             bw.Write(inputData[i]);
                     }
-                    Debug.Log($"[NdiSender] Wrote interleaved input: {inputData.Length} samples -> {filename}");
+                    Debug.Log($"[NdiSender] Wrote buffered input: {inputData.Length} samples -> {filename}");
                     float durationSec = inputData.Length / (float)(numChannels * sampleRate);
                     Debug.Log($"[NdiSender] Duration: {durationSec:F2}s, Channels: {numChannels}");
                 }
@@ -589,8 +608,6 @@ public sealed partial class NdiSender : MonoBehaviour
     {
         if (_audioRingBuffer == null) return;
 
-        lock (_audioBufferLock)
-        {
             int capacity = _audioRingBuffer.Length;
             for (int i = 0; i < data.Length; i++)
             {
@@ -598,33 +615,40 @@ public sealed partial class NdiSender : MonoBehaviour
                 _audioWriteIndex = (_audioWriteIndex + 1) % capacity;
             }
             _audioAvailableSamples = Math.Min(_audioAvailableSamples + data.Length, capacity);
-        }
+        
     }
 
     private bool ReadFromAudioRing(float[] outputBuffer)
     {
-        if (_audioRingBuffer == null) return false;
+        if (_audioRingBuffer == null) { if (audioDebugVerbose) Debug.Log("[NdiSender][AudioRing] Skip read: ring buffer null"); return false; }
 
         lock (_audioBufferLock)
         {
             int capacity = _audioRingBuffer.Length;
+            int startThreshold = Mathf.Clamp((int)(capacity * initialBufferFillFraction), 0, capacity - 1);
 
-            // Initial setup: establish delay once buffer is half-full
-            if (!_audioReadStarted && _audioAvailableSamples >= capacity / 2)
+            // Initial setup: establish delay once buffer reaches threshold
+            if (!_audioReadStarted && _audioAvailableSamples >= startThreshold)
             {
-                int delay = capacity / 2;
+                int delay = startThreshold; // use threshold instead of half capacity
                 _audioReadIndex = (_audioWriteIndex - delay + capacity) % capacity;
                 _audioReadStarted = true;
-                Debug.Log($"[NdiSender] Audio buffering started. Delay={delay} samples ({delay/(float)(_audioSampleRate*_audioChannels)*1000:F1}ms)");
+                Debug.Log($"[NdiSender] Audio buffering started. Delay={delay} samples ({delay/(float)(_audioSampleRate*_audioChannels)*1000:F1}ms, fraction={initialBufferFillFraction:F2})");
             }
 
-            if (!_audioReadStarted) return false;  // Still filling buffer
+            if (!_audioReadStarted)
+            {
+                if (audioDebugVerbose)
+                    Debug.Log($"[NdiSender][AudioRing] Waiting for start. Have={_audioAvailableSamples} Need>={startThreshold}");
+                return false;  // Still filling buffer
+            }
 
-            // Check available samples
+            // Check available samples (interleaved)
             int available = (_audioWriteIndex - _audioReadIndex + capacity) % capacity;
             if (available < outputBuffer.Length)
             {
-                Debug.LogWarning($"[NdiSender] Audio buffer underrun! Available={available}, Need={outputBuffer.Length}");
+                if (audioDebugVerbose)
+                    Debug.Log($"[NdiSender][AudioRing] Underrun (available {available} < requested {outputBuffer.Length})");
                 return false;
             }
 
@@ -635,9 +659,26 @@ public sealed partial class NdiSender : MonoBehaviour
                 _audioReadIndex = (_audioReadIndex + 1) % capacity;
             }
 
+            // Adjust available sample counter (approximate)
+            _audioAvailableSamples = Mathf.Max(0, _audioAvailableSamples - outputBuffer.Length);
+
+            if (audioDebugVerbose)
+                Debug.Log($"[NdiSender][AudioRing] Read {outputBuffer.Length} samples, remaining approx {_audioAvailableSamples}, writeIdx={_audioWriteIndex}, readIdx={_audioReadIndex}");
+
+            // Capture buffered output if capturing is enabled
+            if (_isCapturingNdiInput)
+            {
+                lock (_ndiCaptureLock)
+                {
+                    _ndiInputCapture.AddRange(outputBuffer);
+                }
+            }
+
             return true;
         }
     }
+
+
 
     #endregion
 
@@ -969,25 +1010,34 @@ public sealed partial class NdiSender : MonoBehaviour
             _metaDataPtr = IntPtr.Zero;
         }
 
-        sampleRate = AudioSettings.outputSampleRate;
-        _audioSampleRate = sampleRate;
+        if (Application.isPlaying)
+        {
+            sampleRate = AudioSettings.outputSampleRate;
+            _audioSampleRate = sampleRate;
+        }
 
-        // Initialize audio ring buffer
+        // Initialize audio ring buffer (eager init when restarting active)
         if (willBeActivate && audioMode == AudioMode.AudioListener)
         {
-            _audioChannels = 2; // Assuming stereo, will be updated in OnAudioFilterRead
+            _audioChannels = Mathf.Max(_audioChannels, 2); // will be corrected later
             int capacity = (_audioSampleRate * _audioChannels * AUDIO_BUFFER_LENGTH_MS) / 1000;
             _audioRingBuffer = new float[Math.Max(capacity, 1)];
             _audioWriteIndex = 0;
             _audioReadIndex = 0;
             _audioAvailableSamples = 0;
             _audioReadStarted = false;
-            Debug.Log($"[NdiSender] Audio ring buffer initialized: {capacity} samples ({AUDIO_BUFFER_LENGTH_MS}ms)");
+            Debug.Log($"[NdiSender] Audio ring buffer initialized (Restart): {capacity} samples ({AUDIO_BUFFER_LENGTH_MS}ms)");
+
         }
 
         // Debug.Log("Driver capabilties: " + AudioSettings.driverCapabilities);
         ResetState(willBeActivate);
-        ReleaseSenderObjects();
+
+        // Do NOT release sender objects if we are activating (previous behavior disposed them)
+        if (!willBeActivate)
+        {
+            ReleaseSenderObjects();
+        }
     }
 
     internal void ResetState() => ResetState(isActiveAndEnabled);
