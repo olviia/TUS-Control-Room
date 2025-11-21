@@ -35,9 +35,21 @@ namespace Klak.Ndi
         private const float CAPTURE_INTERVAL = 20f;
         private const float CAPTURE_DURATION = 5f;
 
+        // ReadFromRing output capture (to test if tracking works correctly)
+        private System.Collections.Generic.List<float> _readFromRingCapture;
+        private readonly object _capturelock = new object();
+        private bool _isCapturingReadOutput = false;
+        private float _readOutputCaptureTimer = 0f;
+
         // Per-frame analysis control
         private const float JumpThreshold = 0.1f;
         private const bool LogPerFrameDiscontinuities = false;
+
+        // Buffer diagnostics
+        private int _underrunCount = 0;
+        private int _totalReadCalls = 0;
+        private float _diagnosticLogTimer = 0f;
+        private const float DIAGNOSTIC_LOG_INTERVAL = 5f;
 
         private void Start()
         {
@@ -48,6 +60,7 @@ namespace Klak.Ndi
             _ringBuffer = new float[Math.Max(capacity, 1)];
             _writeIndex = 0;
             _availableSamples = 0;
+            _readFromRingCapture = new System.Collections.Generic.List<float>();
             Debug.Log($"[AudioListenerBridge] Init sampleRate={_sampleRate}Hz channels={_channels} ringCapacity={_ringBuffer.Length}");
         }
 
@@ -55,6 +68,7 @@ namespace Klak.Ndi
         {
             if (!Application.isPlaying) return;
 
+            // Handle ring buffer snapshot capture
             _captureTimer += Time.deltaTime;
             if (_captureTimer >= CAPTURE_INTERVAL && !_isCapturing)
             {
@@ -68,6 +82,34 @@ namespace Klak.Ndi
                 _isCapturing = false;
                 _captureTimer = 0f;
                 WriteCapturedAudio();
+            }
+
+            // Handle ReadFromRing output capture (separate from snapshot)
+            _readOutputCaptureTimer += Time.deltaTime;
+            if (_readOutputCaptureTimer >= CAPTURE_INTERVAL && !_isCapturingReadOutput)
+            {
+                _readOutputCaptureTimer = 0f;
+                _isCapturingReadOutput = true;
+                lock (_capturelock)
+                {
+                    _readFromRingCapture.Clear();
+                }
+                Debug.Log("[AudioListenerBridge] Starting ReadFromRing output capture...");
+            }
+
+            if (_isCapturingReadOutput && _readOutputCaptureTimer >= CAPTURE_DURATION)
+            {
+                _isCapturingReadOutput = false;
+                _readOutputCaptureTimer = 0f;
+                WriteReadFromRingCapture();
+            }
+
+            // Log buffer diagnostics periodically
+            _diagnosticLogTimer += Time.deltaTime;
+            if (_diagnosticLogTimer >= DIAGNOSTIC_LOG_INTERVAL)
+            {
+                _diagnosticLogTimer = 0f;
+                LogBufferDiagnostics();
             }
         }
 
@@ -111,6 +153,8 @@ namespace Klak.Ndi
                 _ringBuffer[_writeIndex] = data[i];
                 _writeIndex = (_writeIndex + 1) % capacity;
             }
+            // NOTE: _availableSamples is never decremented in ReadFromRing!
+            // This will saturate at capacity and may not reflect actual available data
             _availableSamples = Math.Min(_availableSamples + data.Length, capacity);
         }
 
@@ -131,11 +175,16 @@ namespace Klak.Ndi
 
             if (!_readStarted) return false;  // Still filling initial buffer
 
+            _totalReadCalls++;
+
             // Check if enough samples available between read and write positions
+            // NOTE: This calculation has a potential issue - when _writeIndex == _readIndex,
+            // it can't distinguish between "buffer empty" and "buffer full"
             int available = (_writeIndex - _readIndex + capacity) % capacity;
             if (available < outputBuffer.Length)
             {
-                Debug.LogWarning($"[AudioListenerBridge] Buffer underrun! Available={available}, Need={outputBuffer.Length}");
+                _underrunCount++;
+                Debug.LogWarning($"[AudioListenerBridge] Buffer underrun #{_underrunCount}! Available={available}, Need={outputBuffer.Length}, ReadIdx={_readIndex}, WriteIdx={_writeIndex}");
                 return false;
             }
 
@@ -144,6 +193,15 @@ namespace Klak.Ndi
             {
                 outputBuffer[i] = _ringBuffer[_readIndex];
                 _readIndex = (_readIndex + 1) % capacity;
+            }
+
+            // Capture the read output if capturing is enabled
+            if (_isCapturingReadOutput)
+            {
+                lock (_capturelock)
+                {
+                    _readFromRingCapture.AddRange(outputBuffer);
+                }
             }
 
             return true;
@@ -190,6 +248,66 @@ namespace Klak.Ndi
 
             writeThread.IsBackground = true;
             writeThread.Start();
+        }
+
+        private void WriteReadFromRingCapture()
+        {
+            float[] capturedData;
+            lock (_capturelock)
+            {
+                if (_readFromRingCapture.Count == 0)
+                {
+                    Debug.LogWarning("[AudioListenerBridge] No ReadFromRing output captured");
+                    return;
+                }
+                capturedData = _readFromRingCapture.ToArray();
+            }
+
+            Thread writeThread = new Thread(() =>
+            {
+                try
+                {
+                    string filename = $"AudioBridge_ReadOutput_{DateTime.Now:HHmmss}.raw";
+                    using (var fs = new FileStream(filename, FileMode.Create))
+                    using (var bw = new BinaryWriter(fs))
+                    {
+                        for (int i = 0; i < capturedData.Length; i++)
+                            bw.Write(capturedData[i]);
+                    }
+
+                    Debug.Log($"[AudioListenerBridge] Wrote ReadFromRing output: {capturedData.Length} samples -> {filename}");
+                    float durationSec = capturedData.Length / (float)(_channels * _sampleRate);
+                    Debug.Log($"[AudioListenerBridge] Duration: {durationSec:F2}s");
+
+                    AnalyzeCorruption(capturedData);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[AudioListenerBridge] Write error: {ex.Message}");
+                }
+            });
+
+            writeThread.IsBackground = true;
+            writeThread.Start();
+        }
+
+        private void LogBufferDiagnostics()
+        {
+            if (!_readStarted)
+            {
+                Debug.Log($"[AudioListenerBridge] Buffer still filling... Available={_availableSamples}/{_ringBuffer?.Length ?? 0}");
+                return;
+            }
+
+            int capacity = _ringBuffer.Length;
+            int available = (_writeIndex - _readIndex + capacity) % capacity;
+            float underrunRate = _totalReadCalls > 0 ? (_underrunCount / (float)_totalReadCalls * 100f) : 0f;
+            float availableMs = available / (float)(_sampleRate * _channels) * 1000f;
+
+            Debug.Log($"[AudioListenerBridge] Buffer diagnostics:");
+            Debug.Log($"  ReadIdx={_readIndex}, WriteIdx={_writeIndex}");
+            Debug.Log($"  Available={available}/{capacity} samples ({availableMs:F1}ms)");
+            Debug.Log($"  Underruns={_underrunCount}/{_totalReadCalls} ({underrunRate:F2}%)");
         }
 
         // Frame-level quick discontinuity check (not cumulative)
