@@ -42,16 +42,20 @@ namespace Klak.Ndi.Audio
         private int _readIndex;
         private bool _readStarted;
 
+        // Cached game object name for thread-safe logging
+        private string _cachedName;
+
         private void Start()
         {
             if (!Application.isPlaying) return;
+            _cachedName = gameObject.name; // Cache name on main thread
             _sampleRate = AudioSettings.outputSampleRate;
             // Allocate ring buffer: samples = sampleRate * channels * (ms/1000)
             int capacity = (_sampleRate * _channels * BufferLengthMS) / 1000;
             _ringBuffer = new float[Math.Max(capacity, 1)];
             _writeIndex = 0;
             _availableSamples = 0;
-            Debug.Log($"[AudioSourceListener-{gameObject.name}] Init sampleRate={_sampleRate}Hz channels={_channels} ringCapacity={_ringBuffer.Length}");
+            Debug.Log($"[AudioSourceListener-{_cachedName}] Init sampleRate={_sampleRate}Hz channels={_channels} ringCapacity={_ringBuffer.Length}");
         }
 
         private void OnAudioFilterRead(float[] data, int channels)
@@ -241,7 +245,9 @@ namespace Klak.Ndi.Audio
                 int delay = capacity / 2;
                 _readIndex = (_writeIndex - delay + capacity) % capacity;
                 _readStarted = true;
-                Debug.Log($"[AudioSourceListener-{gameObject.name}] Reading started at index {_readIndex}, write at {_writeIndex} (delay={delay} samples, {delay/(float)(_sampleRate*_channels)*1000:F1}ms)");
+
+                
+                Debug.Log($"[AudioSourceListener-{_cachedName}] Reading started at index {_readIndex}, write at {_writeIndex} (delay={delay} samples, {delay/(float)(_sampleRate*_channels)*1000:F1}ms)");
             }
 
             if (!_readStarted) return false;  // Still filling initial buffer
@@ -250,7 +256,7 @@ namespace Klak.Ndi.Audio
             int available = (_writeIndex - _readIndex + capacity) % capacity;
             if (available < outputBuffer.Length)
             {
-                Debug.LogWarning($"[AudioSourceListener-{gameObject.name}] Buffer underrun! Available={available}, Need={outputBuffer.Length}");
+                Debug.LogWarning($"[AudioSourceListener-{_cachedName}] Buffer underrun! Available={available}, Need={outputBuffer.Length}");
                 return false;
             }
 

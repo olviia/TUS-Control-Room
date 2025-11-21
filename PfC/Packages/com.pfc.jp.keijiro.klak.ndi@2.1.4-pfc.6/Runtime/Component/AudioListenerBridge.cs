@@ -41,6 +41,11 @@ namespace Klak.Ndi
         private bool _isCapturingReadOutput = false;
         private float _readOutputCaptureTimer = 0f;
 
+        // Buffered callback data (to send from Update instead of audio thread)
+        private System.Collections.Generic.Queue<float[]> _callbackQueue = new System.Collections.Generic.Queue<float[]>();
+        private readonly object _callbackLock = new object();
+        private int _callbackChannels = 2;
+
         // Per-frame analysis control
         private const float JumpThreshold = 0.1f;
         private const bool LogPerFrameDiscontinuities = false;
@@ -50,6 +55,12 @@ namespace Klak.Ndi
         private int _totalReadCalls = 0;
         private float _diagnosticLogTimer = 0f;
         private const float DIAGNOSTIC_LOG_INTERVAL = 5f;
+
+        // File logging for diagnostics
+        private StreamWriter _logWriter;
+        private readonly object _logLock = new object();
+        private string _logFilePath;
+        private int _unbufferedSendCount = 0;
 
         private void Start()
         {
@@ -61,7 +72,33 @@ namespace Klak.Ndi
             _writeIndex = 0;
             _availableSamples = 0;
             _readFromRingCapture = new System.Collections.Generic.List<float>();
+
+            // Initialize file logging with unique filename
+            string baseFilename = $"AudioBridge_Log_{DateTime.Now:yyyyMMdd_HHmmss}";
+            _logFilePath = $"{baseFilename}.txt";
+            int counter = 1;
+
+            // If file is locked, try with counter suffix
+            while (File.Exists(_logFilePath) && counter < 100)
+            {
+                _logFilePath = $"{baseFilename}_{counter}.txt";
+                counter++;
+            }
+
+            try
+            {
+                _logWriter = new StreamWriter(_logFilePath, false);
+                _logWriter.AutoFlush = true;
+                LogToFile($"[AudioListenerBridge] Session started at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                LogToFile($"Init sampleRate={_sampleRate}Hz channels={_channels} ringCapacity={_ringBuffer.Length}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[AudioListenerBridge] Failed to create log file: {ex.Message}");
+            }
+
             Debug.Log($"[AudioListenerBridge] Init sampleRate={_sampleRate}Hz channels={_channels} ringCapacity={_ringBuffer.Length}");
+            Debug.Log($"[AudioListenerBridge] Logging to file: {_logFilePath}");
         }
 
         private void Update()
@@ -81,7 +118,7 @@ namespace Klak.Ndi
             {
                 _isCapturing = false;
                 _captureTimer = 0f;
-                WriteCapturedAudio();
+                // WriteCapturedAudio(); // Commented out - not needed for debugging NDI path
             }
 
             // Handle ReadFromRing output capture (separate from snapshot)
@@ -117,10 +154,10 @@ namespace Klak.Ndi
         {
             _channels = channels;
 
-            // Write incoming frame into ring buffer
+            // Write incoming frame into ring buffer (for diagnostics)
             WriteToRing(data);
 
-            // Create buffer for reading from ring
+            // Create buffer for reading from ring (for diagnostics)
             float[] bufferedData = new float[data.Length];
             bool hasBufferedData = ReadFromRing(bufferedData);
 
@@ -128,19 +165,13 @@ namespace Klak.Ndi
             if (LogPerFrameDiscontinuities && hasBufferedData)
                 AnalyzeFrame(bufferedData);
 
-            // Forward buffered data to external listener (NDI callback)
+            // Send ORIGINAL unbuffered data to NdiSender
+            // NdiSender will do its own buffering!
             lock (_lock)
             {
-                if (hasBufferedData)
-                {
-                    // Send buffered data to NDI (not original data!)
-                    _onAudioFilterReadEvent?.Invoke(bufferedData, channels);
-                }
-                else
-                {
-                    // Still filling buffer, send original data temporarily
-                    _onAudioFilterReadEvent?.Invoke(data, channels);
-                }
+                float[] copy = new float[data.Length];
+                System.Array.Copy(data, copy, data.Length);
+                _onAudioFilterReadEvent?.Invoke(copy, channels);
             }
         }
 
@@ -170,7 +201,9 @@ namespace Klak.Ndi
                 int delay = capacity / 2;
                 _readIndex = (_writeIndex - delay + capacity) % capacity;
                 _readStarted = true;
-                Debug.Log($"[AudioListenerBridge] Reading started at index {_readIndex}, write at {_writeIndex} (delay={delay} samples, {delay/(float)(_sampleRate*_channels)*1000:F1}ms)");
+                string msg = $"Reading started at index {_readIndex}, write at {_writeIndex} (delay={delay} samples, {delay/(float)(_sampleRate*_channels)*1000:F1}ms)";
+                LogToFile(msg);
+                Debug.Log($"[AudioListenerBridge] {msg}");
             }
 
             if (!_readStarted) return false;  // Still filling initial buffer
@@ -184,6 +217,8 @@ namespace Klak.Ndi
             if (available < outputBuffer.Length)
             {
                 _underrunCount++;
+                string msg = $"UNDERRUN #{_underrunCount}! Available={available}, Need={outputBuffer.Length}, ReadIdx={_readIndex}, WriteIdx={_writeIndex}";
+                LogToFile(msg);
                 Debug.LogWarning($"[AudioListenerBridge] Buffer underrun #{_underrunCount}! Available={available}, Need={outputBuffer.Length}, ReadIdx={_readIndex}, WriteIdx={_writeIndex}");
                 return false;
             }
@@ -267,7 +302,16 @@ namespace Klak.Ndi
             {
                 try
                 {
-                    string filename = $"AudioBridge_ReadOutput_{DateTime.Now:HHmmss}.raw";
+                    // Generate unique filename to avoid sharing violations
+                    string baseFilename = $"AudioBridge_ReadOutput_{DateTime.Now:HHmmss}";
+                    string filename = $"{baseFilename}.raw";
+                    int counter = 1;
+                    while (File.Exists(filename) && counter < 100)
+                    {
+                        filename = $"{baseFilename}_{counter}.raw";
+                        counter++;
+                    }
+
                     using (var fs = new FileStream(filename, FileMode.Create))
                     using (var bw = new BinaryWriter(fs))
                     {
@@ -303,6 +347,9 @@ namespace Klak.Ndi
             int available = (_writeIndex - _readIndex + capacity) % capacity;
             float underrunRate = _totalReadCalls > 0 ? (_underrunCount / (float)_totalReadCalls * 100f) : 0f;
             float availableMs = available / (float)(_sampleRate * _channels) * 1000f;
+
+            string diagnostics = $"Buffer: ReadIdx={_readIndex}, WriteIdx={_writeIndex}, Available={available}/{capacity} ({availableMs:F1}ms), Underruns={_underrunCount}/{_totalReadCalls} ({underrunRate:F2}%), UnbufferedSends={_unbufferedSendCount}";
+            LogToFile(diagnostics);
 
             Debug.Log($"[AudioListenerBridge] Buffer diagnostics:");
             Debug.Log($"  ReadIdx={_readIndex}, WriteIdx={_writeIndex}");
@@ -357,6 +404,46 @@ namespace Klak.Ndi
                 Debug.LogWarning($"  WARNING: {percent:F2}% discontinuities");
             else
                 Debug.Log("  Audio appears clean");
+        }
+
+        private void LogToFile(string message)
+        {
+            if (_logWriter == null) return;
+
+            lock (_logLock)
+            {
+                try
+                {
+                    string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                    _logWriter.WriteLine($"[{timestamp}] {message}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[AudioListenerBridge] Log write error: {ex.Message}");
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_logWriter != null)
+            {
+                try
+                {
+                    LogToFile($"Session ended at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    LogToFile($"Final stats - Total reads: {_totalReadCalls}, Underruns: {_underrunCount}, Unbuffered sends: {_unbufferedSendCount}");
+                    lock (_logLock)
+                    {
+                        _logWriter.Close();
+                        _logWriter = null;
+                    }
+                    Debug.Log($"[AudioListenerBridge] Log file closed: {_logFilePath}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[AudioListenerBridge] Error closing log: {ex.Message}");
+                }
+            }
         }
     }
 }
