@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-This document explains the ring buffer architecture implemented to eliminate audio crackling in NDI Sender. The solution uses **ring buffers in bridge components** (AudioListenerBridge and AudioSourceListener) to decouple Unity's audio thread from the NDI network transmission thread, preventing timing mismatches that caused audio artifacts.
+This document explains the ring buffer architecture implemented to eliminate audio crackling in NDI Sender for **AudioListener** and **Individual** modes. The solution uses **ring buffers in bridge components** (AudioListenerBridge and AudioListenerIndividualBridge) to decouple Unity's audio thread from the NDI network transmission thread, preventing timing mismatches that caused audio artifacts.
 
-**Key Insight**: Buffering happens in the bridge/listener components, NOT in NdiSender. NdiSender simply retrieves buffered data from Update loop and sends to NDI.
+**Key Insight**: Buffering happens in the bridge components, NOT in NdiSender. NdiSender simply retrieves buffered data from Update loop and sends to NDI.
 
 ---
 
@@ -39,17 +39,14 @@ Audio Thread (OnAudioFilterRead)          Main Thread (Update Loop)
     Accumulates audio ──────────────────────────────┘
 ```
 
-**Object-Based Mode:**
+**Individual Mode:**
 ```
-Audio Thread (OnAudioFilterRead)                Main Thread (Update Loop)
-            ↓                                             ↓
-    AudioSourceListener                          SendObjectBasedChannels()
-      Ring Buffer (200ms)                                 ↓
-            ↓                                    GetObjectBasedAudio()
-    VirtualAudio.SetAudioDataFromSource()                ↓
-            ↓                                         Send to NDI
-      VirtualAudio stores ────────────────────────────────┘
-    (aggregates all sources)
+Audio Thread (OnAudioFilterRead)          Main Thread (Update Loop)
+            ↓                                       ↓
+  AudioListenerIndividualBridge           GetAccumulatedAudio()
+      Ring Buffer (200ms)                           ↓
+            ↓                                   Send to NDI
+    Accumulates audio ──────────────────────────────┘
 ```
 
 ### Key Components
@@ -62,23 +59,13 @@ Audio Thread (OnAudioFilterRead)                Main Thread (Update Loop)
 - Provides `GetAccumulatedAudio()` method for batch retrieval
 - **NdiSender.Update()** calls `GetAccumulatedAudio()` from main thread (line ~287)
 
-#### 2. AudioSourceListener.cs (Object-Based Mode)
-**File:** `Runtime/Component/VirtualAudio/AudioSourceListener.cs`
-
-- One instance attached to each AudioSource that needs capturing
-- Captures audio in `OnAudioFilterRead` (audio thread)
-- Buffers into a **200ms ring buffer** (one per AudioSource)
-- Reads buffered data and sends to `VirtualAudio.SetAudioDataFromSource()`
-- VirtualAudio aggregates data from all sources
-- **NdiSender.Update()** calls `SendObjectBasedChannels()` which calls `VirtualAudio.GetObjectBasedAudio()` (line ~300)
-
-#### 3. NdiSender.cs (Coordinator)
+#### 2. NdiSender.cs (Coordinator)
 **File:** `Runtime/Component/NdiSender.cs`
 
 - **Does NOT use its own ring buffer** (variables at lines 101-110 are unused/leftover)
 - Retrieves audio from bridges in Update loop (main thread):
   - **AudioListener mode**: calls `_audioListenerBridge.GetAccumulatedAudio()` (line ~287)
-  - **Object-Based mode**: calls `SendObjectBasedChannels()` → `VirtualAudio.GetObjectBasedAudio()` (line ~300)
+  - **Individual mode**: calls `_selectedIndividualBridge.GetAccumulatedAudio()` (line ~328)
 - Sends to NDI with consistent timing from main thread
 
 ---
@@ -110,15 +97,6 @@ Unity Audio Thread → OnAudioFilterRead → DIRECT NDI Send (same thread)
 private void OnAudioFilterRead(float[] data, int channels) {
     if (_audioMode == AudioMode.AudioListener) {
         SendAudioListenerData(data, channels);  // IMMEDIATE SEND - WRONG!
-    }
-}
-```
-
-**Old Object-Based Mode (oldndisender.cs:289):**
-```csharp
-private void OnAudioFilterRead(float[] data, int channels) {
-    if (_audioMode == AudioMode.ObjectBased) {
-        SendObjectBasedChannels();  // CALLED FROM AUDIO THREAD - WRONG!
     }
 }
 ```
@@ -203,40 +181,6 @@ if (_audioMode == AudioMode.AudioListener && Application.isPlaying) {
 }
 ```
 
-### AudioSourceListener Ring Buffer (To Be Implemented)
-
-**File:** `Runtime/Component/VirtualAudio/AudioSourceListener.cs`
-
-**Pattern (same as AudioListenerBridge):**
-1. Add ring buffer variables
-2. Initialize in Start()
-3. WriteToRing() in OnAudioFilterRead
-4. ReadFromRing() before sending to VirtualAudio
-5. Send buffered data (not raw data) to VirtualAudio
-
-**Current Problem (line 47):**
-```csharp
-VirtualAudio.SetAudioDataFromSource(_audioSourceData.id, data, channels);
-// Sends raw data directly - NO BUFFERING!
-```
-
-**Solution:**
-```csharp
-// Write to ring buffer
-WriteToRing(data);
-
-// Read buffered data
-float[] bufferedData = new float[data.Length];
-bool hasBufferedData = ReadFromRing(bufferedData);
-
-if (hasBufferedData) {
-    VirtualAudio.SetAudioDataFromSource(_audioSourceData.id, bufferedData, channels);
-} else {
-    // Still filling buffer, send original temporarily
-    VirtualAudio.SetAudioDataFromSource(_audioSourceData.id, data, channels);
-}
-```
-
 ### How It All Connects
 
 **AudioListener Mode Flow:**
@@ -245,13 +189,11 @@ if (hasBufferedData) {
 3. `NdiSender.Update()` calls `GetAccumulatedAudio()` (main thread)
 4. NdiSender sends accumulated audio to NDI
 
-**Object-Based Mode Flow:**
-1. Unity audio driver calls `AudioSourceListener.OnAudioFilterRead()` for each source (audio thread)
-2. AudioSourceListener writes to ring buffer, reads buffered data
-3. AudioSourceListener sends buffered data to VirtualAudio
-4. `NdiSender.Update()` calls `SendObjectBasedChannels()` (main thread)
-5. `SendObjectBasedChannels()` calls `VirtualAudio.GetObjectBasedAudio()`
-6. NdiSender sends aggregated audio to NDI
+**Individual Mode Flow:**
+1. Unity audio driver calls `AudioListenerIndividualBridge.OnAudioFilterRead()` (audio thread)
+2. AudioListenerIndividualBridge writes to ring buffer
+3. `NdiSender.Update()` calls `GetAccumulatedAudio()` from the selected bridge (main thread)
+4. NdiSender sends accumulated audio to NDI
 
 ---
 
@@ -313,29 +255,6 @@ Main Thread (16.7ms intervals for 60fps) → Read Buffer → NDI Send → SMOOTH
 
 ---
 
-## Performance Characteristics
-
-### CPU Overhead
-- **Write**: O(n) where n = frame size (512-2048 samples) → ~1-5μs
-- **Read**: O(m) where m = accumulated samples → ~5-15μs
-- **Total CPU**: <0.1%
-
-### Memory Usage
-- **AudioListener Mode**: One buffer = ~76KB (48kHz stereo, 200ms)
-- **Object-Based Mode**: Per AudioSource = ~76KB each (10 sources = ~760KB)
-
-### Latency
-- **Base Latency**: ~100ms (initial buffer delay)
-- **Total Latency**: ~100-120ms (including NDI transmission)
-- **Jitter**: <5ms (very stable)
-
-### Jitter Tolerance
-- **Before**: ±2-5ms (crackling beyond this)
-- **After**: ±80-100ms (no crackling even under heavy load)
-- **Improvement**: 20x better!
-
----
-
 ## Tunable Parameters
 
 ### Buffer Length
@@ -369,43 +288,15 @@ int startThreshold = (int)(capacity * initialBufferFillFraction);
 - `WriteToRing()`: lines 215-227
 - `OnAudioFilterRead()`: lines 194-213
 
-### AudioSourceListener.cs
-- **Currently**: Sends raw data directly (line 47) - NO BUFFERING
-- **To implement**: Ring buffer pattern (same as AudioListenerBridge)
+### AudioListenerIndividualBridge.cs
+- Inherits all ring buffer functionality from AudioListenerBridge
+- Adds AudioSource requirement and registration system
+- Uses Bridge ID for identification
 
 ### NdiSender.cs
 - AudioListener mode retrieval: lines 282-295
-- Object-based mode retrieval: lines 298-301
+- Individual mode retrieval: lines 328-361
 - **Important**: Ring buffer variables (lines 101-110) are UNUSED
-
----
-
-## Implementation Status
-
-### AudioListener Mode: ✅ COMPLETE
-- AudioListenerBridge has ring buffer
-- NdiSender.Update() calls GetAccumulatedAudio()
-- Audio is smooth, no crackling
-
-### Object-Based Mode: 🔄 IN PROGRESS
-- NdiSender.Update() now calls SendObjectBasedChannels() ✅
-- AudioSourceListener needs ring buffer implementation ⚠️
-- Currently sends raw data without buffering
-
----
-
-## Next Steps for AudioSourceListener
-
-1. Add ring buffer variables (same as AudioListenerBridge)
-2. Add Start() method to initialize buffer
-3. Add WriteToRing() method
-4. Add ReadFromRing() method
-5. Modify OnAudioFilterRead() to use buffered data:
-   - Write incoming data to ring
-   - Read buffered data from ring
-   - Send buffered data to VirtualAudio
-
-This will complete the buffering pattern for object-based mode.
 
 ---
 
@@ -466,10 +357,7 @@ if (_audioMode == AudioMode.Individual && Application.isPlaying) {
 
 ### Manual Recovery
 
-If audio stops (e.g., when NdiReceiver enables audio), you can manually restart:
-1. Right-click **AudioListenerIndividualBridge** in Inspector
-2. Select **"Debug Audio State"** to check status
-3. Select **"Restart Audio Source"** to restart playback
+If audio stops (e.g., when NdiReceiver enables audio), you can manually restart the AudioSource by toggling it off and on again in the Inspector, or by restarting play mode.
 
 ---
 
@@ -513,4 +401,3 @@ If audio stops (e.g., when NdiReceiver enables audio), you can manually restart:
 |------|----------|-----------------|----------------|
 | **AudioListener** | All scene audio | AudioListenerBridge | Unity's mixed output |
 | **Individual** | Single AudioSource | AudioListenerIndividualBridge | Specific AudioSource |
-| **ObjectBased** | Multiple positioned sources | AudioSourceListener | VirtualAudio mixing |
