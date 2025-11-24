@@ -15,7 +15,11 @@ namespace Klak.Ndi
 
         private AudioSource _audioSource;
         private bool _isRegistered = false;
-        
+
+        private void Awake()
+        {
+            _audioSource = GetComponent<AudioSource>();
+        }
 
         private void OnEnable()
         {

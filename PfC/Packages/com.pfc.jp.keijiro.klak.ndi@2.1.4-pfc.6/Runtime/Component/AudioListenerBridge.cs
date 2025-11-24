@@ -27,7 +27,9 @@ namespace Klak.Ndi
             lock (_bufferAccessLock)
             {
                 if (_ringBuffer == null)
+                {
                     return false;
+                }
 
                 int capacity = _ringBuffer.Length;
 
@@ -37,16 +39,19 @@ namespace Klak.Ndi
                     int delay = capacity / 2;
                     _ndiReadIndex = (_writeIndex - delay + capacity) % capacity;
                     _ndiReadStarted = true;
-                    Debug.Log($"[AudioListenerBridge] NdiSender read started at index {_ndiReadIndex}, write at {_writeIndex}");
                 }
 
                 if (!_ndiReadStarted)
+                {
                     return false;
+                }
 
                 int available = (_writeIndex - _ndiReadIndex + capacity) % capacity;
 
                 if (available <= 0)
+                {
                     return false;
+                }
 
                 // Create array with accumulated data
                 audioData = new float[available];
@@ -97,13 +102,13 @@ namespace Klak.Ndi
         }
 
 
-        private void OnAudioFilterRead(float[] data, int channels)
+        protected virtual void OnAudioFilterRead(float[] data, int channels)
         {
             _channels = channels;
 
             // Write incoming frame into ring buffer (for diagnostics)
             WriteToRing(data);
-            
+
         }
 
         private void WriteToRing(float[] data)

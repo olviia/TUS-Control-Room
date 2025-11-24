@@ -409,6 +409,91 @@ This will complete the buffering pattern for object-based mode.
 
 ---
 
+## Individual Audio Mode
+
+### Overview
+Individual mode was added to capture audio from a **single specific AudioSource** (not all scene audio like AudioListener, not mixed sources like ObjectBased).
+
+### Components
+
+#### AudioListenerIndividualBridge.cs
+**File:** `Runtime/Component/AudioListenerIndividualBridge.cs`
+
+- Inherits from `AudioListenerBridge` (reuses all ring buffer functionality)
+- Requires `AudioSource` component
+- Registers itself with NdiSender by Bridge ID
+- Uses the same 200ms ring buffer as AudioListenerBridge
+
+#### How to Use Individual Mode
+
+1. **Add AudioListenerIndividualBridge** to your AudioSource GameObject
+2. **Set Bridge ID** in the component (e.g., 0, 1, 2, etc.)
+3. **In NdiSender**, select **Individual** audio mode
+4. **Set Audio Bridge ID** to match the bridge you want to capture
+
+**Example Setup:**
+```
+GameObject: "DialogueAudio"
+  ├─ AudioSource (playing dialogue)
+  └─ AudioListenerIndividualBridge (Bridge ID = 0)
+
+GameObject: "NdiSender"
+  └─ NdiSender (Audio Mode = Individual, Audio Bridge ID = 0)
+```
+
+### Registration System
+
+**NdiSender.cs (lines 93-121):**
+```csharp
+private static Dictionary<int, AudioListenerIndividualBridge> _registeredIndividualBridges;
+
+public static void RegisterIndividualAudioBridge(AudioListenerIndividualBridge bridge) {
+    _registeredIndividualBridges[bridge.BridgeId] = bridge;
+}
+```
+
+**NdiSender.cs Update() (lines 328-361):**
+```csharp
+if (_audioMode == AudioMode.Individual && Application.isPlaying) {
+    // Get selected bridge by ID (cached in Restart)
+    if (_selectedIndividualBridge != null) {
+        if (_selectedIndividualBridge.GetAccumulatedAudio(out float[] audioData, out int channels)) {
+            SendAudioListenerData(audioData, channels);
+        }
+    }
+}
+```
+
+### Manual Recovery
+
+If audio stops (e.g., when NdiReceiver enables audio), you can manually restart:
+1. Right-click **AudioListenerIndividualBridge** in Inspector
+2. Select **"Debug Audio State"** to check status
+3. Select **"Restart Audio Source"** to restart playback
+
+---
+
+## Known Issues and Workarounds
+
+### Issue: NdiReceiver Breaking Individual Mode Audio
+
+**Problem:** When NdiReceiver enables audio, it calls `AudioSettings.Reset()` to change speaker mode, which causes Unity to stop calling `OnAudioFilterRead` on other AudioSources, breaking Individual mode.
+
+**Root Cause:** `NdiReceiver.ResetAudioSpeakerSetup()` (line ~1150) calls `AudioSettings.Reset(audioConfiguration)` which reinitializes Unity's audio system.
+
+**Solution:** Commented out `AudioSettings.Reset()` in NdiReceiver.cs to prevent audio system reinitialization.
+
+**File:** `Runtime/Component/NdiReceiver.cs` line ~1150
+```csharp
+// AudioSettings.Reset(audioConfiguration);  // COMMENTED OUT - breaks Individual mode
+```
+
+**Alternative:** Set Unity's default speaker mode to Stereo in Project Settings to minimize the need for runtime changes:
+1. Edit → Project Settings → Audio
+2. Set "Default Speaker Mode" to **Stereo**
+
+---
+
 ## Summary
 
 | Aspect | Old | New |
@@ -421,3 +506,11 @@ This will complete the buffering pattern for object-based mode.
 | **Audio Quality** | Crackling | Smooth, artifact-free |
 
 **Key Principle**: Buffer on audio thread, retrieve from main thread, send to NDI with consistent timing.
+
+### Audio Modes Comparison
+
+| Mode | Use Case | Buffer Location | Capture Method |
+|------|----------|-----------------|----------------|
+| **AudioListener** | All scene audio | AudioListenerBridge | Unity's mixed output |
+| **Individual** | Single AudioSource | AudioListenerIndividualBridge | Specific AudioSource |
+| **ObjectBased** | Multiple positioned sources | AudioSourceListener | VirtualAudio mixing |

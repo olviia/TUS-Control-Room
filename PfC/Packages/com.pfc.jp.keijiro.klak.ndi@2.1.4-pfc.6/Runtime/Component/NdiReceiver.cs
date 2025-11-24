@@ -1137,7 +1137,7 @@ public sealed partial class NdiReceiver : MonoBehaviour
 				_usingVirtualSpeakers = false;
 				Debug.Log("Setting Speaker Mode to Stereo");
 				audioConfiguration.speakerMode = AudioSpeakerMode.Stereo;
-				AudioSettings.Reset(audioConfiguration);
+				//AudioSettings.Reset(audioConfiguration);
 				CheckPassthroughAudioSource();
 				return;
 			}

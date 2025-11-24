@@ -12,8 +12,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Debug = UnityEngine.Debug;
-using System.IO; // Added for raw file output
-
 namespace Klak.Ndi {
 
 [ExecuteInEditMode]
@@ -120,15 +118,6 @@ public sealed partial class NdiSender : MonoBehaviour
         }
     }
 
-    // Audio diagnostics for debugging
-    private System.Collections.Generic.List<float> _ndiInputCapture;
-    private bool _isCapturingNdiInput = false;
-    private bool _isCapturingNdiPlanar = false;
-    private float _ndiCaptureTimer = 0f;
-    private const float NDI_CAPTURE_INTERVAL = 20f;
-    private const float NDI_CAPTURE_DURATION = 5f;
-    private readonly object _ndiCaptureLock = new object();
-
     // Ring buffer for audio (accumulates incoming frames)
     private const int AUDIO_BUFFER_LENGTH_MS = 200;
     private float[] _audioRingBuffer;
@@ -139,13 +128,6 @@ public sealed partial class NdiSender : MonoBehaviour
     private int _audioChannels = 2;
     private int _audioSampleRate = 48000;
     private readonly object _audioBufferLock = new object();
-
-    // Debug raw output of what is actually sent to NDI (interleaved ring buffer read)
-    private bool _debugWriteRawAudio = true; // toggle to enable/disable raw dump
-    private FileStream _rawAudioFs;
-    private BinaryWriter _rawAudioBw;
-    private int _rawAudioSamplesWritten = 0;
-    private string _rawAudioFilePath;
 
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
@@ -292,12 +274,7 @@ public sealed partial class NdiSender : MonoBehaviour
         
         if (audioMode != AudioMode.CustomVirtualAudioSetup)
             VirtualAudio.PlayCenteredAudioSourceOnAllListeners = playCenteredAudioSourcesOnAllSpeakers;
-      
-        if (_audioMode != audioMode || _lastVirtualListenerDistance != virtualListenerDistance)
-        {
-            Debug.Log($"[NdiSender] Audio mode changed: {_audioMode} -> {audioMode}, calling ResetState()");
-            ResetState();
-        }
+        
 
         // Ensure sender objects exist for audio-only usage (they were only created for video before)
         if (Application.isPlaying && _send == null && audioMode != AudioMode.None)
@@ -347,17 +324,9 @@ public sealed partial class NdiSender : MonoBehaviour
                 // Get buffered audio from the selected bridge
                 if (_selectedIndividualBridge.GetAccumulatedAudio(out float[] audioData, out int channels))
                 {
-                    if (audioDebugVerbose)
-                        Debug.Log($"[NdiSender] Sending audio from bridge ID {objectBasedBridgeId}: {audioData.Length} samples");
-
                     // Send audio using same method as AudioListener mode
                     SendAudioListenerData(audioData, channels);
                 }
-            }
-            else
-            {
-                if (audioDebugVerbose)
-                    Debug.Log($"[NdiSender] No bridge registered with ID {objectBasedBridgeId}");
             }
         }
     }
@@ -400,11 +369,9 @@ public sealed partial class NdiSender : MonoBehaviour
     {
         if (_audioMode == AudioMode.None)
             return;
-        
+
         else if (VirtualAudio.UseVirtualAudio)
         {
-            if (audioDebugVerbose)
-                Debug.Log("[NdiSender][OnAudioFilterRead] VirtualAudio custom listener mode write.");
             SendCustomListenerData();
         }
     }
@@ -579,52 +546,6 @@ public sealed partial class NdiSender : MonoBehaviour
         }
     }
 
-    private void WriteNdiAudioCaptures()
-    {
-        float[] inputData = null;
-
-        lock (_ndiCaptureLock)
-        {
-            if (_ndiInputCapture != null && _ndiInputCapture.Count > 0)
-                inputData = _ndiInputCapture.ToArray();
-        }
-
-        if (inputData != null)
-        {
-            System.Threading.Thread thread1 = new System.Threading.Thread(() =>
-            {
-                try
-                {
-                    // Generate unique filename to avoid sharing violations
-                    string baseFilename = $"NdiSender_Input_{System.DateTime.Now:HHmmss}";
-                    string filename = $"{baseFilename}.raw";
-                    int counter = 1;
-                    while (System.IO.File.Exists(filename) && counter < 100)
-                    {
-                        filename = $"{baseFilename}_{counter}.raw";
-                        counter++;
-                    }
-
-                    using (var fs = new System.IO.FileStream(filename, System.IO.FileMode.Create))
-                    using (var bw = new System.IO.BinaryWriter(fs))
-                    {
-                        for (int i = 0; i < inputData.Length; i++)
-                            bw.Write(inputData[i]);
-                    }
-                    Debug.Log($"[NdiSender] Wrote buffered input: {inputData.Length} samples -> {filename}");
-                    float durationSec = inputData.Length / (float)(numChannels * sampleRate);
-                    Debug.Log($"[NdiSender] Duration: {durationSec:F2}s, Channels: {numChannels}");
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogError($"[NdiSender] Input write error: {ex.Message}");
-                }
-            });
-            thread1.IsBackground = true;
-            thread1.Start();
-        }
-    }
-
     private void WriteToAudioRing(float[] data)
     {
         if (_audioRingBuffer == null) return;
@@ -685,15 +606,6 @@ public sealed partial class NdiSender : MonoBehaviour
 
             if (audioDebugVerbose)
                 Debug.Log($"[NdiSender][AudioRing] Read {outputBuffer.Length} samples, remaining approx {_audioAvailableSamples}, writeIdx={_audioWriteIndex}, readIdx={_audioReadIndex}");
-
-            // Capture buffered output if capturing is enabled
-            if (_isCapturingNdiInput)
-            {
-                lock (_ndiCaptureLock)
-                {
-                    _ndiInputCapture.AddRange(outputBuffer);
-                }
-            }
 
             return true;
         }
@@ -1030,9 +942,6 @@ public sealed partial class NdiSender : MonoBehaviour
     // Component state reset with NDI object disposal
     internal void Restart(bool willBeActivate)
     {
-        Debug.Log($"[NdiSender] Restart() called: willBeActivate={willBeActivate}, audioMode={audioMode}");
-        audioDebugVerbose = true;
-
         if (_metaDataPtr != IntPtr.Zero)
         {
             Marshal.FreeCoTaskMem(_metaDataPtr);
@@ -1077,8 +986,6 @@ public sealed partial class NdiSender : MonoBehaviour
         }
         else
         {
-            if (_selectedIndividualBridge != null)
-                Debug.Log($"[NdiSender] Clearing selected bridge (mode is {audioMode}, not Individual)");
             _selectedIndividualBridge = null;
         }
 
