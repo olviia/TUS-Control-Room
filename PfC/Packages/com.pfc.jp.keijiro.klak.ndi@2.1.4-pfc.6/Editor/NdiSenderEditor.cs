@@ -25,6 +25,7 @@ sealed class NdiSenderEditor : UnityEditor.Editor
     private AutoProperty audioMode;
     private AutoProperty virtualListenerDistance;
     private AutoProperty maxObjectBasedChannels;
+    private AutoProperty objectBasedBridgeId;
     private AutoProperty audioOrientation;
     private AutoProperty audioOrigin;
 
@@ -118,7 +119,7 @@ sealed class NdiSenderEditor : UnityEditor.Editor
         if (audioMode.Target.enumValueIndex > 0)
         {
             var audioModeEnum = (NdiSender.AudioMode)audioMode.Target.enumValueIndex;
-            if (audioModeEnum != NdiSender.AudioMode.AudioListener)
+            if (audioModeEnum != NdiSender.AudioMode.AudioListener && audioModeEnum != NdiSender.AudioMode.Individual)
             {
                 EditorGUILayout.HelpBox(
                     "This AudioMode will create virtual AudioListeners and is not using the Unity builtin spatializer and AudioListener.\n" +
@@ -168,7 +169,7 @@ sealed class NdiSenderEditor : UnityEditor.Editor
                     EditorGUILayout.PropertyField(playCenteredAudioSourcesOnAllSpeakers);
                 }
             }
-            else
+            else if (audioModeEnum == NdiSender.AudioMode.AudioListener)
             {
                 if (availableAudioChannels != currentAudioChannels)
                 {
@@ -182,6 +183,14 @@ sealed class NdiSenderEditor : UnityEditor.Editor
                         $"This AudioMode will capture all audio from the AudioListener.\nThe channel amount depends on the audio device capabilities and the Unity Audio Settings.\nWith your current settings, {currentAudioChannels} channels ({audioSettings.speakerMode}) will be sent.",
                         MessageType.Info);
                 }
+            }
+            else if (audioModeEnum == NdiSender.AudioMode.Individual)
+            {
+                EditorGUILayout.PropertyField(objectBasedBridgeId, new GUIContent("Audio Bridge ID"));
+                EditorGUILayout.HelpBox(
+                    "Individual mode captures audio from a single AudioSource.\n" +
+                    "Add AudioListenerIndividualBridge component to your AudioSource and set its Bridge ID to match the Audio Bridge ID above.",
+                    MessageType.Info);
             }
 
             if (!Application.isPlaying && audioMode.Target.enumValueIndex > 1)

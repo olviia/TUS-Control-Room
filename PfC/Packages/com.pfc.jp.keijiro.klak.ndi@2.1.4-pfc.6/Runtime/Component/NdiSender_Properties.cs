@@ -13,14 +13,15 @@ public sealed partial class NdiSender : MonoBehaviour, IAdmDataProvider
 
     public enum AudioMode {
         None,
-        AudioListener, 
+        AudioListener,
         VirtualQuad,
-        Virtual5Point1, 
+        Virtual5Point1,
         Virtual7Point1,
         Virtual32Array,
         SpeakerConfigAsset,
         ObjectBased,
-        CustomVirtualAudioSetup
+        CustomVirtualAudioSetup,
+        Individual
     }
     
     public Transform audioOrigin;
@@ -36,6 +37,7 @@ public sealed partial class NdiSender : MonoBehaviour, IAdmDataProvider
     [FormerlySerializedAs("useCameraPositionForVirtualAttenuation")] [Tooltip("If enabled, the Distance Attenuation will be calculated based on AudioOrigin Position instead of the Virtual Listener Position.")]
     public bool useAudioOriginPositionForVirtualAttenuation = false;
     public int maxObjectBasedChannels = 32;
+    public int objectBasedBridgeId = 0;
     public SpeakerConfig customSpeakerConfig;
     [Tooltip("Sending Frame Rate")]
     public FrameRateOptions frameRate = FrameRateOptions.Common_60;

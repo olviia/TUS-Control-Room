@@ -74,8 +74,9 @@ public sealed partial class NdiSender : MonoBehaviour
     #endregion
     
     #region Sound Sender
-    
+
     private AudioListenerBridge _audioListenerBridge;
+    private AudioListenerIndividualBridge _selectedIndividualBridge;
     private int numSamples = 0;
     private int numChannels = 0;
     private float[] samples = new float[1];
@@ -88,6 +89,36 @@ public sealed partial class NdiSender : MonoBehaviour
     private List<NativeArray<float>> _objectBasedChannels = new List<NativeArray<float>>();
     private List<Vector3> _objectBasedPositions = new List<Vector3>();
     private List<float> _objectBasedGains = new List<float>();
+
+    // AudioListenerIndividualBridge registration for object-based mode (by ID)
+    private static Dictionary<int, AudioListenerIndividualBridge> _registeredIndividualBridges = new Dictionary<int, AudioListenerIndividualBridge>();
+    private static readonly object _individualBridgesLock = new object();
+
+    public static void RegisterIndividualAudioBridge(AudioListenerIndividualBridge bridge)
+    {
+        lock (_individualBridgesLock)
+        {
+            int id = bridge.BridgeId;
+            if (_registeredIndividualBridges.ContainsKey(id))
+            {
+                Debug.LogWarning($"[NdiSender] Bridge ID {id} already registered. Replacing with {bridge.gameObject.name}");
+            }
+            _registeredIndividualBridges[id] = bridge;
+            Debug.Log($"[NdiSender] Registered individual bridge ID {id}: {bridge.gameObject.name}");
+        }
+    }
+
+    public static void UnregisterIndividualAudioBridge(AudioListenerIndividualBridge bridge)
+    {
+        lock (_individualBridgesLock)
+        {
+            int id = bridge.BridgeId;
+            if (_registeredIndividualBridges.Remove(id))
+            {
+                Debug.Log($"[NdiSender] Unregistered individual bridge ID {id}: {bridge.gameObject.name}");
+            }
+        }
+    }
 
     // Audio diagnostics for debugging
     private System.Collections.Generic.List<float> _ndiInputCapture;
@@ -264,6 +295,7 @@ public sealed partial class NdiSender : MonoBehaviour
       
         if (_audioMode != audioMode || _lastVirtualListenerDistance != virtualListenerDistance)
         {
+            Debug.Log($"[NdiSender] Audio mode changed: {_audioMode} -> {audioMode}, calling ResetState()");
             ResetState();
         }
 
@@ -272,20 +304,7 @@ public sealed partial class NdiSender : MonoBehaviour
         {
             PrepareSenderObjects();
         }
-
-        // Ensure ring buffer initialized if audio listener mode active but buffer missing
-        if (Application.isPlaying && audioMode == AudioMode.AudioListener && _audioRingBuffer == null)
-        {
-            sampleRate = AudioSettings.outputSampleRate;
-            _audioSampleRate = sampleRate;
-            _audioChannels = Mathf.Max(_audioChannels, 2); // default assumption, corrected in OnAudioFilterRead
-            int capacity = (_audioSampleRate * _audioChannels * AUDIO_BUFFER_LENGTH_MS) / 1000;
-            _audioRingBuffer = new float[Math.Max(capacity, 1)];
-            _audioWriteIndex = 0;
-            _audioReadIndex = 0;
-            _audioAvailableSamples = 0;
-            _audioReadStarted = false;
-        }
+        
 
         int targetFrameRate = setRenderTargetFrameRate ? frameRate.GetUnityFrameTarget() : -1;
         if (Application.targetFrameRate != targetFrameRate)
@@ -294,27 +313,6 @@ public sealed partial class NdiSender : MonoBehaviour
 
         if (_audioMode == AudioMode.AudioListener && Application.isPlaying)
         {
-            // NDI audio capture diagnostics
-            _ndiCaptureTimer += Time.deltaTime;
-            if (_ndiCaptureTimer >= NDI_CAPTURE_INTERVAL && !_isCapturingNdiInput)
-            {
-                _ndiCaptureTimer = 0f;
-                _isCapturingNdiInput = true;
-                lock (_ndiCaptureLock)
-                {
-                    if (_ndiInputCapture == null) _ndiInputCapture = new System.Collections.Generic.List<float>();
-                    _ndiInputCapture.Clear();
-                }
-                Debug.Log("[NdiSender] Starting NDI audio path capture...");
-            }
-
-            if (_isCapturingNdiInput && _ndiCaptureTimer >= NDI_CAPTURE_DURATION)
-            {
-                _isCapturingNdiInput = false;
-                _ndiCaptureTimer = 0f;
-                WriteNdiAudioCaptures();
-            }
-
             // Get accumulated audio directly from AudioListenerBridge's ring buffer
             if (_audioListenerBridge != null)
             {
@@ -325,6 +323,41 @@ public sealed partial class NdiSender : MonoBehaviour
                     // Send to NDI
                     SendAudioListenerData(audioData, channels);
                 }
+            }
+        }
+
+        // Individual audio mode: Get audio from cached selected bridge
+        if (_audioMode == AudioMode.Individual && Application.isPlaying)
+        {
+            // Try to get the bridge if not already cached (handles timing issues)
+            if (_selectedIndividualBridge == null)
+            {
+                lock (_individualBridgesLock)
+                {
+                    if (_registeredIndividualBridges.TryGetValue(objectBasedBridgeId, out var bridge))
+                    {
+                        _selectedIndividualBridge = bridge;
+                        Debug.Log($"[NdiSender] Selected individual bridge ID {objectBasedBridgeId}: {bridge.gameObject.name}");
+                    }
+                }
+            }
+
+            if (_selectedIndividualBridge != null)
+            {
+                // Get buffered audio from the selected bridge
+                if (_selectedIndividualBridge.GetAccumulatedAudio(out float[] audioData, out int channels))
+                {
+                    if (audioDebugVerbose)
+                        Debug.Log($"[NdiSender] Sending audio from bridge ID {objectBasedBridgeId}: {audioData.Length} samples");
+
+                    // Send audio using same method as AudioListener mode
+                    SendAudioListenerData(audioData, channels);
+                }
+            }
+            else
+            {
+                if (audioDebugVerbose)
+                    Debug.Log($"[NdiSender] No bridge registered with ID {objectBasedBridgeId}");
             }
         }
     }
@@ -367,19 +400,7 @@ public sealed partial class NdiSender : MonoBehaviour
     {
         if (_audioMode == AudioMode.None)
             return;
-
-        if (_audioMode == AudioMode.AudioListener)
-        {
-            _audioChannels = channels;
-
-            // Write incoming frame to ring buffer (accumulate for Update)
-            WriteToAudioRing(data); }
-        else if (_audioMode == AudioMode.ObjectBased)
-        {
-            if (audioDebugVerbose)
-                Debug.Log("[NdiSender][OnAudioFilterRead] ObjectBased mode write.");
-            SendObjectBasedChannels();
-        }
+        
         else if (VirtualAudio.UseVirtualAudio)
         {
             if (audioDebugVerbose)
@@ -931,6 +952,12 @@ public sealed partial class NdiSender : MonoBehaviour
                     break;
                 case AudioMode.CustomVirtualAudioSetup:
                     break;
+                case AudioMode.Individual:
+                    // Individual mode uses AudioListenerIndividualBridge components
+                    // No VirtualAudio setup needed - bridges handle audio capture
+                    lock (_channelVisualisationsLock)
+                        _channelVisualisations = null;
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -1003,6 +1030,8 @@ public sealed partial class NdiSender : MonoBehaviour
     // Component state reset with NDI object disposal
     internal void Restart(bool willBeActivate)
     {
+        Debug.Log($"[NdiSender] Restart() called: willBeActivate={willBeActivate}, audioMode={audioMode}");
+        audioDebugVerbose = true;
 
         if (_metaDataPtr != IntPtr.Zero)
         {
@@ -1027,7 +1056,30 @@ public sealed partial class NdiSender : MonoBehaviour
             _audioAvailableSamples = 0;
             _audioReadStarted = false;
             Debug.Log($"[NdiSender] Audio ring buffer initialized (Restart): {capacity} samples ({AUDIO_BUFFER_LENGTH_MS}ms)");
+        }
 
+        // Get selected individual bridge for Individual mode
+        if (willBeActivate && audioMode == AudioMode.Individual)
+        {
+            lock (_individualBridgesLock)
+            {
+                if (_registeredIndividualBridges.TryGetValue(objectBasedBridgeId, out var bridge))
+                {
+                    _selectedIndividualBridge = bridge;
+                    Debug.Log($"[NdiSender] Selected individual bridge ID {objectBasedBridgeId}: {bridge.gameObject.name}");
+                }
+                else
+                {
+                    _selectedIndividualBridge = null;
+                    Debug.LogWarning($"[NdiSender] No bridge found with ID {objectBasedBridgeId}");
+                }
+            }
+        }
+        else
+        {
+            if (_selectedIndividualBridge != null)
+                Debug.Log($"[NdiSender] Clearing selected bridge (mode is {audioMode}, not Individual)");
+            _selectedIndividualBridge = null;
         }
 
         // Debug.Log("Driver capabilties: " + AudioSettings.driverCapabilities);
