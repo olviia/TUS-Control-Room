@@ -4293,7 +4293,6 @@ GameObject:
   - component: {fileID: 1052568751}
   - component: {fileID: 1052568752}
   - component: {fileID: 1052568753}
-  - component: {fileID: 1052568754}
   - component: {fileID: 1052568755}
   m_Layer: 0
   m_Name: sender
@@ -4362,22 +4361,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeshToRenderTextureBridge
   ndiReceiverOverlay: {fileID: 1033888033}
   outputRenderTexture: {fileID: 8400000, guid: b228826d15a7b6145b7891695b2c0077, type: 2}
---- !u!114 &1052568754
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1052568750}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe7015dc3f594d04984002f650a16bc8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Klak.Ndi.Runtime::Klak.Ndi.AdmOscSender
-  _settings:
-    nearDistance: 0.1
-    farDistance: 2
-  _connection: {fileID: 11400000, guid: cc40d2a995770e54facc367498abf4b2, type: 2}
 --- !u!114 &1052568755
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6492,6 +6475,10 @@ PrefabInstance:
     - target: {fileID: 3711727909470462395, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMin.x
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3740185762948309910, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3954365665684205259, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.x
