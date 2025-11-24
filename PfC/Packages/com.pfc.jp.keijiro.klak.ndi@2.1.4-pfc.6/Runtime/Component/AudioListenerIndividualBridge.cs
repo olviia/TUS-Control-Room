@@ -16,6 +16,11 @@ namespace Klak.Ndi
         private AudioSource _audioSource;
         private bool _isRegistered = false;
 
+        public void SetBridgeId(int id)
+        {
+            _bridgeId = id;
+        }
+
         private void Awake()
         {
             _audioSource = GetComponent<AudioSource>();

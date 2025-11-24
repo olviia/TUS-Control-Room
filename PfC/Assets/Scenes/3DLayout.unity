@@ -4026,14 +4026,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2d98e5bfcdff4847ad69efa861a8e7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  audioDebugVerbose: 1
+  initialBufferFillFraction: 0.5
   audioOrigin: {fileID: 0}
   addMissingAudioSourceListenersAtRuntime: 0
   _ndiName: PresenterAudio
   playCenteredAudioSourcesOnAllSpeakers: 1
-  audioMode: 7
+  audioMode: 9
   virtualListenerDistance: 4
   useAudioOriginPositionForVirtualAttenuation: 0
   maxObjectBasedChannels: 32
+  objectBasedBridgeId: 0
   customSpeakerConfig: {fileID: 0}
   frameRate: 6
   setRenderTargetFrameRate: 0
@@ -4291,6 +4294,7 @@ GameObject:
   - component: {fileID: 1052568752}
   - component: {fileID: 1052568753}
   - component: {fileID: 1052568754}
+  - component: {fileID: 1052568755}
   m_Layer: 0
   m_Name: sender
   m_TagString: Untagged
@@ -4325,14 +4329,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2d98e5bfcdff4847ad69efa861a8e7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Klak.Ndi.Runtime::Klak.Ndi.NdiSender
+  audioDebugVerbose: 1
+  initialBufferFillFraction: 0.5
   audioOrigin: {fileID: 0}
   addMissingAudioSourceListenersAtRuntime: 0
   _ndiName: TvLiveOutputUnity
   playCenteredAudioSourcesOnAllSpeakers: 1
-  audioMode: 1
+  audioMode: 9
   virtualListenerDistance: 4
   useAudioOriginPositionForVirtualAttenuation: 0
   maxObjectBasedChannels: 32
+  objectBasedBridgeId: 1
   customSpeakerConfig: {fileID: 0}
   frameRate: 5
   setRenderTargetFrameRate: 1
@@ -4371,6 +4378,20 @@ MonoBehaviour:
     nearDistance: 0.1
     farDistance: 2
   _connection: {fileID: 11400000, guid: cc40d2a995770e54facc367498abf4b2, type: 2}
+--- !u!114 &1052568755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1052568750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dda24d691115bb4387bfcf212de16af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AddBridgeToAudioChild
+  ndiReceiver: {fileID: 1318600841}
+  audioBridgeId: 1
 --- !u!1 &1057355440
 GameObject:
   m_ObjectHideFlags: 0
@@ -5075,6 +5096,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vivoxAudioToNdi: {fileID: 1014853840}
   muteAudience: 0
+  audioBridgeId: 0
 --- !u!1001 &1290066748
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7338,6 +7360,10 @@ PrefabInstance:
     - target: {fileID: 6980856403464687181, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: _ndiName
       value: TIIMEX10 (TVSuper)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980856403464687181, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
+      propertyPath: _receiveAudio
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6990742435566964312, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
       propertyPath: m_AnchorMax.y
@@ -10223,8 +10249,9 @@ GameObject:
   - component: {fileID: 1670769713}
   - component: {fileID: 1670769712}
   - component: {fileID: 1670769711}
+  - component: {fileID: 1670769714}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: testaudio
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10237,7 +10264,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1670769710}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 27afa9ce0869b7d43b8778418c7fa3bd, type: 3}
   m_Name: 
@@ -10255,11 +10282,11 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 0
+  m_Resource: {fileID: 8300000, guid: 715c3c17981d62f4b89964ed555a8132, type: 3}
+  m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -10301,7 +10328,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1
+      value: 0
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -10356,6 +10383,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1670769714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1670769710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 092c16ff51f08264a9dc4a5b62d4b83c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Klak.Ndi.Runtime::Klak.Ndi.AudioListenerIndividualBridge
+  _bridgeId: 1
 --- !u!1 &1672500620
 GameObject:
   m_ObjectHideFlags: 0
@@ -10826,7 +10866,6 @@ GameObject:
   - component: {fileID: 1792380331}
   - component: {fileID: 1792380333}
   - component: {fileID: 1792380334}
-  - component: {fileID: 1792380335}
   m_Layer: 0
   m_Name: StudioLiveAudioSource
   m_TagString: Untagged
@@ -10958,22 +10997,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0add11aace3251d468194e843213445f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1792380335
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1792380330}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a77d3f00815d4bb0b6ec4eca5a963a79, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Klak.Ndi.Runtime::Klak.Ndi.Audio.AudioSourceListener
-  additionalSettings:
-    forceToChannel: 0
-    channel: 0
-  _showDebugGizmos: 0
 --- !u!1 &1797521309
 GameObject:
   m_ObjectHideFlags: 0

@@ -9,6 +9,7 @@ using Unity.Services.Vivox;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Klak.Ndi;
 using Klak.Ndi.Audio;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -29,6 +30,10 @@ public class CommunicationManager : MonoBehaviour
     [Header("Audience Control")]
     [Tooltip("When enabled, all audience members will be muted")]
     public bool muteAudience = false;
+
+    [Header("Audio Bridge Settings")]
+    [Tooltip("ID to be assigned to AudioListenerIndividualBridge components")]
+    public int audioBridgeId = 0;
 
     private NetworkRoleRegistry roleRegistry;
     private List<string> joinedChannels = new List<string>();
@@ -231,7 +236,8 @@ public class CommunicationManager : MonoBehaviour
                 GameObject tapObject = new GameObject("PresenterAudioTap");
                 tapObject.transform.SetParent(vivoxAudioToNdi.transform);
                 tapObject.AddComponent<AudioSource>();
-                tapObject.AddComponent<AudioSourceListener>();
+                AudioListenerIndividualBridge audioBridge = tapObject.AddComponent<AudioListenerIndividualBridge>();
+                audioBridge.SetBridgeId(audioBridgeId);
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
 
                 presenterTap.ParticipantName = id.ToString();
