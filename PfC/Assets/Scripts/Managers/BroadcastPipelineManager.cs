@@ -65,6 +65,35 @@ public class BroadcastPipelineManager : MonoBehaviour
         NetworkStreamCoordinator.OnStreamControlChanged -= OnNetworkStreamChanged;
     }
 
+    private void OnApplicationQuit()
+    {
+        // Clean up OBS StreamLive scene when Unity stops running
+        try
+        {
+            OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
+            ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
+            if (obsWebSocket != null && obsWebSocket.IsConnected)
+            {
+                ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
+                
+                obsScene.ConfigureAndExecute("StreamLive", "TvLiveOutputUnity", false, "TvLiveOutputUnity");
+
+                obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
+
+                obsWebSocket.SetCurrentProgramScene("StreamLive");
+                Debug.Log("[BroadcastPipeline] Cleared StreamLive scene on application quit");
+            }
+            else
+            {
+                Debug.LogWarning("[BroadcastPipeline] OBS WebSocket not connected, cannot clear StreamLive scene");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[BroadcastPipeline] Failed to clear StreamLive scene on quit: {e.Message}");
+        }
+    }
+
     public void RegisterSource(IPipelineSource source) 
     {
         registeredSources.Add(source);
@@ -324,26 +353,29 @@ public class BroadcastPipelineManager : MonoBehaviour
                         }
                     }
 
-                    if (pipelineType == PipelineType.TVLive)
+                    if (pipelineType == PipelineType.StudioLive)
                     {
-                        // TEMPORARILY COMMENTED OUT - OBS scene switching disabled
-                        // OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
+                        OBSWebsocket obsWebSocket = ObsSceneSourceOperation.SharedObsWebSocket;
                         //
-                        // string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
-                        //     "ndi_filter_ndiname",
-                        //     source.ndiName);
-                        //
-                        // ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
-                        //
-                        // //clean obs stream live scene
-                        // ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
-                        // //add subtitles
-                        // obsScene.ConfigureAndExecute("StreamLive", "TVSuper", true, "TVSuper");
-                        //
-                        // obsScene.ConfigureAndExecute("StreamLive", name, true, name);
+                        string name = ObsUtilities.FindSceneBySourceFilter(obsWebSocket, Constants.DEDICATED_NDI_OUTPUT,
+                            "ndi_filter_ndiname",
+                            source.ndiName);
+
+                        ObsSceneSourceOperation obsScene = GetComponent<ObsSceneSourceOperation>();
+
+                        //clean obs stream live scene
+                        ObsUtilities.ClearScene(obsWebSocket, "StreamLive");
+                        // //add tvlive
+                         obsScene.ConfigureAndExecute("StreamLive", "TvLiveOutputUnity", false, "TvLiveOutputUnity");
+                        //add studiolive audio
+                         obsScene.ConfigureAndExecute("StreamLive", name, true, name);
                         //
                         // // add audio tap for presenters
-                        // obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
+                        obsScene.ConfigureAndExecute("StreamLive", "PresenterAudio", true, "PresenterAudio");
+
+                        // Transition to StreamLive scene
+
+                            obsWebSocket.SetCurrentProgramScene("StreamLive");
                     }
                 }
             }
