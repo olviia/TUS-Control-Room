@@ -136,6 +136,7 @@ public class CommunicationManager : MonoBehaviour
                 case Role.Director:
                     // Director joins only the director channel
                     await JoinChannel(directorChannelName, true);
+                    VivoxService.Instance.ParticipantAddedToChannel += SetupPresenterAudioTaps;
                     break;
 
                 case Role.Presenter:
