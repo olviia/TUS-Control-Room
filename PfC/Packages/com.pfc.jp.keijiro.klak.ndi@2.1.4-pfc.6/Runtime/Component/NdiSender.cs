@@ -956,6 +956,12 @@ public sealed partial class NdiSender : MonoBehaviour
                     lock (_channelVisualisationsLock)
                         _channelVisualisations = null;
                     break;
+                case AudioMode.Vivox:
+                    // Vivox mode uses VivoxAudioBridge components
+                    // No VirtualAudio setup needed - bridges handle audio capture from Vivox
+                    lock (_channelVisualisationsLock)
+                        _channelVisualisations = null;
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
