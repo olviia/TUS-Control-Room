@@ -388,12 +388,7 @@ public sealed partial class NdiSender : MonoBehaviour
                 {
                     // Send audio using same method as AudioListener mode
                     SendAudioListenerData(audioData, channels);
-                    Debug.Log($"[NdiSender] Sending Vivox audio to NDI: {audioData.Length} samples, {channels} channels");
                 }
-            }
-            else
-            {
-                Debug.LogWarning($"[NdiSender] Vivox mode active but no bridge selected");
             }
         }
     }

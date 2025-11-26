@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEngine;
 
 namespace Klak.Ndi
@@ -11,6 +12,9 @@ namespace Klak.Ndi
     {
         [Tooltip("Bridge ID for NdiSender to identify this audio source")]
         public int bridgeId = 0;
+
+        [Tooltip("Enable audio recording to file for debugging")]
+        public bool enableAudioRecording = true;
 
         // Ring buffer for audio accumulation
         private const int BufferLengthMS = 200;
@@ -30,6 +34,15 @@ namespace Klak.Ndi
         private AudioClip _audioClip;
         private int _lastReadPosition;
         private float[] _tempBuffer;
+
+        // Audio recording for debugging
+        private float _recordingTimer = 0f;
+        private float _recordingCooldown = 15f;
+        private bool _isRecording = false;
+        private float _recordingDuration = 0f;
+        private const float MAX_RECORDING_DURATION = 10f;
+        private System.Collections.Generic.List<float> _recordedSamples;
+        private int _recordingNumber = 0;
 
         public int BridgeId => bridgeId;
 
@@ -66,17 +79,7 @@ namespace Klak.Ndi
 
         private void Update()
         {
-            if (_audioSource == null)
-            {
-                Debug.LogWarning($"[VivoxAudioBridge] AudioSource is null on bridge ID {bridgeId}");
-                return;
-            }
-
-            if (_audioSource.clip == null)
-            {
-                Debug.LogWarning($"[VivoxAudioBridge] AudioSource.clip is null on bridge ID {bridgeId}. VivoxParticipantTap may not have initialized yet.");
-                return;
-            }
+            if (_audioSource == null || _audioSource.clip == null) return;
 
             // Update AudioClip reference if it changed
             if (_audioClip != _audioSource.clip)
@@ -87,26 +90,41 @@ namespace Klak.Ndi
                 Debug.Log($"[VivoxAudioBridge] AudioClip updated: {_audioClip.name}, channels: {_channels}, samples: {_audioClip.samples}");
             }
 
+            // Recording timer for debugging
+            if (enableAudioRecording)
+            {
+                _recordingTimer += Time.deltaTime;
+
+                if (!_isRecording && _recordingTimer >= _recordingCooldown)
+                {
+                    // Start new recording
+                    _isRecording = true;
+                    _recordingDuration = 0f;
+                    _recordedSamples = new System.Collections.Generic.List<float>();
+                    Debug.Log($"[VivoxAudioBridge] Started recording #{_recordingNumber}");
+                }
+
+                if (_isRecording)
+                {
+                    _recordingDuration += Time.deltaTime;
+                    if (_recordingDuration >= MAX_RECORDING_DURATION)
+                    {
+                        // Stop recording and save
+                        SaveRecordingToFile();
+                        _isRecording = false;
+                        _recordingTimer = 0f;
+                        _recordingNumber++;
+                    }
+                }
+            }
+
             // Read new audio data from the AudioClip
             ReadAudioFromClip();
         }
 
-        private float _debugTimer = 0f;
-        private int _totalSamplesRead = 0;
-
         private void ReadAudioFromClip()
         {
-            if (_audioClip == null)
-            {
-                Debug.LogWarning($"[VivoxAudioBridge] ReadAudioFromClip: AudioClip is null");
-                return;
-            }
-
-            if (!_audioSource.isPlaying)
-            {
-                Debug.LogWarning($"[VivoxAudioBridge] ReadAudioFromClip: AudioSource is not playing!");
-                return;
-            }
+            if (_audioClip == null || !_audioSource.isPlaying) return;
 
             // Get current playback position
             int currentPosition = _audioSource.timeSamples;
@@ -137,21 +155,22 @@ namespace Klak.Ndi
                 _tempBuffer = new float[totalFloats];
             }
 
-            // Read from AudioClip
+            // Read from AudioClip using GetData
             _audioClip.GetData(_tempBuffer, _lastReadPosition);
+
+            Debug.Log($"[VivoxAudioBridge] GetData read {samplesToRead} samples from position {_lastReadPosition}, total floats: {totalFloats}, channels: {_channels}");
+
+            // Record samples if recording is active
+            if (_isRecording && _recordedSamples != null)
+            {
+                for (int i = 0; i < totalFloats; i++)
+                {
+                    _recordedSamples.Add(_tempBuffer[i]);
+                }
+            }
 
             // Write to ring buffer
             WriteToRing(_tempBuffer, totalFloats);
-
-            _totalSamplesRead += samplesToRead;
-
-            // Debug log every second
-            _debugTimer += Time.deltaTime;
-            if (_debugTimer >= 1.0f)
-            {
-                Debug.Log($"[VivoxAudioBridge] Reading audio: {samplesToRead} samples this frame, {_totalSamplesRead} total, position: {currentPosition}/{totalSamples}, available in buffer: {_availableSamples}");
-                _debugTimer = 0f;
-            }
 
             // Update last read position
             _lastReadPosition = currentPosition;
@@ -230,6 +249,44 @@ namespace Klak.Ndi
         public void SetBridgeId(int id)
         {
             bridgeId = id;
+        }
+
+        private void SaveRecordingToFile()
+        {
+            if (_recordedSamples == null || _recordedSamples.Count == 0)
+            {
+                Debug.LogWarning("[VivoxAudioBridge] No samples recorded");
+                return;
+            }
+
+            string filename = $"VivoxAudio_Recording_{_recordingNumber}_{System.DateTime.Now:yyyyMMdd_HHmmss}.raw";
+            string filepath = Path.Combine(Application.persistentDataPath, filename);
+
+            try
+            {
+                using (FileStream fs = new FileStream(filepath, FileMode.Create))
+                using (BinaryWriter writer = new BinaryWriter(fs))
+                {
+                    // Write header info as text
+                    string header = $"// Sample Rate: {_sampleRate}, Channels: {_channels}, Total Samples: {_recordedSamples.Count}\n";
+                    byte[] headerBytes = System.Text.Encoding.UTF8.GetBytes(header);
+                    writer.Write(headerBytes);
+
+                    // Write raw float data
+                    foreach (float sample in _recordedSamples)
+                    {
+                        writer.Write(sample);
+                    }
+                }
+
+                Debug.Log($"[VivoxAudioBridge] Saved recording to: {filepath}");
+                Debug.Log($"[VivoxAudioBridge] Recorded {_recordedSamples.Count} samples ({_recordedSamples.Count / _channels} frames), {_sampleRate}Hz, {_channels}ch");
+                Debug.Log($"[VivoxAudioBridge] Duration: {(_recordedSamples.Count / _channels) / (float)_sampleRate:F2} seconds");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[VivoxAudioBridge] Failed to save recording: {e.Message}");
+            }
         }
     }
 }
