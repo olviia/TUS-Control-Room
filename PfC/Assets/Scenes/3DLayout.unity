@@ -5065,7 +5065,7 @@ MonoBehaviour:
   vivoxAudioToNdi: {fileID: 1014853840}
   muteAudience: 0
   audioBridgeId: 0
-  ndiSender: {fileID: 0}
+  ndiSender: {fileID: 1014853842}
 --- !u!1001 &1290066748
 PrefabInstance:
   m_ObjectHideFlags: 0
