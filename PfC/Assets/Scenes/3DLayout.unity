@@ -4032,7 +4032,7 @@ MonoBehaviour:
   addMissingAudioSourceListenersAtRuntime: 0
   _ndiName: PresenterAudio
   playCenteredAudioSourcesOnAllSpeakers: 1
-  audioMode: 9
+  audioMode: 10
   virtualListenerDistance: 4
   useAudioOriginPositionForVirtualAttenuation: 0
   maxObjectBasedChannels: 32
@@ -5065,6 +5065,7 @@ MonoBehaviour:
   vivoxAudioToNdi: {fileID: 1014853840}
   muteAudience: 0
   audioBridgeId: 0
+  ndiSender: {fileID: 0}
 --- !u!1001 &1290066748
 PrefabInstance:
   m_ObjectHideFlags: 0
