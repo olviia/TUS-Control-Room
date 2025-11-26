@@ -7,7 +7,6 @@ using Klak.Ndi;
 using NUnit.Framework.Internal;
 using OBSWebsocketDotNet;
 using Unity.Netcode;
-using Unity.Services.Vivox.AudioTaps;
 using UnityEngine;
 using Util.MergedScreen;
 

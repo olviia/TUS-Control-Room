@@ -75,6 +75,7 @@ public sealed partial class NdiSender : MonoBehaviour
 
     private AudioListenerBridge _audioListenerBridge;
     private AudioListenerIndividualBridge _selectedIndividualBridge;
+    private VivoxAudioBridge _selectedVivoxBridge;
     private int numSamples = 0;
     private int numChannels = 0;
     private float[] samples = new float[1];
@@ -114,6 +115,36 @@ public sealed partial class NdiSender : MonoBehaviour
             if (_registeredIndividualBridges.Remove(id))
             {
                 Debug.Log($"[NdiSender] Unregistered individual bridge ID {id}: {bridge.gameObject.name}");
+            }
+        }
+    }
+
+    // VivoxAudioBridge registration for Vivox mode (by ID)
+    private static Dictionary<int, VivoxAudioBridge> _registeredVivoxBridges = new Dictionary<int, VivoxAudioBridge>();
+    private static readonly object _vivoxBridgesLock = new object();
+
+    public static void RegisterVivoxAudioBridge(VivoxAudioBridge bridge)
+    {
+        lock (_vivoxBridgesLock)
+        {
+            int id = bridge.BridgeId;
+            if (_registeredVivoxBridges.ContainsKey(id))
+            {
+                Debug.LogWarning($"[NdiSender] Vivox Bridge ID {id} already registered. Replacing with {bridge.gameObject.name}");
+            }
+            _registeredVivoxBridges[id] = bridge;
+            Debug.Log($"[NdiSender] Registered Vivox bridge ID {id}: {bridge.gameObject.name}");
+        }
+    }
+
+    public static void UnregisterVivoxAudioBridge(VivoxAudioBridge bridge)
+    {
+        lock (_vivoxBridgesLock)
+        {
+            int id = bridge.BridgeId;
+            if (_registeredVivoxBridges.Remove(id))
+            {
+                Debug.Log($"[NdiSender] Unregistered Vivox bridge ID {id}: {bridge.gameObject.name}");
             }
         }
     }
@@ -329,6 +360,33 @@ public sealed partial class NdiSender : MonoBehaviour
                 }
             }
         }
+
+        // Vivox audio mode: Get audio from cached selected Vivox bridge
+        if (_audioMode == AudioMode.Vivox && Application.isPlaying)
+        {
+            // Try to get the bridge if not already cached (handles timing issues)
+            if (_selectedVivoxBridge == null)
+            {
+                lock (_vivoxBridgesLock)
+                {
+                    if (_registeredVivoxBridges.TryGetValue(objectBasedBridgeId, out var bridge))
+                    {
+                        _selectedVivoxBridge = bridge;
+                        Debug.Log($"[NdiSender] Selected Vivox bridge ID {objectBasedBridgeId}: {bridge.gameObject.name}");
+                    }
+                }
+            }
+
+            if (_selectedVivoxBridge != null)
+            {
+                // Get buffered audio from the selected Vivox bridge
+                if (_selectedVivoxBridge.GetAccumulatedAudio(out float[] audioData, out int channels))
+                {
+                    // Send audio using same method as AudioListener mode
+                    SendAudioListenerData(audioData, channels);
+                }
+            }
+        }
     }
 
     private void LateUpdate()
@@ -489,6 +547,25 @@ public sealed partial class NdiSender : MonoBehaviour
             _metaDataPtr = Marshal.StringToCoTaskMemAnsi(xml);
     }
     
+    /// <summary>
+    /// Public method for Vivox to send audio data directly to NDI
+    /// Called from VivoxAudioProcessor after fetching audio from Vivox SDK
+    /// </summary>
+    public void SendVivoxAudioData(float[] data, int channels, int audioSampleRate)
+    {
+        if (_audioMode != AudioMode.Vivox) return;
+        if (data == null || data.Length == 0 || channels == 0) return;
+
+        // Update sample rate if provided
+        if (audioSampleRate > 0 && audioSampleRate != sampleRate)
+        {
+            sampleRate = audioSampleRate;
+        }
+
+        // Send using the same method as AudioListener mode
+        SendAudioListenerData(data, channels);
+    }
+
     private void SendAudioListenerData(float[] data, int channels)
     {
         if (data.Length == 0 || channels == 0) return;
@@ -524,7 +601,7 @@ public sealed partial class NdiSender : MonoBehaviour
 
             UnsafeUtility.ReleaseGCObject(handleData);
             UnsafeUtility.ReleaseGCObject(handleSamples);
-            
+
             fixed (float* p = samples)
             {
                 var frame = new Interop.AudioFrame

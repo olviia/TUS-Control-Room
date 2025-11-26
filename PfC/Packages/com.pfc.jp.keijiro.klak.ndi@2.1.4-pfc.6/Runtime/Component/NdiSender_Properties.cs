@@ -21,7 +21,8 @@ public sealed partial class NdiSender : MonoBehaviour, IAdmDataProvider
         SpeakerConfigAsset,
         ObjectBased,
         CustomVirtualAudioSetup,
-        Individual
+        Individual,
+        Vivox
     }
     
     public Transform audioOrigin;

@@ -35,6 +35,10 @@ public class CommunicationManager : MonoBehaviour
     [Tooltip("ID to be assigned to AudioListenerIndividualBridge components")]
     public int audioBridgeId = 0;
 
+    [Header("NDI Settings")]
+    [Tooltip("NdiSender to send Vivox audio to (set audio mode to Vivox)")]
+    public NdiSender ndiSender;
+
     private NetworkRoleRegistry roleRegistry;
     private List<string> joinedChannels = new List<string>();
 
@@ -237,12 +241,14 @@ public class CommunicationManager : MonoBehaviour
                 GameObject tapObject = new GameObject("PresenterAudioTap");
                 tapObject.transform.SetParent(vivoxAudioToNdi.transform);
                 tapObject.AddComponent<AudioSource>();
-                AudioListenerIndividualBridge audioBridge = tapObject.AddComponent<AudioListenerIndividualBridge>();
-                audioBridge.SetBridgeId(audioBridgeId);
+                VivoxAudioBridge audioBridge = tapObject.AddComponent<VivoxAudioBridge>();
+               audioBridge.bridgeId = ndiSender.objectBasedBridgeId;
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
 
                 presenterTap.ParticipantName = id.ToString();
                 presenterTap.ChannelName = directorChannelName; // Capture from studio-tus-channel
+                
+
                 vivoxTaps.Add(presenterTap);
         }
 

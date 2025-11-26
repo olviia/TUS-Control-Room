@@ -119,7 +119,7 @@ sealed class NdiSenderEditor : UnityEditor.Editor
         if (audioMode.Target.enumValueIndex > 0)
         {
             var audioModeEnum = (NdiSender.AudioMode)audioMode.Target.enumValueIndex;
-            if (audioModeEnum != NdiSender.AudioMode.AudioListener && audioModeEnum != NdiSender.AudioMode.Individual)
+            if (audioModeEnum != NdiSender.AudioMode.AudioListener && audioModeEnum != NdiSender.AudioMode.Individual && audioModeEnum != NdiSender.AudioMode.Vivox)
             {
                 EditorGUILayout.HelpBox(
                     "This AudioMode will create virtual AudioListeners and is not using the Unity builtin spatializer and AudioListener.\n" +
@@ -190,6 +190,15 @@ sealed class NdiSenderEditor : UnityEditor.Editor
                 EditorGUILayout.HelpBox(
                     "Individual mode captures audio from a single AudioSource.\n" +
                     "Add AudioListenerIndividualBridge component to your AudioSource and set its Bridge ID to match the Audio Bridge ID above.",
+                    MessageType.Info);
+            }
+            else if (audioModeEnum == NdiSender.AudioMode.Vivox)
+            {
+                EditorGUILayout.PropertyField(objectBasedBridgeId, new GUIContent("Audio Bridge ID"));
+                EditorGUILayout.HelpBox(
+                    "Vivox mode receives audio directly from VivoxAudioBridge components.\n" +
+                    "Add VivoxAudioBridge component to your Vivox AudioSource and set its Bridge ID to match the Audio Bridge ID above.\n" +
+                    "Audio will be sent to NDI without OnAudioFilterRead conflicts.",
                     MessageType.Info);
             }
 
