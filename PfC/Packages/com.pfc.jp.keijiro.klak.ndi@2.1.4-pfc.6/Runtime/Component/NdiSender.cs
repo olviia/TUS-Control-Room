@@ -386,6 +386,16 @@ public sealed partial class NdiSender : MonoBehaviour
                     // Send audio using same method as AudioListener mode
                     SendAudioListenerData(audioData, channels);
                 }
+                else
+                {
+                    // No data available - send silence to maintain continuous NDI stream
+                    // Use a reasonable buffer size (~20ms at 48kHz = 1024 samples per channel)
+                    int silenceSamples = 1024;
+                    int silenceChannels = 1; // Vivox typically uses mono
+                    float[] silenceBuffer = new float[silenceSamples * silenceChannels];
+                    // Array is already zeroed (silence)
+                    SendAudioListenerData(silenceBuffer, silenceChannels);
+                }
             }
         }
     }
