@@ -16,6 +16,12 @@ namespace Klak.Ndi
         [Tooltip("Enable audio recording to file for debugging")]
         public bool enableAudioRecording = true;
 
+        [Tooltip("Bypass ring buffer and send directly to NdiSender")]
+        public bool bypassRingBuffer = true;
+
+        [Tooltip("NdiSender to send audio to when bypassing ring buffer")]
+        public NdiSender ndiSenderDirect;
+
         // Ring buffer for audio accumulation
         private const int BufferLengthMS = 200;
         private float[] _ringBuffer;
@@ -190,8 +196,20 @@ namespace Klak.Ndi
                 }
             }
 
-            // Write to ring buffer
-            WriteToRing(_tempBuffer, totalFloats);
+            // If bypassing ring buffer, send directly to NdiSender
+            if (bypassRingBuffer && ndiSenderDirect != null)
+            {
+                // Create a properly sized array with only the data we read
+                float[] directData = new float[totalFloats];
+                Array.Copy(_tempBuffer, 0, directData, 0, totalFloats);
+                ndiSenderDirect.SendVivoxAudioData(directData, _channels, _sampleRate);
+                Debug.Log($"[VivoxAudioBridge] Direct send to NDI: {totalFloats} floats, {_channels}ch");
+            }
+            else
+            {
+                // Write to ring buffer (normal path)
+                WriteToRing(_tempBuffer, totalFloats);
+            }
 
             // Update last read position
             _lastReadPosition = currentPosition;

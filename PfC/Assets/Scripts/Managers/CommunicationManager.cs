@@ -242,7 +242,8 @@ public class CommunicationManager : MonoBehaviour
                 tapObject.transform.SetParent(vivoxAudioToNdi.transform);
                 tapObject.AddComponent<AudioSource>();
                 VivoxAudioBridge audioBridge = tapObject.AddComponent<VivoxAudioBridge>();
-               audioBridge.bridgeId = ndiSender.objectBasedBridgeId;
+                audioBridge.bridgeId = ndiSender.objectBasedBridgeId;
+                audioBridge.ndiSenderDirect = ndiSender; // For direct bypass mode
                 VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
 
                 presenterTap.ParticipantName = id.ToString();
