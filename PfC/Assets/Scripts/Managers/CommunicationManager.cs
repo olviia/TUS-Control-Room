@@ -233,36 +233,47 @@ public class CommunicationManager : MonoBehaviour
 
     public void SetupPresenterAudioTaps(VivoxParticipant vivoxParticipant)
     {
-        // Configure to capture only presenter's audio from the director channel
+        // Check if this participant is a presenter
         var presentersID = NetworkRoleRegistry.Instance.GetPresentersIDList(Role.Presenter);
-        List<VivoxParticipantTap> vivoxTaps =  new List<VivoxParticipantTap>();
-        foreach (var id in presentersID)
+        bool isPresenter = presentersID.Contains(vivoxParticipant.PlayerId);
+
+        if (!isPresenter)
         {
-                GameObject tapObject = new GameObject("PresenterAudioTap");
-                tapObject.transform.SetParent(vivoxAudioToNdi.transform);
-                tapObject.AddComponent<AudioSource>();
-                VivoxAudioBridge audioBridge = tapObject.AddComponent<VivoxAudioBridge>();
-                audioBridge.bridgeId = ndiSender.objectBasedBridgeId;
-                audioBridge.ndiSenderDirect = ndiSender; // For direct bypass mode
-                VivoxParticipantTap presenterTap = tapObject.AddComponent<VivoxParticipantTap>();
-
-                presenterTap.ParticipantName = id.ToString();
-                presenterTap.ChannelName = directorChannelName; // Capture from studio-tus-channel
-                
-
-                vivoxTaps.Add(presenterTap);
+            Debug.Log($"[Vivox] Participant {vivoxParticipant.DisplayName} is not a presenter, skipping tap creation");
+            return;
         }
 
-        Debug.Log("[Vivox] PresenterAudioTaps setup completed");
-        Debug.Log($"[Vivox] Presenters ID : {string.Join(", ", presentersID)}");
+        Debug.Log($"[Vivox] Creating tap for presenter: {vivoxParticipant.DisplayName} (ID: {vivoxParticipant.PlayerId})");
 
-        Debug.Log($"[Vivox] VivoxTaps ({vivoxTaps.Count}):");
-        foreach (var tap in vivoxTaps)
+        // Use Vivox's built-in method to create a properly configured tap
+        GameObject tapObject = vivoxParticipant.CreateVivoxParticipantTap();
+
+        if (tapObject == null)
         {
-            Debug.Log($"  - {tap.ParticipantName} on GameObject: {tap.gameObject.name}");
+            Debug.LogError($"[Vivox] Failed to create tap for {vivoxParticipant.DisplayName}");
+            return;
         }
-        // Route to streaming (virtual audio cable, etc.)
-        //SetupStreamingPipeline(presenterTap.GetComponent<AudioSource>());
+
+        // Parent it to our NDI container
+        tapObject.transform.SetParent(vivoxAudioToNdi.transform);
+        tapObject.name = $"PresenterAudioTap_{vivoxParticipant.PlayerId}";
+
+        // The tap creates an AudioSource automatically - get it
+        AudioSource audioSource = tapObject.GetComponent<AudioSource>();
+        if (audioSource != null)
+        {
+            audioSource.volume = 1.0f; // Full volume
+            audioSource.spatialBlend = 0f; // 2D audio
+            Debug.Log($"[Vivox] AudioSource configured for {vivoxParticipant.DisplayName}");
+        }
+
+        // Add our VivoxAudioBridge to capture the audio
+        VivoxAudioBridge audioBridge = tapObject.AddComponent<VivoxAudioBridge>();
+        audioBridge.bridgeId = ndiSender.objectBasedBridgeId;
+        audioBridge.ndiSenderDirect = ndiSender;
+
+        Debug.Log($"[Vivox] VivoxAudioBridge added to {vivoxParticipant.DisplayName} with bridge ID {ndiSender.objectBasedBridgeId}");
+        Debug.Log($"[Vivox] Tap setup completed for presenter: {vivoxParticipant.DisplayName}");
     }
     
     
