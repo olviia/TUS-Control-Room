@@ -66,7 +66,17 @@ namespace Klak.Ndi
 
         private void Update()
         {
-            if (_audioSource == null || _audioSource.clip == null) return;
+            if (_audioSource == null)
+            {
+                Debug.LogWarning($"[VivoxAudioBridge] AudioSource is null on bridge ID {bridgeId}");
+                return;
+            }
+
+            if (_audioSource.clip == null)
+            {
+                Debug.LogWarning($"[VivoxAudioBridge] AudioSource.clip is null on bridge ID {bridgeId}. VivoxParticipantTap may not have initialized yet.");
+                return;
+            }
 
             // Update AudioClip reference if it changed
             if (_audioClip != _audioSource.clip)
@@ -74,16 +84,29 @@ namespace Klak.Ndi
                 _audioClip = _audioSource.clip;
                 _channels = _audioClip.channels;
                 _lastReadPosition = 0;
-                Debug.Log($"[VivoxAudioBridge] AudioClip updated: {_audioClip.name}, channels: {_channels}");
+                Debug.Log($"[VivoxAudioBridge] AudioClip updated: {_audioClip.name}, channels: {_channels}, samples: {_audioClip.samples}");
             }
 
             // Read new audio data from the AudioClip
             ReadAudioFromClip();
         }
 
+        private float _debugTimer = 0f;
+        private int _totalSamplesRead = 0;
+
         private void ReadAudioFromClip()
         {
-            if (_audioClip == null || !_audioSource.isPlaying) return;
+            if (_audioClip == null)
+            {
+                Debug.LogWarning($"[VivoxAudioBridge] ReadAudioFromClip: AudioClip is null");
+                return;
+            }
+
+            if (!_audioSource.isPlaying)
+            {
+                Debug.LogWarning($"[VivoxAudioBridge] ReadAudioFromClip: AudioSource is not playing!");
+                return;
+            }
 
             // Get current playback position
             int currentPosition = _audioSource.timeSamples;
@@ -119,6 +142,16 @@ namespace Klak.Ndi
 
             // Write to ring buffer
             WriteToRing(_tempBuffer, totalFloats);
+
+            _totalSamplesRead += samplesToRead;
+
+            // Debug log every second
+            _debugTimer += Time.deltaTime;
+            if (_debugTimer >= 1.0f)
+            {
+                Debug.Log($"[VivoxAudioBridge] Reading audio: {samplesToRead} samples this frame, {_totalSamplesRead} total, position: {currentPosition}/{totalSamples}, available in buffer: {_availableSamples}");
+                _debugTimer = 0f;
+            }
 
             // Update last read position
             _lastReadPosition = currentPosition;

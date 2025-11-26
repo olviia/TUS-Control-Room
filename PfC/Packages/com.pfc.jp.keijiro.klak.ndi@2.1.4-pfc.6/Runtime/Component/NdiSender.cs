@@ -374,6 +374,10 @@ public sealed partial class NdiSender : MonoBehaviour
                         _selectedVivoxBridge = bridge;
                         Debug.Log($"[NdiSender] Selected Vivox bridge ID {objectBasedBridgeId}: {bridge.gameObject.name}");
                     }
+                    else
+                    {
+                        Debug.LogWarning($"[NdiSender] No Vivox bridge found with ID {objectBasedBridgeId}");
+                    }
                 }
             }
 
@@ -384,7 +388,12 @@ public sealed partial class NdiSender : MonoBehaviour
                 {
                     // Send audio using same method as AudioListener mode
                     SendAudioListenerData(audioData, channels);
+                    Debug.Log($"[NdiSender] Sending Vivox audio to NDI: {audioData.Length} samples, {channels} channels");
                 }
+            }
+            else
+            {
+                Debug.LogWarning($"[NdiSender] Vivox mode active but no bridge selected");
             }
         }
     }

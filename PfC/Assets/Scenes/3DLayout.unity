@@ -4036,7 +4036,7 @@ MonoBehaviour:
   virtualListenerDistance: 4
   useAudioOriginPositionForVirtualAttenuation: 0
   maxObjectBasedChannels: 32
-  objectBasedBridgeId: 0
+  objectBasedBridgeId: 50
   customSpeakerConfig: {fileID: 0}
   frameRate: 6
   setRenderTargetFrameRate: 0
@@ -5064,7 +5064,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vivoxAudioToNdi: {fileID: 1014853840}
   muteAudience: 0
-  audioBridgeId: 0
+  audioBridgeId: 50
   ndiSender: {fileID: 1014853842}
 --- !u!1001 &1290066748
 PrefabInstance:
