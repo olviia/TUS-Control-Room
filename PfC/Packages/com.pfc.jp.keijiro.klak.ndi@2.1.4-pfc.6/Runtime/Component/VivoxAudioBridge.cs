@@ -77,9 +77,21 @@ namespace Klak.Ndi
             NdiSender.UnregisterVivoxAudioBridge(this);
         }
 
+        private float _debugTimerForRecording = 0f;
+
         private void Update()
         {
-            if (_audioSource == null || _audioSource.clip == null) return;
+            if (_audioSource == null || _audioSource.clip == null)
+            {
+                // Debug every 5 seconds if clip is not available
+                _debugTimerForRecording += Time.deltaTime;
+                if (_debugTimerForRecording >= 5f)
+                {
+                    Debug.LogWarning($"[VivoxAudioBridge] No AudioClip available yet. AudioSource: {_audioSource != null}, Clip: {(_audioSource?.clip != null)}");
+                    _debugTimerForRecording = 0f;
+                }
+                return;
+            }
 
             // Update AudioClip reference if it changed
             if (_audioClip != _audioSource.clip)
@@ -95,13 +107,21 @@ namespace Klak.Ndi
             {
                 _recordingTimer += Time.deltaTime;
 
+                // Debug every 5 seconds
+                _debugTimerForRecording += Time.deltaTime;
+                if (_debugTimerForRecording >= 5f)
+                {
+                    Debug.Log($"[VivoxAudioBridge] Recording status: timer={_recordingTimer:F1}s, isRecording={_isRecording}, cooldown={_recordingCooldown}s");
+                    _debugTimerForRecording = 0f;
+                }
+
                 if (!_isRecording && _recordingTimer >= _recordingCooldown)
                 {
                     // Start new recording
                     _isRecording = true;
                     _recordingDuration = 0f;
                     _recordedSamples = new System.Collections.Generic.List<float>();
-                    Debug.Log($"[VivoxAudioBridge] Started recording #{_recordingNumber}");
+                    Debug.Log($"[VivoxAudioBridge] ⏺️ Started recording #{_recordingNumber}");
                 }
 
                 if (_isRecording)
@@ -110,6 +130,7 @@ namespace Klak.Ndi
                     if (_recordingDuration >= MAX_RECORDING_DURATION)
                     {
                         // Stop recording and save
+                        Debug.Log($"[VivoxAudioBridge] ⏹️ Stopping recording #{_recordingNumber}, saving...");
                         SaveRecordingToFile();
                         _isRecording = false;
                         _recordingTimer = 0f;

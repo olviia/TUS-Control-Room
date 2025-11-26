@@ -374,10 +374,7 @@ public sealed partial class NdiSender : MonoBehaviour
                         _selectedVivoxBridge = bridge;
                         Debug.Log($"[NdiSender] Selected Vivox bridge ID {objectBasedBridgeId}: {bridge.gameObject.name}");
                     }
-                    else
-                    {
-                        Debug.LogWarning($"[NdiSender] No Vivox bridge found with ID {objectBasedBridgeId}");
-                    }
+                    
                 }
             }
 
