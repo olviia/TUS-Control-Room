@@ -5,16 +5,17 @@ using UnityEngine;
 namespace Klak.Ndi
 {
     /// <summary>
-    /// Bridge component that reads audio from Vivox's AudioClip and provides it to NdiSender
+    /// Bridge component that captures audio from Vivox AudioSource using OnAudioFilterRead
     /// Attach this to the same GameObject as VivoxParticipantTap
     /// </summary>
+    [RequireComponent(typeof(AudioSource))]
     public class VivoxAudioBridge : MonoBehaviour
     {
         [Tooltip("Bridge ID for NdiSender to identify this audio source")]
         public int bridgeId = 0;
 
         [Tooltip("Enable audio recording to file for debugging")]
-        public bool enableAudioRecording = true;
+        public bool enableAudioRecording = false;
 
         [Tooltip("Bypass ring buffer and send directly to NdiSender")]
         public bool bypassRingBuffer = true;
@@ -85,50 +86,52 @@ namespace Klak.Ndi
 
         private float _debugTimerForRecording = 0f;
 
-        private void Update()
+        /// <summary>
+        /// OnAudioFilterRead is called by Unity's audio thread with the actual audio being played
+        /// This is the CORRECT way to capture audio from AudioSource in real-time
+        /// </summary>
+        private void OnAudioFilterRead(float[] data, int channels)
         {
-            if (_audioSource == null || _audioSource.clip == null)
-            {
-                // Debug every 5 seconds if clip is not available
-                _debugTimerForRecording += Time.deltaTime;
-                if (_debugTimerForRecording >= 5f)
-                {
-                    Debug.LogWarning($"[VivoxAudioBridge] No AudioClip available yet. AudioSource: {_audioSource != null}, Clip: {(_audioSource?.clip != null)}");
-                    _debugTimerForRecording = 0f;
-                }
-                return;
-            }
+            _channels = channels;
 
-            // Update AudioClip reference if it changed
-            if (_audioClip != _audioSource.clip)
-            {
-                _audioClip = _audioSource.clip;
-                _channels = _audioClip.channels;
-                _lastReadPosition = 0;
-                Debug.Log($"[VivoxAudioBridge] AudioClip updated: {_audioClip.name}, channels: {_channels}, samples: {_audioClip.samples}");
-            }
-
-            // Recording timer for debugging
+            // Record samples if recording is active
             if (enableAudioRecording)
             {
-                _recordingTimer += Time.deltaTime;
-
-                // Debug every 5 seconds
-                _debugTimerForRecording += Time.deltaTime;
-                if (_debugTimerForRecording >= 5f)
-                {
-                    Debug.Log($"[VivoxAudioBridge] Recording status: timer={_recordingTimer:F1}s, isRecording={_isRecording}, cooldown={_recordingCooldown}s");
-                    _debugTimerForRecording = 0f;
-                }
-
                 if (!_isRecording && _recordingTimer >= _recordingCooldown)
                 {
-                    // Start new recording
                     _isRecording = true;
                     _recordingDuration = 0f;
                     _recordedSamples = new System.Collections.Generic.List<float>();
                     Debug.Log($"[VivoxAudioBridge] ⏺️ Started recording #{_recordingNumber}");
                 }
+
+                if (_isRecording)
+                {
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        _recordedSamples.Add(data[i]);
+                    }
+                }
+            }
+
+            // If bypassing ring buffer, send directly to NdiSender
+            if (bypassRingBuffer && ndiSenderDirect != null)
+            {
+                ndiSenderDirect.SendVivoxAudioData(data, channels, _sampleRate);
+            }
+            else
+            {
+                // Write to ring buffer (normal path)
+                WriteToRing(data, data.Length);
+            }
+        }
+
+        private void Update()
+        {
+            // Recording timer for debugging
+            if (enableAudioRecording)
+            {
+                _recordingTimer += Time.deltaTime;
 
                 if (_isRecording)
                 {
@@ -144,75 +147,6 @@ namespace Klak.Ndi
                     }
                 }
             }
-
-            // Read new audio data from the AudioClip
-            ReadAudioFromClip();
-        }
-
-        private void ReadAudioFromClip()
-        {
-            if (_audioClip == null || !_audioSource.isPlaying) return;
-
-            // Get current playback position
-            int currentPosition = _audioSource.timeSamples;
-
-            // Calculate how many samples to read
-            int totalSamples = _audioClip.samples;
-            int samplesToRead = 0;
-
-            if (currentPosition >= _lastReadPosition)
-            {
-                samplesToRead = currentPosition - _lastReadPosition;
-            }
-            else
-            {
-                // Wrapped around (looping AudioClip)
-                samplesToRead = (totalSamples - _lastReadPosition) + currentPosition;
-            }
-
-            if (samplesToRead <= 0) return;
-
-            // Limit to reasonable chunk size
-            samplesToRead = Math.Min(samplesToRead, _sampleRate / 10); // Max 100ms at a time
-
-            // Allocate temp buffer if needed
-            int totalFloats = samplesToRead * _channels;
-            if (_tempBuffer == null || _tempBuffer.Length < totalFloats)
-            {
-                _tempBuffer = new float[totalFloats];
-            }
-
-            // Read from AudioClip using GetData
-            _audioClip.GetData(_tempBuffer, _lastReadPosition);
-
-            Debug.Log($"[VivoxAudioBridge] GetData read {samplesToRead} samples from position {_lastReadPosition}, total floats: {totalFloats}, channels: {_channels}");
-
-            // Record samples if recording is active
-            if (_isRecording && _recordedSamples != null)
-            {
-                for (int i = 0; i < totalFloats; i++)
-                {
-                    _recordedSamples.Add(_tempBuffer[i]);
-                }
-            }
-
-            // If bypassing ring buffer, send directly to NdiSender
-            if (bypassRingBuffer && ndiSenderDirect != null)
-            {
-                // Create a properly sized array with only the data we read
-                float[] directData = new float[totalFloats];
-                Array.Copy(_tempBuffer, 0, directData, 0, totalFloats);
-                ndiSenderDirect.SendVivoxAudioData(directData, _channels, _sampleRate);
-                Debug.Log($"[VivoxAudioBridge] Direct send to NDI: {totalFloats} floats, {_channels}ch");
-            }
-            else
-            {
-                // Write to ring buffer (normal path)
-                WriteToRing(_tempBuffer, totalFloats);
-            }
-
-            // Update last read position
-            _lastReadPosition = currentPosition;
         }
 
         private void WriteToRing(float[] data, int length)
