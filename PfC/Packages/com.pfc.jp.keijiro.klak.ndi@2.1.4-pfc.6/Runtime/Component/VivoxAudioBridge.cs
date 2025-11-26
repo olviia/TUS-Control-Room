@@ -18,7 +18,7 @@ namespace Klak.Ndi
         public bool enableAudioRecording = false;
 
         [Tooltip("Bypass ring buffer and send directly to NdiSender")]
-        public bool bypassRingBuffer = true;
+        public bool bypassRingBuffer = false;
 
         [Tooltip("NdiSender to send audio to when bypassing ring buffer")]
         public NdiSender ndiSenderDirect;
