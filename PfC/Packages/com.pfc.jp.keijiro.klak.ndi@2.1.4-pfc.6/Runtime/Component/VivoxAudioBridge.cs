@@ -36,6 +36,15 @@ namespace Klak.Ndi
         private int _ndiReadIndex;
         private bool _ndiReadStarted;
 
+        // Drift compensation (like the FMOD solution)
+        private const int TARGET_LATENCY_MS = 50;
+        private const int DRIFT_THRESHOLD_MS = 1;
+        private uint _totalSamplesWritten = 0;
+        private uint _totalSamplesRead = 0;
+        private int _targetLatencySamples;
+        private int _driftThresholdSamples;
+        private float _actualLatency; // Smoothed latency tracking
+
         // AudioSource and AudioClip references
         private AudioSource _audioSource;
         private AudioClip _audioClip;
@@ -74,9 +83,14 @@ namespace Klak.Ndi
             _availableSamples = 0;
             _lastReadPosition = 0;
 
+            // Initialize drift compensation
+            _targetLatencySamples = (_sampleRate * TARGET_LATENCY_MS) / 1000;
+            _driftThresholdSamples = (_sampleRate * DRIFT_THRESHOLD_MS) / 1000;
+            _actualLatency = _targetLatencySamples;
+
             // Register with NdiSender
             NdiSender.RegisterVivoxAudioBridge(this);
-            Debug.Log($"[VivoxAudioBridge] Initialized with bridge ID {bridgeId}");
+            Debug.Log($"[VivoxAudioBridge] Initialized with bridge ID {bridgeId}, target latency: {TARGET_LATENCY_MS}ms ({_targetLatencySamples} samples)");
         }
 
         private void OnDestroy()
@@ -162,6 +176,9 @@ namespace Klak.Ndi
                     _writeIndex = (_writeIndex + 1) % capacity;
                 }
                 _availableSamples = Math.Min(_availableSamples + length, capacity);
+
+                // Track total samples written for drift compensation
+                _totalSamplesWritten += (uint)length;
             }
         }
 
@@ -203,17 +220,40 @@ namespace Klak.Ndi
                     return false;
                 }
 
-                // Create array with accumulated data
-                audioData = new float[available];
+                // Drift compensation: Calculate actual latency and adjust read amount
+                int latency = (int)_totalSamplesWritten - (int)_totalSamplesRead;
+                _actualLatency = 0.97f * _actualLatency + 0.03f * latency; // Smooth latency tracking
+
+                // Adjust how much we read based on drift
+                int samplesToRead = available;
+                if (_actualLatency < _targetLatencySamples - _driftThresholdSamples)
+                {
+                    // Buffer too empty - read less (slow down consumption)
+                    samplesToRead = Math.Max(available / 2, 1);
+                }
+                else if (_actualLatency > _targetLatencySamples + _driftThresholdSamples)
+                {
+                    // Buffer too full - read more (speed up consumption)
+                    samplesToRead = available; // Read everything available
+                }
+                else
+                {
+                    // Within threshold - read normal amount (target latency worth)
+                    samplesToRead = Math.Min(available, _targetLatencySamples);
+                }
+
+                // Create array with adjusted amount
+                audioData = new float[samplesToRead];
 
                 // Copy from ring buffer
-                for (int i = 0; i < available; i++)
+                for (int i = 0; i < samplesToRead; i++)
                 {
                     audioData[i] = _ringBuffer[(_ndiReadIndex + i) % capacity];
                 }
 
-                // Update NdiSender read index
-                _ndiReadIndex = (_ndiReadIndex + available) % capacity;
+                // Update NdiSender read index and tracking
+                _ndiReadIndex = (_ndiReadIndex + samplesToRead) % capacity;
+                _totalSamplesRead += (uint)samplesToRead;
 
                 return true;
             }
