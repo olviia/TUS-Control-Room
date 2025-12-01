@@ -29,10 +29,7 @@ public class WebRTCStreamer : MonoBehaviour
     public NdiReceiver ndiReceiverSource;
     public NdiReceiver ndiReceiverCaptions;
     public WebRTCRenderer targetRenderer;
-
-    // Current pipeline source (to detect TextureSourceObject)
-    private IPipelineSource currentPipelineSource;
-
+    
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1280;
     [SerializeField] private int textureHeight = 720;
@@ -174,16 +171,7 @@ public class WebRTCStreamer : MonoBehaviour
     #endregion
     
     #region Public Interface
-
-    /// <summary>
-    /// Set the pipeline source (to detect if it's TextureSourceObject)
-    /// </summary>
-    public void SetPipelineSource(IPipelineSource source)
-    {
-        currentPipelineSource = source;
-        Debug.Log($"[📡{instanceId}] Pipeline source set: {source?.GetType().Name}");
-    }
-
+    
     /// <summary>
     /// Start streaming for the given session
     /// </summary>
@@ -439,41 +427,30 @@ public class WebRTCStreamer : MonoBehaviour
 
         while (IsStreamingOrConnecting())
         {
-            Texture sourceTexture = null;
+            var ndiTexture = ndiReceiverSource?.GetTexture();
 
-            // Check if source is TextureSourceObject - get texture directly from it
-            if (currentPipelineSource is TextureSourceObject textureSource)
+            if (ndiTexture != null && webRtcTexture != null)
             {
-                sourceTexture = textureSource.GetTexture();
-            }
-            else
-            {
-                // Use NDI receiver (for SourceObject and MergedScreenSource)
-                sourceTexture = ndiReceiverSource?.GetTexture();
-            }
-
-            if (sourceTexture != null && webRtcTexture != null)
-            {
-                var captionsTexture = ndiReceiverCaptions?.GetTexture();
+                var ndiTextureCaptions = ndiReceiverCaptions?.GetTexture();
 
                 // Try caption compositing if captions are available
-                if (captionsTexture != null)
+                if (ndiTextureCaptions != null)
                 {
                     if (compositeRT == null)
                     {
-                        compositeRT = new RenderTexture(sourceTexture.width, sourceTexture.height, 0);
+                        compositeRT = new RenderTexture(ndiTexture.width, ndiTexture.height, 0);
                         compositeRT.Create();
                     }
 
-                    blendMaterial.SetTexture("_MainTex", sourceTexture);
-                    blendMaterial.SetTexture("_OverlayTex", captionsTexture);
+                    blendMaterial.SetTexture("_MainTex", ndiTexture);
+                    blendMaterial.SetTexture("_OverlayTex", ndiTextureCaptions);
                     Graphics.Blit(null, compositeRT, blendMaterial);
                     Graphics.Blit(compositeRT, webRtcTexture);
                 }
                 else
                 {
                     // Direct blit - no captions
-                    Graphics.Blit(sourceTexture, webRtcTexture);
+                    Graphics.Blit(ndiTexture, webRtcTexture);
                 }
 
                 frameCount++;
@@ -486,7 +463,7 @@ public class WebRTCStreamer : MonoBehaviour
             {
                 if (frameCount == 0 || frameCount % 60 == 0)
                 {
-                    Debug.LogWarning($"[📡{instanceId}] Missing texture! Source: {sourceTexture != null}, WebRTC: {webRtcTexture != null}");
+                    Debug.LogWarning($"[📡{instanceId}] Missing texture! NDI: {ndiTexture != null}, WebRTC: {webRtcTexture != null}");
                 }
             }
 
