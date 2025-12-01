@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4776814088692171705
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2057706591142250815}
+  - component: {fileID: 497241432439774428}
+  - component: {fileID: 3117971875419024576}
+  m_Layer: 0
+  m_Name: PointCloudReceiver
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2057706591142250815
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4776814088692171705}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 2, y: 2, z: 4}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!114 &497241432439774428
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4776814088692171705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6abaccbbd6c614f90b585b06fe920e02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Cwipc::Cwipc.NetworkPointCloudReader
+  url: tcp://127.0.0.1:4303
+  compressed: 0
+--- !u!114 &3117971875419024576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4776814088692171705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ee0a2e5b3db3432996166faa4dfc160, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Cwipc::Cwipc.PointCloudRenderer
+  pointcloudSource: {fileID: 497241432439774428}
+  baseMaterial: {fileID: 2100000, guid: 61365c20d96f4db44b2f83dc67d606af, type: 2}
+  timeoutBeforeGhosting: 5
+  pointSizeFactor: 1
+  maximumPointSize: 0.1
+  pcMirrorX: 1
+  pcMirrorZ: 0
+  started:
+    m_PersistentCalls:
+      m_Calls: []
+  finished:
+    m_PersistentCalls:
+      m_Calls: []
+  _RendererName: 
+  _PreparerName: 
+  material: {fileID: 2100000, guid: 61365c20d96f4db44b2f83dc67d606af, type: 2}
+  dataIsMissing: 0
+  timestampMostRecentReception: 0
+  metadataMostRecentReception:
+    timestamp: 0
+    dsi: 
+    dsi_size: 0
+    filename: 
+  pointCountMostRecentReception: 0
+  pointSizeMostRecentReception: 0
+  paused: 0
