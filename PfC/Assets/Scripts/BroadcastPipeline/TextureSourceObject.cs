@@ -39,7 +39,7 @@ public class TextureSourceObject : SourceObject
         highlightStrategy = new MaterialHighlightStrategy(screenGameObject, BroadcastPipelineManager.Instance);
 
         // For texture sources, set a descriptive name instead of using receiver.ndiName
-        ndiName = $"Texture_{gameObject.name}";
+        //ndiName = $"Texture_{gameObject.name}";
         BroadcastPipelineManager.Instance?.RegisterSource(this);
     }
 

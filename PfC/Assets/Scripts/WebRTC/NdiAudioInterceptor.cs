@@ -13,26 +13,20 @@ public class NdiAudioInterceptor : MonoBehaviour
     
     [Header("Component References")]
     [SerializeField] private AudioSourceBridge targetAudioSourceBridge;
-
+    
     [Header("Buffering Settings")]
-    [SerializeField] private int bufferSizeMs = 200; // Ring buffer size in milliseconds (same as AudioListenerBridge)
+    [SerializeField] private float audioPollingRate = 1000f; // Hz - high frequency NDI data pulling
+    [SerializeField] private int bufferSizeMs = 100; // Buffer size in milliseconds
 
     // NDI and WebRTC components
     private NdiReceiver ndiReceiver;
     public AudioStreamTrack audioStreamTrack;
-
-    // Ring buffer for smooth audio streaming (same pattern as AudioListenerBridge)
-    private float[] ringBuffer;
-    private int writeIndex;
-    private int readIndex;
-    private int availableSamples;
-    private bool readStarted;
-    private int channels = 2;
-    private int sampleRate = 48000;
-    private readonly object bufferLock = new object();
-
+    
+    
     // State management
     private bool isStreamingActive = false;
+    private bool isInitialized = false;
+    private Coroutine ndiPullingCoroutine;
     
     #region Unity Lifecycle
     
@@ -49,96 +43,49 @@ public class NdiAudioInterceptor : MonoBehaviour
         }
         audioStreamTrack = new AudioStreamTrack();
 
-        // Initialize ring buffer
-        sampleRate = AudioSettings.outputSampleRate;
-        int capacity = (sampleRate * channels * bufferSizeMs) / 1000;
-        ringBuffer = new float[System.Math.Max(capacity, 1)];
-        writeIndex = 0;
-        readIndex = 0;
-        availableSamples = 0;
-        readStarted = false;
-        Debug.Log($"[🎵AudioInterceptor] Ring buffer initialized: {capacity} samples ({bufferSizeMs}ms)");
-
         StartAudioStreaming();
         StopAudioStreaming();
     }
     
-    void Update()
-    {
-        // Send accumulated audio to WebRTC every frame (same pattern as NdiSender)
-        if (isStreamingActive)
-        {
-            SendAccumulatedAudioToWebRTC();
-        }
-    }
-
+    // void Update()
+    // {
+    //     //Dynamic AudioSourceBridge detection for runtime on/off capability
+    //     if (targetAudioSourceBridge == null)
+    //     {
+    //         targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
+    //     }
+    // }
+    
     #endregion
     
 
     #region Audio Processing Utilities
-
-    private void HandleChunk(float[] audioData, int incomingChannels, int incomingSampleRate)
+    
+    private void HandleChunk(float[] audioData, int channels, int sampleRate)
     {
-        // Update cached values
-        this.channels = incomingChannels;
-        this.sampleRate = incomingSampleRate;
-
-        // Write incoming audio to ring buffer (same pattern as AudioListenerBridge)
-        WriteToRingBuffer(audioData);
-    }
-
-    private void WriteToRingBuffer(float[] data)
-    {
-        if (ringBuffer == null || data == null) return;
-
-        lock (bufferLock)
+        float rms = CalculateRMS(audioData);
+    
+        // 🔍 DETAILED DEBUG: Track what happens during SetData
+        try
         {
-            int capacity = ringBuffer.Length;
-            for (int i = 0; i < data.Length; i++)
-            {
-                ringBuffer[writeIndex] = data[i];
-                writeIndex = (writeIndex + 1) % capacity;
-            }
-            availableSamples = System.Math.Min(availableSamples + data.Length, capacity);
+            audioStreamTrack.SetData(audioData, channels, sampleRate);
+        
+            // if (rms > 0.001f)
+            // {
+            //     Debug.Log($"aabb_[🔍AudioInterceptor] ✅ SetData SUCCESS: RMS={rms:F3}, Channels={channels}");
+            // }
+            // else
+            // {
+            //     Debug.Log($"aabb_[🔍AudioInterceptor] ⚠️ SetData called with SILENT data: RMS={rms:F3}");
+            // }
+        }
+        catch (System.Exception e)
+        {
+            // Debug.LogError($"aabb_[🔍AudioInterceptor] ❌ SetData FAILED: {e.Message}");
+            // Debug.LogError($"aabb_[🔍AudioInterceptor] Track state - Disposed: {audioStreamTrack == null}");
         }
     }
-
-    private bool ReadFromRingBuffer(out float[] audioData, int samplesToRead)
-    {
-        audioData = null;
-
-        lock (bufferLock)
-        {
-            if (ringBuffer == null) return false;
-
-            int capacity = ringBuffer.Length;
-
-            // Wait until buffer is half full before starting (same as AudioListenerBridge)
-            if (!readStarted && availableSamples >= capacity / 2)
-            {
-                int delay = capacity / 2;
-                readIndex = (writeIndex - delay + capacity) % capacity;
-                readStarted = true;
-                Debug.Log($"[🎵AudioInterceptor] Started reading from buffer (half-full at {availableSamples} samples)");
-            }
-
-            if (!readStarted) return false;
-
-            int available = (writeIndex - readIndex + capacity) % capacity;
-            if (available < samplesToRead) return false;
-
-            // Read requested samples from ring buffer
-            audioData = new float[samplesToRead];
-            for (int i = 0; i < samplesToRead; i++)
-            {
-                audioData[i] = ringBuffer[(readIndex + i) % capacity];
-            }
-
-            readIndex = (readIndex + samplesToRead) % capacity;
-            return true;
-        }
-    }
-
+    
     private float CalculateRMS(float[] audioData)
     {
         float sum = 0f;
@@ -148,107 +95,36 @@ public class NdiAudioInterceptor : MonoBehaviour
         }
         return Mathf.Sqrt(sum / audioData.Length);
     }
-
+    
     #endregion
-
-    #region WebRTC Audio Sending
-
-    private void SendAccumulatedAudioToWebRTC()
-    {
-        // Get all accumulated audio from ring buffer (same pattern as NdiSender)
-        if (GetAccumulatedAudio(out float[] audioData, out int audioChannels))
-        {
-            try
-            {
-                audioStreamTrack.SetData(audioData, audioChannels, sampleRate);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"[🎵AudioInterceptor] SetData failed: {e.Message}");
-            }
-        }
-    }
-
-    private bool GetAccumulatedAudio(out float[] audioData, out int audioChannels)
-    {
-        audioData = null;
-        audioChannels = channels;
-
-        lock (bufferLock)
-        {
-            if (ringBuffer == null) return false;
-
-            int capacity = ringBuffer.Length;
-
-            // Wait until buffer is half full before starting (same as AudioListenerBridge)
-            if (!readStarted && availableSamples >= capacity / 2)
-            {
-                int delay = capacity / 2;
-                readIndex = (writeIndex - delay + capacity) % capacity;
-                readStarted = true;
-                Debug.Log($"[🎵AudioInterceptor] Started reading from buffer (half-full at {availableSamples} samples)");
-            }
-
-            if (!readStarted) return false;
-
-            int available = (writeIndex - readIndex + capacity) % capacity;
-            if (available <= 0) return false;
-
-            // Get all available samples
-            audioData = new float[available];
-            for (int i = 0; i < available; i++)
-            {
-                audioData[i] = ringBuffer[(readIndex + i) % capacity];
-            }
-
-            readIndex = (readIndex + available) % capacity;
-            return true;
-        }
-    }
-
-    #endregion
-
+    
     #region Public Interface
-
+    
     public void StartAudioStreaming()
-    {
-        targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
-        if (targetAudioSourceBridge == null)
-        {
-            Debug.LogError("[🎵AudioInterceptor] No AudioSourceBridge found!");
-            return;
-        }
+    {                    
+        
 
-        // Subscribe to audio chunks
+        targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
+
         targetAudioSourceBridge.OnWebRTCAudioReady += HandleChunk;
 
-        // Reset ring buffer state
-        lock (bufferLock)
-        {
-            writeIndex = 0;
-            readIndex = 0;
-            availableSamples = 0;
-            readStarted = false;
-        }
+        //
 
-        // Start sending audio to WebRTC (via Update)
+        
         isStreamingActive = true;
 
-        Debug.Log("[🎵AudioInterceptor] Audio streaming started with ring buffer (Update-based)");
     }
-
+    
     public void StopAudioStreaming()
     {
         isStreamingActive = false;
-
-        if (targetAudioSourceBridge != null)
-        {
-            targetAudioSourceBridge.OnWebRTCAudioReady -= HandleChunk;
-        }
-
+        
+        targetAudioSourceBridge.OnWebRTCAudioReady -= HandleChunk;
+        
+        
         Debug.Log("[🎵AudioInterceptor] Audio streaming stopped");
     }
-
+    
     #endregion
     
 

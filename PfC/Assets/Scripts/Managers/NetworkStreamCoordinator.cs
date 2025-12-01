@@ -147,20 +147,19 @@ public class NetworkStreamCoordinator : NetworkBehaviour
     private bool ValidateRequest(PipelineType pipeline, string localNdiName)
     {
         if (!IsNetworkReady()) return false;
-
+        
         if (!supportedPipelines.Contains(pipeline))
         {
             Debug.LogError($"[🎬StreamCoordinator] Unsupported pipeline: {pipeline}");
             return false;
         }
-
-        // Allow null/empty ndiName for non-NDI sources like TextureSourceObject
-        // The actual source validation happens in BroadcastPipelineManager
-        if (string.IsNullOrEmpty(localNdiName))
+        
+        if (localNdiName == null)
         {
-            Debug.Log("[🎬StreamCoordinator] Non-NDI source (TextureSourceObject) - skipping ndiName validation");
+            Debug.LogError("[🎬StreamCoordinator] No NDI source provided");
+            return false;
         }
-
+        
         return true;
     }
 
