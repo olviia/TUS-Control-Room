@@ -194,20 +194,24 @@ public class StreamManager : MonoBehaviour
         var pipelineSource = FindPipelineSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
         isStreaming = true;
-    
+
         if (pipelineSource == null || streamer == null)
-        {            
+        {
             Debug.LogError($"[🎯StreamManager] Cannot start streaming {pipeline} - missing components");
             ShowLocalContent(source);
             return;
         }
-        
-        // Update NDI source for both video 
+
+        // Set the pipeline source for TextureSourceObject detection
+        streamer.SetPipelineSource(pipelineSource);
+        Debug.Log($"[🎯StreamManager] Pipeline source set: {pipelineSource.GetType().Name}");
+
+        // Update NDI source for both video
         var liveDestinationReceiver = FindLiveDestinationReceiver(pipeline);
         if (liveDestinationReceiver != null)
         {
             streamer.ndiReceiverSource = liveDestinationReceiver;
-        
+
             // CRITICAL: Also update the audio interceptor
             var liveAudioInterceptor = liveDestinationReceiver.GetComponent<NdiAudioInterceptor>();
             if (liveAudioInterceptor != null)
