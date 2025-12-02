@@ -33,9 +33,9 @@ public class WebRTCStreamer : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1280;
     [SerializeField] private int textureHeight = 720;
-    [SerializeField] private float connectionTimeout = 3f; // Reasonable timeout for WebRTC negotiation
+    [SerializeField] private float connectionTimeout = 0.5f; // Fast retry for local gigabit network
     [SerializeField] private bool enableOptimisticStates = true;
-    [SerializeField] private int maxRetryAttempts = 5; // More resilient retry attempts
+    [SerializeField] private int maxRetryAttempts = 3;
     
     [Header("Audio Integration")]
     public NdiAudioInterceptor audioInterceptor; // Assign in inspector or find automatically
@@ -203,26 +203,18 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void PrepareForNewSessionSync(string sessionId)
     {
-        Debug.Log($"[📡{instanceId}] PrepareForNewSessionSync START - Current state: {currentState}");
-
-        // CRITICAL FIX: Force recovery from Failed state
-        if (currentState == StreamerState.Failed)
-        {
-            Debug.LogWarning($"[📡{instanceId}] Recovering from Failed state - forcing cleanup");
-            CleanupCurrentSession();
-            ResetSessionState();
-            SetState(StreamerState.Idle);
-        }
-        else if (currentState != StreamerState.Idle)
+        Debug.Log($"[📡{instanceId}] PrepareForNewSessionSync START");
+        
+        if (currentState != StreamerState.Idle)
         {
             CleanupCurrentSession();
         }
-
+        
         currentSessionId = sessionId;
         SetState(StreamerState.Connecting);
         retryCount = 0;
-
-        Debug.Log($"[📡{instanceId}] PrepareForNewSessionSync COMPLETE - New state: {currentState}, retry count: {retryCount}");
+        
+        Debug.Log($"[📡{instanceId}] PrepareForNewSessionSync COMPLETE");
     }
     
     /// <summary>
