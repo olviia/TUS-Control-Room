@@ -1,0 +1,864 @@
+================================================================================
+WebRTC Debug Log - 2025-12-02 14:09:31
+Computer: DESKTOP-TBJM8JN
+OS: Windows 11  (10.0.26100) 64bit
+Unity Version: 6000.2.8f1
+================================================================================
+
+[14:09:31.050] [INFO] [WebRTCLogger] Logging enabled - file: C:/Users/TRANSMIXR/AppData/LocalLow/TUS/ControlRoom\WebRTC_Log_DESKTOP-TBJM8JN_2025-12-02_14-09-31.txt
+[14:09:31.722] [INFO] [🖥️Renderer] ShowLocalNDI called for TVLive - INSTANT switch
+[14:09:31.722] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for TVLive
+[14:09:31.762] [INFO] [🎵AudioInterceptor] Connected to NDI receiver: 
+[14:09:31.764] [INFO] [🎯StreamManager] Managing 2 pipelines 
+[14:09:31.765] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:09:31.765] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:09:33.157] [INFO] [⚙️WebRTCEngine] Started WebRTC engine
+[14:09:33.157] [INFO] [⚙️WebRTCEngine] Registered StudioLive, active: 1
+[14:09:33.161] [INFO] [📡StudioLive_d4c10b3d] WebRTC objects created 1280x720
+[14:09:33.163] [INFO] [⚙️WebRTCEngine] Registered TVLive, active: 2
+[14:09:33.163] [INFO] [📡TVLive_5a8f0c94] WebRTC objects created 1280x720
+[14:09:33.211] [INFO] [AudioSourceBridge] WebRTC buffering started. Delay=9600 samples
+[14:10:41.144] [INFO] [🔗Signaling] Network spawned - signaling active
+[14:10:58.652] [INFO] aabb_[🔍Timing] Receiving started at: 85.51333
+[14:10:58.653] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:10:58.653] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:10:58.653] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:10:58.653] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:10:58.657] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:10:58.658] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684658444_8159
+[14:10:58.658] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684658444_8159
+[14:10:58.659] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684658444_8159
+[14:10:58.717] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684658444_8159
+[14:10:58.719] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684658444_8159 from:0
+[14:10:58.719] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:10:58.720] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:10:58.728] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:10:58.729] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:10:58.729] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:10:58.729] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:10:58.729] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:10:58.730] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:10:58.730] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:10:58.730] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:10:58.730] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:10:58.730] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:10:58.736] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:10:58.737] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:10:58.737] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:10:58.738] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:10:58.738] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:10:58.738] [INFO] aabb_[🔍Timing] Audio initialization at: 85.57982 (+ 85.58s after stream start)
+[14:10:58.739] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:10:58.741] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684658444_8159
+[14:10:58.741] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:10:58.741] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684658444_8159
+[14:10:58.751] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:10:58.751] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:10:58.753] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:10:58.754] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:10:58.784] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684658444_8159 from:0
+[14:10:58.784] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:10:58.785] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:10:58.795] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:10:58.819] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:10:58.819] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:10:58.820] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684658444_8159 to:0
+[14:10:58.821] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:10:58.822] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:10:58.851] [ERROR] [📡StudioLive_d4c10b3d] Answer creation failed: Unity.WebRTC.RTCError
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:654)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:10:58.853] [ERROR] [📡StudioLive_d4c10b3d] Connection failed (attempt 1)
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer:HandleConnectionFailure () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:913)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:655)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:10:58.853] [INFO] [📡StudioLive_d4c10b3d] Retrying connection (attempt 1/2) with 3s timeout
+[14:10:58.887] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:10:58.889] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:10:59.685] [INFO] [📡StudioLive_d4c10b3d] StopSession() called! Stack trace:
+[14:10:59.685] [INFO]   at System.Environment.get_StackTrace () [0x00000] in <715c8f689fc74561a4fef078d73c94aa>:0 
+  at WebRTCStreamer.StopSession () [0x0001a] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\WebRTC\WebRTCStreamer.cs:237 
+  at StreamManager.StopCurrentSession (BroadcastPipeline.PipelineType pipeline) [0x0000e] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:160 
+  at StreamManager.HandleStreamControlChange (StreamAssignment assignment, System.String description) [0x00039] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:145 
+  at NetworkStreamCoordinator.OnStreamChanged (StreamAssignment previousValue, StreamAssignment newValue, System.String pipelineName) [0x00009] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:244 
+  at NetworkStreamCoordinator.<OnNetworkSpawn>b__10_0 (StreamAssignment prev, StreamAssignment curr) [0x00000] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:68 
+  at Unity.Netcode.NetworkVariable`1[T].ReadDelta (Unity.Netcode.FastBufferReader reader, System.Boolean keepDirtyDelta) [0x00047] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\NetworkVariable\NetworkVariable.cs:348 
+  at Unity.Netcode.NetworkVariableDeltaMessage.Handle (Unity.Netcode.NetworkContext& context) [0x0032f] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\Messages\NetworkVariableDeltaMessage.cs:309 
+  at Unity.Netcode.NetworkMessageManager.ReceiveMessage[T] (Unity.Netcode.FastBufferReader reader, Unity.Netcode.NetworkContext& context, Unity.Netcode.NetworkMessageManager manager) [0x00098] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:563 
+  at Unity.Netcode.NetworkMessageManager.HandleMessage (Unity.Netcode.NetworkMessageHeader& header, Unity.Netcode.FastBufferReader reader, System.UInt64 senderId, System.Single timestamp, System.Int32 serializedHeaderSize) [0x000ff] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:422 
+  at Unity.Netcode.NetworkMessageManager.ProcessIncomingMessageQueue () [0x0001a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:448 
+  at Unity.Netcode.NetworkManager.NetworkUpdate (Unity.Netcode.NetworkUpdateStage updateStage) [0x0006a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkManager.cs:340 
+  at Unity.Netcode.NetworkUpdateLoop.RunNetworkUpdateStage (Unity.Netcode.NetworkUpdateStage updateStage) [0x00021] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:191 
+  at Unity.Netcode.NetworkUpdateLoop+NetworkEarlyUpdate+<>c.<CreateLoopSystem>b__0_0 () [0x00000] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:214 
+[14:10:59.686] [INFO] [📡StudioLive_d4c10b3d] Receiving → Disconnecting
+[14:10:59.688] [INFO] [📡StudioLive_d4c10b3d] Audio receiver stopped
+[14:10:59.689] [INFO] [📡StudioLive_d4c10b3d] Disconnecting → Idle
+[14:10:59.690] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:10:59.690] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:10:59.690] [INFO] aabb_[🔍Timing] Receiving started at: 86.54987
+[14:10:59.690] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:10:59.690] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:10:59.691] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:10:59.691] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:10:59.692] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:10:59.692] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684659487_3217
+[14:10:59.692] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684659487_3217
+[14:10:59.693] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684659487_3217
+[14:10:59.750] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684659487_3217
+[14:10:59.785] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684659487_3217 from:0
+[14:10:59.785] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:10:59.785] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:10:59.788] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:10:59.788] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:10:59.789] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:10:59.789] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:10:59.789] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:10:59.790] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:10:59.790] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:10:59.790] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:10:59.790] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:10:59.790] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:10:59.791] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:10:59.791] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:10:59.793] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:10:59.793] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:10:59.793] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:10:59.793] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:10:59.793] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:10:59.793] [INFO] aabb_[🔍Timing] Audio initialization at: 86.64966 (+ 86.65s after stream start)
+[14:10:59.793] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:10:59.795] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684659487_3217
+[14:10:59.795] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:10:59.795] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684659487_3217
+[14:10:59.818] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:10:59.818] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:10:59.850] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684659487_3217 from:0
+[14:10:59.850] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:10:59.851] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:10:59.859] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:10:59.887] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:10:59.887] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:10:59.887] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684659487_3217 to:0
+[14:10:59.887] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:10:59.887] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:10:59.918] [ERROR] [📡StudioLive_d4c10b3d] Answer creation failed: Unity.WebRTC.RTCError
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:654)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:10:59.919] [ERROR] [📡StudioLive_d4c10b3d] Connection failed (attempt 1)
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer:HandleConnectionFailure () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:913)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:655)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:10:59.919] [INFO] [📡StudioLive_d4c10b3d] Retrying connection (attempt 1/2) with 3s timeout
+[14:10:59.952] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:10:59.953] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:11:03.752] [INFO] [📡StudioLive_d4c10b3d] StopSession() called! Stack trace:
+[14:11:03.752] [INFO]   at System.Environment.get_StackTrace () [0x00000] in <715c8f689fc74561a4fef078d73c94aa>:0 
+  at WebRTCStreamer.StopSession () [0x0001a] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\WebRTC\WebRTCStreamer.cs:237 
+  at StreamManager.StopCurrentSession (BroadcastPipeline.PipelineType pipeline) [0x0000e] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:160 
+  at StreamManager.HandleStreamControlChange (StreamAssignment assignment, System.String description) [0x00039] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:145 
+  at NetworkStreamCoordinator.OnStreamChanged (StreamAssignment previousValue, StreamAssignment newValue, System.String pipelineName) [0x00009] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:244 
+  at NetworkStreamCoordinator.<OnNetworkSpawn>b__10_0 (StreamAssignment prev, StreamAssignment curr) [0x00000] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:68 
+  at Unity.Netcode.NetworkVariable`1[T].ReadDelta (Unity.Netcode.FastBufferReader reader, System.Boolean keepDirtyDelta) [0x00047] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\NetworkVariable\NetworkVariable.cs:348 
+  at Unity.Netcode.NetworkVariableDeltaMessage.Handle (Unity.Netcode.NetworkContext& context) [0x0032f] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\Messages\NetworkVariableDeltaMessage.cs:309 
+  at Unity.Netcode.NetworkMessageManager.ReceiveMessage[T] (Unity.Netcode.FastBufferReader reader, Unity.Netcode.NetworkContext& context, Unity.Netcode.NetworkMessageManager manager) [0x00098] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:563 
+  at Unity.Netcode.NetworkMessageManager.HandleMessage (Unity.Netcode.NetworkMessageHeader& header, Unity.Netcode.FastBufferReader reader, System.UInt64 senderId, System.Single timestamp, System.Int32 serializedHeaderSize) [0x000ff] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:422 
+  at Unity.Netcode.NetworkMessageManager.ProcessIncomingMessageQueue () [0x0001a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:448 
+  at Unity.Netcode.NetworkManager.NetworkUpdate (Unity.Netcode.NetworkUpdateStage updateStage) [0x0006a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkManager.cs:340 
+  at Unity.Netcode.NetworkUpdateLoop.RunNetworkUpdateStage (Unity.Netcode.NetworkUpdateStage updateStage) [0x00021] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:191 
+  at Unity.Netcode.NetworkUpdateLoop+NetworkEarlyUpdate+<>c.<CreateLoopSystem>b__0_0 () [0x00000] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:214 
+[14:11:03.752] [INFO] [📡StudioLive_d4c10b3d] Receiving → Disconnecting
+[14:11:03.753] [INFO] [📡StudioLive_d4c10b3d] Audio receiver stopped
+[14:11:03.754] [INFO] [📡StudioLive_d4c10b3d] Disconnecting → Idle
+[14:11:03.754] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:11:03.754] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:11:03.754] [INFO] aabb_[🔍Timing] Receiving started at: 90.61646
+[14:11:03.754] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:11:03.756] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:11:03.756] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:11:03.756] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:11:03.757] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:11:03.757] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684663540_1313
+[14:11:03.757] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684663540_1313
+[14:11:03.757] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684663540_1313
+[14:11:03.817] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684663540_1313
+[14:11:03.818] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684663540_1313 from:0
+[14:11:03.818] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:03.818] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:03.822] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:11:03.822] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:11:03.822] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:11:03.822] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:11:03.823] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:11:03.823] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:11:03.824] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:11:03.824] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:11:03.824] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:11:03.824] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:11:03.824] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:11:03.824] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:11:03.826] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:11:03.826] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:11:03.826] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:11:03.827] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:11:03.827] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:11:03.827] [INFO] aabb_[🔍Timing] Audio initialization at: 90.68286 (+ 90.68s after stream start)
+[14:11:03.827] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:11:03.828] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684663540_1313
+[14:11:03.828] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:11:03.828] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684663540_1313
+[14:11:03.852] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:11:03.852] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:03.889] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:11:03.921] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684663540_1313 from:0
+[14:11:03.921] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:03.922] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:03.926] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684663540_1313 to:0
+[14:11:03.926] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:11:03.926] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:11:03.951] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:11:03.951] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:03.985] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connected
+[14:11:03.986] [INFO] [📡StudioLive_d4c10b3d] Connection took 0.1s
+[14:11:03.986] [INFO] [📡StudioLive_d4c10b3d] Fast network detected - using optimized settings
+[14:11:03.986] [INFO] [📡StudioLive_d4c10b3d] ICE state: Connected
+[14:11:04.052] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684663540_1313 to:0
+[14:11:04.052] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:11:04.152] [INFO] [📡StudioLive_d4c10b3d] ICE state: Disconnected
+[14:11:04.250] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684663540_1313 from:0
+[14:11:04.250] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:04.251] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:04.255] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:11:04.286] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:11:04.286] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:04.321] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:11:04.351] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684663540_1313 to:0
+[14:11:04.352] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:11:09.451] [INFO] [📡StudioLive_d4c10b3d] StopSession() called! Stack trace:
+[14:11:09.452] [INFO]   at System.Environment.get_StackTrace () [0x00000] in <715c8f689fc74561a4fef078d73c94aa>:0 
+  at WebRTCStreamer.StopSession () [0x0001a] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\WebRTC\WebRTCStreamer.cs:237 
+  at StreamManager.StopCurrentSession (BroadcastPipeline.PipelineType pipeline) [0x0000e] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:160 
+  at StreamManager.HandleStreamControlChange (StreamAssignment assignment, System.String description) [0x00039] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:145 
+  at NetworkStreamCoordinator.OnStreamChanged (StreamAssignment previousValue, StreamAssignment newValue, System.String pipelineName) [0x00009] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:244 
+  at NetworkStreamCoordinator.<OnNetworkSpawn>b__10_0 (StreamAssignment prev, StreamAssignment curr) [0x00000] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:68 
+  at Unity.Netcode.NetworkVariable`1[T].ReadDelta (Unity.Netcode.FastBufferReader reader, System.Boolean keepDirtyDelta) [0x00047] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\NetworkVariable\NetworkVariable.cs:348 
+  at Unity.Netcode.NetworkVariableDeltaMessage.Handle (Unity.Netcode.NetworkContext& context) [0x0032f] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\Messages\NetworkVariableDeltaMessage.cs:309 
+  at Unity.Netcode.NetworkMessageManager.ReceiveMessage[T] (Unity.Netcode.FastBufferReader reader, Unity.Netcode.NetworkContext& context, Unity.Netcode.NetworkMessageManager manager) [0x00098] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:563 
+  at Unity.Netcode.NetworkMessageManager.HandleMessage (Unity.Netcode.NetworkMessageHeader& header, Unity.Netcode.FastBufferReader reader, System.UInt64 senderId, System.Single timestamp, System.Int32 serializedHeaderSize) [0x000ff] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:422 
+  at Unity.Netcode.NetworkMessageManager.ProcessIncomingMessageQueue () [0x0001a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:448 
+  at Unity.Netcode.NetworkManager.NetworkUpdate (Unity.Netcode.NetworkUpdateStage updateStage) [0x0006a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkManager.cs:340 
+  at Unity.Netcode.NetworkUpdateLoop.RunNetworkUpdateStage (Unity.Netcode.NetworkUpdateStage updateStage) [0x00021] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:191 
+  at Unity.Netcode.NetworkUpdateLoop+NetworkEarlyUpdate+<>c.<CreateLoopSystem>b__0_0 () [0x00000] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:214 
+[14:11:09.452] [INFO] [📡StudioLive_d4c10b3d] Receiving → Disconnecting
+[14:11:09.453] [INFO] [📡StudioLive_d4c10b3d] Audio receiver stopped
+[14:11:09.458] [INFO] [📡StudioLive_d4c10b3d] Disconnecting → Idle
+[14:11:09.458] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:11:09.459] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:11:09.459] [INFO] aabb_[🔍Timing] Receiving started at: 96.3165
+[14:11:09.459] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:11:09.460] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:11:09.460] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:11:09.460] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:11:09.461] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:11:09.461] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684669262_3403
+[14:11:09.462] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684669262_3403
+[14:11:09.462] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684669262_3403
+[14:11:09.516] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684669262_3403
+[14:11:09.517] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684669262_3403 from:0
+[14:11:09.517] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:09.517] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:11:09.521] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:11:09.523] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:11:09.523] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:11:09.523] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:11:09.523] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:11:09.525] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:11:09.525] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:11:09.525] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:11:09.525] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:11:09.526] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:11:09.526] [INFO] aabb_[🔍Timing] Audio initialization at: 96.38228 (+ 96.38s after stream start)
+[14:11:09.526] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:11:09.526] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684669262_3403
+[14:11:09.526] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:11:09.526] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684669262_3403
+[14:11:09.551] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:11:09.552] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:09.590] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:11:09.618] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684669262_3403 from:0
+[14:11:09.618] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:09.618] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:09.620] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684669262_3403 to:0
+[14:11:09.620] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:11:09.620] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:11:09.652] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:11:09.652] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:09.653] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connected
+[14:11:09.653] [INFO] [📡StudioLive_d4c10b3d] Connection took 0.0s
+[14:11:09.654] [INFO] [📡StudioLive_d4c10b3d] Fast network detected - using optimized settings
+[14:11:09.654] [INFO] [📡StudioLive_d4c10b3d] ICE state: Connected
+[14:11:09.719] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684669262_3403 to:0
+[14:11:09.719] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:11:09.786] [INFO] [📡StudioLive_d4c10b3d] ICE state: Disconnected
+[14:11:09.917] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684669262_3403 from:0
+[14:11:09.918] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:09.918] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:09.921] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684669262_3403 from:0
+[14:11:09.922] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:09.922] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:09.925] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:11:09.952] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:11:09.952] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:09.952] [ERROR] [📡StudioLive_d4c10b3d] Set remote description failed: Unity.WebRTC.RTCError
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<SetRemoteDescription>d__71:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:583)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:11:09.953] [ERROR] [📡StudioLive_d4c10b3d] Connection failed (attempt 1)
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer:HandleConnectionFailure () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:913)
+WebRTCStreamer/<SetRemoteDescription>d__71:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:584)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:11:09.953] [INFO] [📡StudioLive_d4c10b3d] Retrying connection (attempt 1/2) with 3s timeout
+[14:11:09.957] [ERROR] [📡StudioLive_d4c10b3d] Failed to set remote description
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<ProcessOfferImmediately>d__74:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:639)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:11:09.986] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:11:09.987] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:11:10.017] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:11:10.017] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:11:10.018] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:11:10.018] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:11:10.018] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:11:10.018] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:11:10.018] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:11:10.019] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:11:10.019] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:11:10.019] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:11:18.488] [INFO] [TextureSourceObject] GetTexture() called - texture from _BaseMap: True
+[14:11:18.488] [INFO] [TextureSourceObject] Texture details - name: VirtualCamera2, size: 1600x800
+[14:11:19.552] [INFO] [TextureSourceObject] GetTexture() called - texture from _BaseMap: True
+[14:11:19.552] [INFO] [TextureSourceObject] Texture details - name: VirtualCamera2, size: 1600x800
+[14:11:19.553] [INFO] REQUEST STREAM CONTROL CALLED: StudioLive, NDI: 
+[14:11:19.554] [ERROR] [🎬StreamCoordinator] No NDI source provided
+    Stack Trace: UnityEngine.Debug:LogError (object)
+NetworkStreamCoordinator:ValidateRequest (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:159)
+NetworkStreamCoordinator:RequestStreamControl (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:114)
+BroadcastPipelineManager:ForwardContentToNextStage (BroadcastPipeline.PipelineType,BroadcastPipeline.PipelineType) (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:205)
+BroadcastPipelineManager:OnDestinationRightClicked (BroadcastPipeline.PipelineDestination) (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:150)
+BroadcastPipeline.PipelineDestination:OnDestinationRightClicked () (at Assets/Scripts/BroadcastPipeline/PipelineDestination.cs:30)
+BroadcastTriggerClick:HandleRightClick () (at Assets/Scripts/BroadcastPipeline/BroadcastTriggerClick.cs:114)
+BroadcastTriggerClick:OnMouseOver () (at Assets/Scripts/BroadcastPipeline/BroadcastTriggerClick.cs:73)
+UnityEngine.SendMouseEvents:DoSendMouseEvents (int)
+
+[14:11:20.552] [INFO] [TextureSourceObject] GetTexture() called - texture from _BaseMap: True
+[14:11:20.552] [INFO] [TextureSourceObject] Texture details - name: VirtualCamera2, size: 1600x800
+[14:11:20.553] [INFO] REQUEST STREAM CONTROL CALLED: StudioLive, NDI: 
+[14:11:20.553] [ERROR] [🎬StreamCoordinator] No NDI source provided
+    Stack Trace: UnityEngine.Debug:LogError (object)
+NetworkStreamCoordinator:ValidateRequest (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:159)
+NetworkStreamCoordinator:RequestStreamControl (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:114)
+BroadcastPipelineManager:ForwardContentToNextStage (BroadcastPipeline.PipelineType,BroadcastPipeline.PipelineType) (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:205)
+BroadcastPipelineManager/<Reassign>d__29:MoveNext () (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:125)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:11:24.817] [INFO] [📡StudioLive_d4c10b3d] StopSession() called! Stack trace:
+[14:11:24.818] [INFO]   at System.Environment.get_StackTrace () [0x00000] in <715c8f689fc74561a4fef078d73c94aa>:0 
+  at WebRTCStreamer.StopSession () [0x0001a] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\WebRTC\WebRTCStreamer.cs:237 
+  at StreamManager.StopCurrentSession (BroadcastPipeline.PipelineType pipeline) [0x0000e] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:160 
+  at StreamManager.HandleStreamControlChange (StreamAssignment assignment, System.String description) [0x00039] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:145 
+  at NetworkStreamCoordinator.OnStreamChanged (StreamAssignment previousValue, StreamAssignment newValue, System.String pipelineName) [0x00009] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:244 
+  at NetworkStreamCoordinator.<OnNetworkSpawn>b__10_0 (StreamAssignment prev, StreamAssignment curr) [0x00000] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:68 
+  at Unity.Netcode.NetworkVariable`1[T].ReadDelta (Unity.Netcode.FastBufferReader reader, System.Boolean keepDirtyDelta) [0x00047] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\NetworkVariable\NetworkVariable.cs:348 
+  at Unity.Netcode.NetworkVariableDeltaMessage.Handle (Unity.Netcode.NetworkContext& context) [0x0032f] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\Messages\NetworkVariableDeltaMessage.cs:309 
+  at Unity.Netcode.NetworkMessageManager.ReceiveMessage[T] (Unity.Netcode.FastBufferReader reader, Unity.Netcode.NetworkContext& context, Unity.Netcode.NetworkMessageManager manager) [0x00098] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:563 
+  at Unity.Netcode.NetworkMessageManager.HandleMessage (Unity.Netcode.NetworkMessageHeader& header, Unity.Netcode.FastBufferReader reader, System.UInt64 senderId, System.Single timestamp, System.Int32 serializedHeaderSize) [0x000ff] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:422 
+  at Unity.Netcode.NetworkMessageManager.ProcessIncomingMessageQueue () [0x0001a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:448 
+  at Unity.Netcode.NetworkManager.NetworkUpdate (Unity.Netcode.NetworkUpdateStage updateStage) [0x0006a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkManager.cs:340 
+  at Unity.Netcode.NetworkUpdateLoop.RunNetworkUpdateStage (Unity.Netcode.NetworkUpdateStage updateStage) [0x00021] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:191 
+  at Unity.Netcode.NetworkUpdateLoop+NetworkEarlyUpdate+<>c.<CreateLoopSystem>b__0_0 () [0x00000] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:214 
+[14:11:24.818] [INFO] [📡StudioLive_d4c10b3d] Receiving → Disconnecting
+[14:11:24.818] [INFO] [📡StudioLive_d4c10b3d] Audio receiver stopped
+[14:11:24.820] [INFO] [📡StudioLive_d4c10b3d] Disconnecting → Idle
+[14:11:24.820] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:11:24.820] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:11:24.820] [INFO] aabb_[🔍Timing] Receiving started at: 111.6821
+[14:11:24.820] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:11:24.820] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:11:24.820] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:11:24.822] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:11:24.822] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:11:24.823] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684684630_3404
+[14:11:24.823] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684684630_3404
+[14:11:24.823] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684684630_3404
+[14:11:24.849] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684684630_3404
+[14:11:24.884] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684684630_3404 from:0
+[14:11:24.885] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:24.885] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:24.888] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:11:24.888] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:11:24.888] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:11:24.888] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:11:24.889] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:11:24.889] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:11:24.889] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:11:24.889] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:11:24.889] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:11:24.890] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:11:24.890] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:11:24.892] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:11:24.892] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:11:24.892] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:11:24.893] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:11:24.893] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:11:24.893] [INFO] aabb_[🔍Timing] Audio initialization at: 111.7495 (+ 111.75s after stream start)
+[14:11:24.893] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:11:24.894] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684684630_3404
+[14:11:24.894] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:11:24.894] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684684630_3404
+[14:11:24.918] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:11:24.920] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:11:24.921] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:24.950] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684684630_3404 from:0
+[14:11:24.951] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:24.951] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:24.958] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:11:24.987] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:11:24.987] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:24.987] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684684630_3404 to:0
+[14:11:24.988] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:11:24.988] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:11:25.018] [ERROR] [📡StudioLive_d4c10b3d] Answer creation failed: Unity.WebRTC.RTCError
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:654)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:11:25.018] [ERROR] [📡StudioLive_d4c10b3d] Connection failed (attempt 1)
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer:HandleConnectionFailure () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:913)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:655)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:11:25.019] [INFO] [📡StudioLive_d4c10b3d] Retrying connection (attempt 1/2) with 3s timeout
+[14:11:25.051] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:11:25.053] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:11:30.251] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684684630_3404 from:0
+[14:11:30.252] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:11:30.252] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:11:30.255] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:11:30.255] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:11:30.255] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:11:30.255] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:11:30.256] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:11:30.256] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:11:30.257] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:11:30.257] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:11:30.257] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:11:30.257] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:11:30.257] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:11:30.257] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:11:30.260] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:11:30.260] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:11:30.260] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:11:30.260] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:11:30.260] [INFO] aabb_[🔍Timing] Audio initialization at: 117.1163 (+ 117.12s after stream start)
+[14:11:30.260] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:11:30.260] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684684630_3404
+[14:11:30.261] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:11:30.261] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684684630_3404
+[14:11:30.285] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:11:30.286] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:11:30.321] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:11:30.353] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684684630_3404 to:0
+[14:11:30.353] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:11:30.353] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:11:30.386] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connected
+[14:11:30.386] [INFO] [📡StudioLive_d4c10b3d] Connection took 0.0s
+[14:11:30.386] [INFO] [📡StudioLive_d4c10b3d] Fast network detected - using optimized settings
+[14:11:30.386] [INFO] [📡StudioLive_d4c10b3d] ICE state: Connected
+[14:11:30.555] [INFO] [📡StudioLive_d4c10b3d] Video received: 1280x720
+[14:12:20.867] [INFO] [TextureSourceObject] GetTexture() called - texture from _BaseMap: True
+[14:12:20.868] [INFO] [TextureSourceObject] Texture details - name: VirtualCamera2, size: 1600x800
+[14:12:21.303] [INFO] [TextureSourceObject] GetTexture() called - texture from _BaseMap: True
+[14:12:21.303] [INFO] [TextureSourceObject] Texture details - name: VirtualCamera2, size: 1600x800
+[14:12:21.305] [INFO] REQUEST STREAM CONTROL CALLED: StudioLive, NDI: 
+[14:12:21.305] [ERROR] [🎬StreamCoordinator] No NDI source provided
+    Stack Trace: UnityEngine.Debug:LogError (object)
+NetworkStreamCoordinator:ValidateRequest (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:159)
+NetworkStreamCoordinator:RequestStreamControl (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:114)
+BroadcastPipelineManager:ForwardContentToNextStage (BroadcastPipeline.PipelineType,BroadcastPipeline.PipelineType) (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:205)
+BroadcastPipelineManager:OnDestinationRightClicked (BroadcastPipeline.PipelineDestination) (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:150)
+BroadcastPipeline.PipelineDestination:OnDestinationRightClicked () (at Assets/Scripts/BroadcastPipeline/PipelineDestination.cs:30)
+BroadcastTriggerClick:HandleRightClick () (at Assets/Scripts/BroadcastPipeline/BroadcastTriggerClick.cs:114)
+BroadcastTriggerClick:OnMouseOver () (at Assets/Scripts/BroadcastPipeline/BroadcastTriggerClick.cs:73)
+UnityEngine.SendMouseEvents:DoSendMouseEvents (int)
+
+[14:12:46.768] [INFO] [📡StudioLive_d4c10b3d] ICE state: Disconnected
+[14:12:46.801] [INFO] [📡StudioLive_d4c10b3d] StopSession() called! Stack trace:
+[14:12:46.801] [INFO]   at System.Environment.get_StackTrace () [0x00000] in <715c8f689fc74561a4fef078d73c94aa>:0 
+  at WebRTCStreamer.StopSession () [0x0001a] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\WebRTC\WebRTCStreamer.cs:237 
+  at StreamManager.StopCurrentSession (BroadcastPipeline.PipelineType pipeline) [0x0000e] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:160 
+  at StreamManager.HandleStreamControlChange (StreamAssignment assignment, System.String description) [0x00039] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:145 
+  at NetworkStreamCoordinator.OnStreamChanged (StreamAssignment previousValue, StreamAssignment newValue, System.String pipelineName) [0x00009] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:244 
+  at NetworkStreamCoordinator.<OnNetworkSpawn>b__10_0 (StreamAssignment prev, StreamAssignment curr) [0x00000] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:68 
+  at Unity.Netcode.NetworkVariable`1[T].ReadDelta (Unity.Netcode.FastBufferReader reader, System.Boolean keepDirtyDelta) [0x00047] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\NetworkVariable\NetworkVariable.cs:348 
+  at Unity.Netcode.NetworkVariableDeltaMessage.Handle (Unity.Netcode.NetworkContext& context) [0x0032f] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\Messages\NetworkVariableDeltaMessage.cs:309 
+  at Unity.Netcode.NetworkMessageManager.ReceiveMessage[T] (Unity.Netcode.FastBufferReader reader, Unity.Netcode.NetworkContext& context, Unity.Netcode.NetworkMessageManager manager) [0x00098] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:563 
+  at Unity.Netcode.NetworkMessageManager.HandleMessage (Unity.Netcode.NetworkMessageHeader& header, Unity.Netcode.FastBufferReader reader, System.UInt64 senderId, System.Single timestamp, System.Int32 serializedHeaderSize) [0x000ff] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:422 
+  at Unity.Netcode.NetworkMessageManager.ProcessIncomingMessageQueue () [0x0001a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:448 
+  at Unity.Netcode.NetworkManager.NetworkUpdate (Unity.Netcode.NetworkUpdateStage updateStage) [0x0006a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkManager.cs:340 
+  at Unity.Netcode.NetworkUpdateLoop.RunNetworkUpdateStage (Unity.Netcode.NetworkUpdateStage updateStage) [0x00021] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:191 
+  at Unity.Netcode.NetworkUpdateLoop+NetworkEarlyUpdate+<>c.<CreateLoopSystem>b__0_0 () [0x00000] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:214 
+[14:12:46.801] [INFO] [📡StudioLive_d4c10b3d] Receiving → Disconnecting
+[14:12:46.802] [INFO] [📡StudioLive_d4c10b3d] Audio receiver stopped
+[14:12:46.811] [INFO] [📡StudioLive_d4c10b3d] Disconnecting → Idle
+[14:12:46.811] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:12:46.812] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:12:46.813] [INFO] aabb_[🔍Timing] Receiving started at: 193.6658
+[14:12:46.813] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:12:46.813] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:12:46.813] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:12:46.813] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:12:46.815] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:12:46.815] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684766602_5185
+[14:12:46.815] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684766602_5185
+[14:12:46.815] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684766602_5185
+[14:12:46.867] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684766602_5185
+[14:12:46.868] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684766602_5185 from:0
+[14:12:46.868] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:46.868] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:46.871] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:12:46.871] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:12:46.873] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:12:46.873] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:12:46.873] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:12:46.873] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:12:46.873] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:12:46.873] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:12:46.873] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:12:46.874] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:12:46.874] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:12:46.874] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:12:46.878] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:12:46.878] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:12:46.878] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:12:46.878] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:12:46.878] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:12:46.878] [INFO] aabb_[🔍Timing] Audio initialization at: 193.7331 (+ 193.73s after stream start)
+[14:12:46.878] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:12:46.879] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684766602_5185
+[14:12:46.879] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:12:46.880] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684766602_5185
+[14:12:46.905] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:12:46.906] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:46.942] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:12:46.971] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684766602_5185 to:0
+[14:12:46.971] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:12:46.971] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:12:47.000] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684766602_5185 from:0
+[14:12:47.000] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:47.001] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:47.036] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:12:47.036] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:47.037] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connected
+[14:12:47.037] [INFO] [📡StudioLive_d4c10b3d] Connection took 0.1s
+[14:12:47.038] [INFO] [📡StudioLive_d4c10b3d] Fast network detected - using optimized settings
+[14:12:47.038] [INFO] [📡StudioLive_d4c10b3d] ICE state: Connected
+[14:12:47.140] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684766602_5185 to:0
+[14:12:47.140] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:12:47.151] [INFO] [📡StudioLive_d4c10b3d] Video received: 1280x720
+[14:12:47.268] [INFO] [📡StudioLive_d4c10b3d] ICE state: Disconnected
+[14:12:47.398] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684766602_5185 from:0
+[14:12:47.399] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:47.399] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:47.431] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684766602_5185 from:0
+[14:12:47.431] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:47.431] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:47.437] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:12:47.449] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:12:47.449] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:47.451] [ERROR] [📡StudioLive_d4c10b3d] Set remote description failed: Unity.WebRTC.RTCError
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<SetRemoteDescription>d__71:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:583)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:47.451] [ERROR] [📡StudioLive_d4c10b3d] Connection failed (attempt 1)
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer:HandleConnectionFailure () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:913)
+WebRTCStreamer/<SetRemoteDescription>d__71:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:584)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:47.451] [INFO] [📡StudioLive_d4c10b3d] Retrying connection (attempt 1/2) with 3s timeout
+[14:12:47.456] [ERROR] [📡StudioLive_d4c10b3d] Failed to set remote description
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<ProcessOfferImmediately>d__74:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:639)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:47.485] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:12:47.486] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:12:48.682] [INFO] [📡StudioLive_d4c10b3d] StopSession() called! Stack trace:
+[14:12:48.683] [INFO]   at System.Environment.get_StackTrace () [0x00000] in <715c8f689fc74561a4fef078d73c94aa>:0 
+  at WebRTCStreamer.StopSession () [0x0001a] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\WebRTC\WebRTCStreamer.cs:237 
+  at StreamManager.StopCurrentSession (BroadcastPipeline.PipelineType pipeline) [0x0000e] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:160 
+  at StreamManager.HandleStreamControlChange (StreamAssignment assignment, System.String description) [0x00039] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:145 
+  at NetworkStreamCoordinator.OnStreamChanged (StreamAssignment previousValue, StreamAssignment newValue, System.String pipelineName) [0x00009] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:244 
+  at NetworkStreamCoordinator.<OnNetworkSpawn>b__10_0 (StreamAssignment prev, StreamAssignment curr) [0x00000] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:68 
+  at Unity.Netcode.NetworkVariable`1[T].ReadDelta (Unity.Netcode.FastBufferReader reader, System.Boolean keepDirtyDelta) [0x00047] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\NetworkVariable\NetworkVariable.cs:348 
+  at Unity.Netcode.NetworkVariableDeltaMessage.Handle (Unity.Netcode.NetworkContext& context) [0x0032f] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\Messages\NetworkVariableDeltaMessage.cs:309 
+  at Unity.Netcode.NetworkMessageManager.ReceiveMessage[T] (Unity.Netcode.FastBufferReader reader, Unity.Netcode.NetworkContext& context, Unity.Netcode.NetworkMessageManager manager) [0x00098] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:563 
+  at Unity.Netcode.NetworkMessageManager.HandleMessage (Unity.Netcode.NetworkMessageHeader& header, Unity.Netcode.FastBufferReader reader, System.UInt64 senderId, System.Single timestamp, System.Int32 serializedHeaderSize) [0x000ff] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:422 
+  at Unity.Netcode.NetworkMessageManager.ProcessIncomingMessageQueue () [0x0001a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:448 
+  at Unity.Netcode.NetworkManager.NetworkUpdate (Unity.Netcode.NetworkUpdateStage updateStage) [0x0006a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkManager.cs:340 
+  at Unity.Netcode.NetworkUpdateLoop.RunNetworkUpdateStage (Unity.Netcode.NetworkUpdateStage updateStage) [0x00021] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:191 
+  at Unity.Netcode.NetworkUpdateLoop+NetworkEarlyUpdate+<>c.<CreateLoopSystem>b__0_0 () [0x00000] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:214 
+[14:12:48.683] [INFO] [📡StudioLive_d4c10b3d] Receiving → Disconnecting
+[14:12:48.684] [INFO] [📡StudioLive_d4c10b3d] Audio receiver stopped
+[14:12:48.685] [INFO] [📡StudioLive_d4c10b3d] Disconnecting → Idle
+[14:12:48.685] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:12:48.685] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:12:48.685] [INFO] aabb_[🔍Timing] Receiving started at: 195.5473
+[14:12:48.687] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:12:48.687] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:12:48.687] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:12:48.687] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:12:48.689] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:12:48.689] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684768462_3011
+[14:12:48.689] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684768462_3011
+[14:12:48.689] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684768462_3011
+[14:12:48.747] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684768462_3011
+[14:12:48.747] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684768462_3011 from:0
+[14:12:48.748] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:48.748] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:48.751] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:12:48.751] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:12:48.752] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:12:48.752] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:12:48.752] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:12:48.752] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:12:48.752] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:12:48.753] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:12:48.753] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:12:48.753] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:12:48.753] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:12:48.753] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:12:48.757] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:12:48.758] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:12:48.758] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:12:48.758] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:12:48.758] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:12:48.758] [INFO] aabb_[🔍Timing] Audio initialization at: 195.6126 (+ 195.61s after stream start)
+[14:12:48.759] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:12:48.759] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684768462_3011
+[14:12:48.759] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:12:48.759] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684768462_3011
+[14:12:48.783] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:12:48.785] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:48.848] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684768462_3011 from:0
+[14:12:48.848] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:48.848] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:48.858] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:12:48.883] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:12:48.884] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:48.884] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684768462_3011 to:0
+[14:12:48.884] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:12:48.884] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:12:48.918] [ERROR] [📡StudioLive_d4c10b3d] Answer creation failed: Unity.WebRTC.RTCError
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:654)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:48.918] [ERROR] [📡StudioLive_d4c10b3d] Connection failed (attempt 1)
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer:HandleConnectionFailure () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:913)
+WebRTCStreamer/<CreateAnswerImmediate>d__75:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:655)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:48.918] [INFO] [📡StudioLive_d4c10b3d] Retrying connection (attempt 1/2) with 3s timeout
+[14:12:48.952] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:12:48.954] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:12:54.181] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684768462_3011 from:0
+[14:12:54.181] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:54.182] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:54.185] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:12:54.186] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:12:54.186] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:12:54.186] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:12:54.186] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:12:54.186] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:12:54.187] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:12:54.187] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:12:54.188] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:12:54.188] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:12:54.188] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:12:54.188] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:12:54.191] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:12:54.192] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:12:54.192] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:12:54.192] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:12:54.192] [INFO] aabb_[🔍Timing] Audio initialization at: 201.0465 (+ 201.05s after stream start)
+[14:12:54.192] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:12:54.193] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684768462_3011
+[14:12:54.193] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:12:54.193] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684768462_3011
+[14:12:54.208] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:12:54.208] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:54.289] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:12:54.316] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684768462_3011 to:0
+[14:12:54.316] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:12:54.317] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:12:54.385] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connected
+[14:12:54.385] [INFO] [📡StudioLive_d4c10b3d] Connection took 0.1s
+[14:12:54.385] [INFO] [📡StudioLive_d4c10b3d] Fast network detected - using optimized settings
+[14:12:54.385] [INFO] [📡StudioLive_d4c10b3d] ICE state: Connected
+[14:12:54.560] [INFO] [📡StudioLive_d4c10b3d] Video received: 1280x720
+[14:12:57.290] [INFO] [📡StudioLive_d4c10b3d] ICE state: Disconnected
+[14:12:57.355] [INFO] [📡StudioLive_d4c10b3d] StopSession() called! Stack trace:
+[14:12:57.355] [INFO]   at System.Environment.get_StackTrace () [0x00000] in <715c8f689fc74561a4fef078d73c94aa>:0 
+  at WebRTCStreamer.StopSession () [0x0001a] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\WebRTC\WebRTCStreamer.cs:237 
+  at StreamManager.StopCurrentSession (BroadcastPipeline.PipelineType pipeline) [0x0000e] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:160 
+  at StreamManager.HandleStreamControlChange (StreamAssignment assignment, System.String description) [0x00039] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\StreamManager.cs:145 
+  at NetworkStreamCoordinator.OnStreamChanged (StreamAssignment previousValue, StreamAssignment newValue, System.String pipelineName) [0x00009] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:244 
+  at NetworkStreamCoordinator.<OnNetworkSpawn>b__10_0 (StreamAssignment prev, StreamAssignment curr) [0x00000] in C:\Users\TRANSMIXR\Documents\GitHub\TUS-Control-Room\PfC\Assets\Scripts\Managers\NetworkStreamCoordinator.cs:68 
+  at Unity.Netcode.NetworkVariable`1[T].ReadDelta (Unity.Netcode.FastBufferReader reader, System.Boolean keepDirtyDelta) [0x00047] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\NetworkVariable\NetworkVariable.cs:348 
+  at Unity.Netcode.NetworkVariableDeltaMessage.Handle (Unity.Netcode.NetworkContext& context) [0x0032f] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\Messages\NetworkVariableDeltaMessage.cs:309 
+  at Unity.Netcode.NetworkMessageManager.ReceiveMessage[T] (Unity.Netcode.FastBufferReader reader, Unity.Netcode.NetworkContext& context, Unity.Netcode.NetworkMessageManager manager) [0x00098] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:563 
+  at Unity.Netcode.NetworkMessageManager.HandleMessage (Unity.Netcode.NetworkMessageHeader& header, Unity.Netcode.FastBufferReader reader, System.UInt64 senderId, System.Single timestamp, System.Int32 serializedHeaderSize) [0x000ff] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:422 
+  at Unity.Netcode.NetworkMessageManager.ProcessIncomingMessageQueue () [0x0001a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Messaging\NetworkMessageManager.cs:448 
+  at Unity.Netcode.NetworkManager.NetworkUpdate (Unity.Netcode.NetworkUpdateStage updateStage) [0x0006a] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkManager.cs:340 
+  at Unity.Netcode.NetworkUpdateLoop.RunNetworkUpdateStage (Unity.Netcode.NetworkUpdateStage updateStage) [0x00021] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:191 
+  at Unity.Netcode.NetworkUpdateLoop+NetworkEarlyUpdate+<>c.<CreateLoopSystem>b__0_0 () [0x00000] in .\Library\PackageCache\com.unity.netcode.gameobjects@851f28323821\Runtime\Core\NetworkUpdateLoop.cs:214 
+[14:12:57.355] [INFO] [📡StudioLive_d4c10b3d] Receiving → Disconnecting
+[14:12:57.355] [INFO] [📡StudioLive_d4c10b3d] Audio receiver stopped
+[14:12:57.362] [INFO] [📡StudioLive_d4c10b3d] Disconnecting → Idle
+[14:12:57.363] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:12:57.364] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:12:57.364] [INFO] aabb_[🔍Timing] Receiving started at: 204.2203
+[14:12:57.364] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync START - Current state: Idle
+[14:12:57.364] [INFO] [📡StudioLive_d4c10b3d] Idle → Connecting
+[14:12:57.364] [INFO] [📡StudioLive_d4c10b3d] PrepareForNewSessionSync COMPLETE - New state: Connecting, retry count: 0
+[14:12:57.364] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:12:57.366] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:12:57.366] [INFO] [📡StudioLive_d4c10b3d] Requesting offer from streamer for: StudioLive_1764684777150_9456
+[14:12:57.366] [INFO] [🔗Signaling] RequestOffer StudioLive:StudioLive_1764684777150_9456
+[14:12:57.367] [INFO] [📡StudioLive_d4c10b3d] Receiver ready immediately for: StudioLive_1764684777150_9456
+[14:12:57.416] [INFO] [🔗Signaling] Offer requested by 1 for StudioLive:StudioLive_1764684777150_9456
+[14:12:57.416] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684777150_9456 from:0
+[14:12:57.417] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:57.417] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:57.421] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:12:57.421] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:12:57.421] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:12:57.422] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:12:57.422] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:12:57.422] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:12:57.422] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:12:57.422] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:12:57.422] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:12:57.423] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:12:57.423] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 11)
+[14:12:57.423] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 12)
+[14:12:57.427] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Video, ID: ec76f924-b116-4612-ad3b-1fa6db00ae75
+[14:12:57.427] [INFO] aaa_[📡StudioLive_d4c10b3d] Video track received and processed
+[14:12:57.427] [INFO] [📡StudioLive_d4c10b3d] Connecting → Receiving
+[14:12:57.427] [INFO] aaa_[📡StudioLive_d4c10b3d] *** TRACK RECEIVED *** Kind: Audio, ID: 648b58ba-a274-4d5c-b840-5d98b8078326
+[14:12:57.427] [INFO] [📡StudioLive_d4c10b3d] Audio track received and processed
+[14:12:57.427] [INFO] aabb_[🔍Timing] Audio initialization at: 204.2817 (+ 204.28s after stream start)
+[14:12:57.428] [INFO] aabb_[🔍InitState] NotifyRendererStartAudio called - this will initialize audio subsystem
+[14:12:57.429] [INFO] [🔊AudioReceiver] Started receiving audio for session: StudioLive_1764684777150_9456
+[14:12:57.429] [INFO] aabb_[🔍InitState] ✅ Audio subsystem initialized via SetTrack
+[14:12:57.429] [INFO] aabb_[📡StudioLive_d4c10b3d] Audio receiver started for session: StudioLive_1764684777150_9456
+[14:12:57.449] [INFO] [📡StudioLive_d4c10b3d] Processing 12 buffered ICE candidates
+[14:12:57.451] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:57.496] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:12:57.526] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684777150_9456 to:0
+[14:12:57.526] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:12:57.526] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connecting
+[14:12:57.555] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684777150_9456 from:0
+[14:12:57.555] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:57.557] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:57.597] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:12:57.597] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:57.598] [INFO] [📡StudioLive_d4c10b3d] Connection state: Connected
+[14:12:57.599] [INFO] [📡StudioLive_d4c10b3d] Connection took 0.1s
+[14:12:57.599] [INFO] [📡StudioLive_d4c10b3d] Fast network detected - using optimized settings
+[14:12:57.599] [INFO] [📡StudioLive_d4c10b3d] ICE state: Connected
+[14:12:57.692] [INFO] [🔗Signaling] SendAnswer StudioLive:StudioLive_1764684777150_9456 to:0
+[14:12:57.692] [INFO] [📡StudioLive_d4c10b3d] Answer completed for client 0
+[14:12:57.790] [INFO] [📡StudioLive_d4c10b3d] ICE state: Disconnected
+[14:12:57.922] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684777150_9456 from:0
+[14:12:57.922] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:57.922] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:57.926] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764684777150_9456 from:0
+[14:12:57.926] [INFO] [📡StudioLive_d4c10b3d] Processing offer from client 0
+[14:12:57.926] [INFO] [📡StudioLive_d4c10b3d] Setting remote description...
+[14:12:57.931] [INFO] [📡StudioLive_d4c10b3d] ICE state: Checking
+[14:12:57.958] [INFO] [📡StudioLive_d4c10b3d] Processing 0 buffered ICE candidates
+[14:12:57.958] [INFO] [📡StudioLive_d4c10b3d] Creating answer...
+[14:12:57.959] [ERROR] [📡StudioLive_d4c10b3d] Set remote description failed: Unity.WebRTC.RTCError
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<SetRemoteDescription>d__71:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:583)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:57.959] [ERROR] [📡StudioLive_d4c10b3d] Connection failed (attempt 1)
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer:HandleConnectionFailure () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:913)
+WebRTCStreamer/<SetRemoteDescription>d__71:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:584)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:57.959] [INFO] [📡StudioLive_d4c10b3d] Retrying connection (attempt 1/2) with 3s timeout
+[14:12:57.964] [ERROR] [📡StudioLive_d4c10b3d] Failed to set remote description
+    Stack Trace: UnityEngine.Debug:LogError (object)
+WebRTCStreamer/<ProcessOfferImmediately>d__74:MoveNext () (at Assets/Scripts/WebRTC/WebRTCStreamer.cs:639)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[14:12:57.992] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection START
+[14:12:57.993] [INFO] aaa_[📡StudioLive_d4c10b3d] CreatePeerConnection COMPLETE
+[14:12:58.022] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 1)
+[14:12:58.022] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 2)
+[14:12:58.022] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 3)
+[14:12:58.022] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 4)
+[14:12:58.023] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 5)
+[14:12:58.023] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 6)
+[14:12:58.023] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 7)
+[14:12:58.023] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 8)
+[14:12:58.023] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 9)
+[14:12:58.024] [INFO] [📡StudioLive_d4c10b3d] ICE candidate buffered (total: 10)
+[14:12:59.955] [INFO] [TextureSourceObject] GetTexture() called - texture from _BaseMap: True
+[14:12:59.956] [INFO] [TextureSourceObject] Texture details - name: VirtualCamera3, size: 1600x800
+[14:13:00.726] [INFO] [TextureSourceObject] GetTexture() called - texture from _BaseMap: True
+[14:13:00.726] [INFO] [TextureSourceObject] Texture details - name: VirtualCamera3, size: 1600x800
+[14:13:00.742] [INFO] REQUEST STREAM CONTROL CALLED: StudioLive, NDI: 
+[14:13:00.743] [ERROR] [🎬StreamCoordinator] No NDI source provided
+    Stack Trace: UnityEngine.Debug:LogError (object)
+NetworkStreamCoordinator:ValidateRequest (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:159)
+NetworkStreamCoordinator:RequestStreamControl (BroadcastPipeline.PipelineType,string) (at Assets/Scripts/Managers/NetworkStreamCoordinator.cs:114)
+BroadcastPipelineManager:ForwardContentToNextStage (BroadcastPipeline.PipelineType,BroadcastPipeline.PipelineType) (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:205)
+BroadcastPipelineManager:OnDestinationRightClicked (BroadcastPipeline.PipelineDestination) (at Assets/Scripts/Managers/BroadcastPipelineManager.cs:150)
+BroadcastPipeline.PipelineDestination:OnDestinationRightClicked () (at Assets/Scripts/BroadcastPipeline/PipelineDestination.cs:30)
+BroadcastTriggerClick:HandleRightClick () (at Assets/Scripts/BroadcastPipeline/BroadcastTriggerClick.cs:114)
+BroadcastTriggerClick:OnMouseOver () (at Assets/Scripts/BroadcastPipeline/BroadcastTriggerClick.cs:73)
+UnityEngine.SendMouseEvents:DoSendMouseEvents (int)
+
+[14:13:10.013] [INFO] [🔗Signaling] Network despawned - signaling inactive
+
+================================================================================
+Log session ended - 2025-12-02 14:13:12
+Total logs captured: 649
+================================================================================
