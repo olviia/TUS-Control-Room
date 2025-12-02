@@ -194,32 +194,44 @@ public class StreamManager : MonoBehaviour
         var pipelineSource = FindPipelineSourceByName(assignment.streamSourceName);
         var streamer = GetStreamerForPipeline(pipeline);
         isStreaming = true;
-    
+
         if (pipelineSource == null || streamer == null)
-        {            
+        {
             Debug.LogError($"[🎯StreamManager] Cannot start streaming {pipeline} - missing components");
             ShowLocalContent(source);
             return;
         }
-        
-        // Update NDI source for both video 
-        var liveDestinationReceiver = FindLiveDestinationReceiver(pipeline);
-        if (liveDestinationReceiver != null)
+
+        // Check if source is a TextureSourceObject (non-NDI source)
+        if (pipelineSource is TextureSourceObject textureSourceObj)
         {
-            streamer.ndiReceiverSource = liveDestinationReceiver;
-        
-            // CRITICAL: Also update the audio interceptor
-            var liveAudioInterceptor = liveDestinationReceiver.GetComponent<NdiAudioInterceptor>();
-            if (liveAudioInterceptor != null)
+            Debug.Log($"[🎯StreamManager] Source is TextureSourceObject - using direct texture streaming");
+            streamer.textureSource = textureSourceObj;
+            streamer.ndiReceiverSource = null; // Clear NDI receiver
+        }
+        else
+        {
+            // Update NDI source for both video
+            streamer.textureSource = null; // Clear texture source
+            var liveDestinationReceiver = FindLiveDestinationReceiver(pipeline);
+            if (liveDestinationReceiver != null)
             {
-                streamer.audioInterceptor = liveAudioInterceptor;
-                Debug.Log($"[Audio] Updated audio interceptor to Live destination");
-            }
-            else
-            {
-                Debug.LogError($"[Audio] No NdiAudioInterceptor found on Live destination receiver!");
+                streamer.ndiReceiverSource = liveDestinationReceiver;
+
+                // CRITICAL: Also update the audio interceptor
+                var liveAudioInterceptor = liveDestinationReceiver.GetComponent<NdiAudioInterceptor>();
+                if (liveAudioInterceptor != null)
+                {
+                    streamer.audioInterceptor = liveAudioInterceptor;
+                    Debug.Log($"[Audio] Updated audio interceptor to Live destination");
+                }
+                else
+                {
+                    Debug.LogError($"[Audio] No NdiAudioInterceptor found on Live destination receiver!");
+                }
             }
         }
+
         streamer.StartStreaming(assignment.sessionId);
         source.renderer.ShowLocalNDI();
     }

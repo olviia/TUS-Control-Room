@@ -29,6 +29,9 @@ public class WebRTCStreamer : MonoBehaviour
     public NdiReceiver ndiReceiverSource;
     public NdiReceiver ndiReceiverCaptions;
     public WebRTCRenderer targetRenderer;
+
+    [Header("Texture Source Support")]
+    public TextureSourceObject textureSource; // For non-NDI texture sources
     
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1280;
@@ -468,7 +471,19 @@ public class WebRTCStreamer : MonoBehaviour
 
         while (IsStreamingOrConnecting())
         {
-            var ndiTexture = ndiReceiverSource?.GetTexture();
+            // Get texture from either TextureSource or NDI receiver
+            Texture ndiTexture = null;
+
+            if (textureSource != null)
+            {
+                // Priority: Use TextureSourceObject if assigned
+                ndiTexture = textureSource.GetTexture();
+            }
+            else if (ndiReceiverSource != null)
+            {
+                // Fallback: Use NDI receiver
+                ndiTexture = ndiReceiverSource.GetTexture();
+            }
 
             if (ndiTexture != null && webRtcTexture != null)
             {
