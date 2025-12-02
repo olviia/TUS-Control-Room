@@ -244,21 +244,17 @@ public class WebRTCStreamer : MonoBehaviour
         PrepareForNewSessionSync(sessionId);
         isOfferer = true;
 
-        // Wait for NDI source to become ready (with timeout)
-        yield return StartCoroutine(WaitForNdiSource());
-
-        if (!HasValidNdiTexture())
-        {
-            Debug.LogError($"[📡{instanceId}] NDI source validation failed after waiting");
-            SetState(StreamerState.Failed);
-            yield break;
-        }
+        // Activate NDI receivers if needed
+        if (ndiReceiverSource != null)
+            ActivateNdiReceiver(ndiReceiverSource);
+        if (ndiReceiverCaptions != null)
+            ActivateNdiReceiver(ndiReceiverCaptions);
 
         SetupStreamingConnection();
         StartConnectionTimeout();
         StartCoroutine(CreateOffer());
 
-        Debug.Log($"[📡{instanceId}] Streaming session initiated with valid NDI source");
+        Debug.Log($"[📡{instanceId}] Streaming session initiated - will stream NDI when available");
     }
     
     private IEnumerator EndCurrentSession()
@@ -466,8 +462,7 @@ public class WebRTCStreamer : MonoBehaviour
     {
         Debug.Log($"[📡{instanceId}] UpdateTextureFromNdi coroutine STARTED");
         int frameCount = 0;
-        int missingTextureFrames = 0;
-        const int maxMissingFrames = 180; // 3 seconds at 60fps
+        int successfulFrames = 0;
 
         while (IsStreamingOrConnecting())
         {
@@ -497,36 +492,27 @@ public class WebRTCStreamer : MonoBehaviour
                     Graphics.Blit(ndiTexture, webRtcTexture);
                 }
 
-                frameCount++;
-                missingTextureFrames = 0; // Reset counter on successful frame
+                successfulFrames++;
 
-                if (frameCount % 60 == 0)  // Log every 60 frames
+                if (successfulFrames % 60 == 0)  // Log every 60 successful frames
                 {
-                    Debug.Log($"[📡{instanceId}] Streaming frame {frameCount}, State: {currentState}");
+                    Debug.Log($"[📡{instanceId}] Streaming frame {successfulFrames}, State: {currentState}");
                 }
             }
             else
             {
-                missingTextureFrames++;
-
-                if (frameCount == 0 || frameCount % 60 == 0)
+                // Just wait for NDI texture to become available - don't fail
+                if (frameCount % 300 == 0)  // Log every 5 seconds at 60fps
                 {
-                    Debug.LogWarning($"[📡{instanceId}] Missing texture! NDI: {ndiTexture != null}, WebRTC: {webRtcTexture != null} (Missing frames: {missingTextureFrames})");
-                }
-
-                // If texture missing for too long, trigger failure
-                if (missingTextureFrames >= maxMissingFrames)
-                {
-                    Debug.LogError($"[📡{instanceId}] NDI texture missing for {missingTextureFrames} frames (3s) - triggering connection failure");
-                    HandleConnectionFailure();
-                    yield break;
+                    Debug.Log($"[📡{instanceId}] Waiting for NDI texture... (frame {frameCount})");
                 }
             }
 
+            frameCount++;
             yield return new WaitForEndOfFrame();
         }
 
-        Debug.LogWarning($"[📡{instanceId}] UpdateTextureFromNdi coroutine STOPPED after {frameCount} frames. Final state: {currentState}");
+        Debug.Log($"[📡{instanceId}] UpdateTextureFromNdi coroutine STOPPED - streamed {successfulFrames} frames. Final state: {currentState}");
     }
 
     private bool IsStreamingOrConnecting()
