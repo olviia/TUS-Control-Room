@@ -755,6 +755,14 @@ public class WebRTCStreamer : MonoBehaviour
     {
         if (!IsForThisInstance(pipeline, sessionId) || !isOfferer) return;
 
+        // Only send offer if we're already in a stable streaming state
+        // Don't send if we're still connecting (already creating an offer)
+        if (currentState == StreamerState.Connecting)
+        {
+            Debug.Log($"[📡{instanceId}] Ignoring offer request from client {requestingClient} - already creating offer");
+            return;
+        }
+
         Debug.Log($"[📡{instanceId}] Offer requested by late-joining client {requestingClient} - sending new offer");
 
         // Send a fresh offer to the late-joining client
