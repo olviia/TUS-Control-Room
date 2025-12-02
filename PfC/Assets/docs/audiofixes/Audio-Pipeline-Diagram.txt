@@ -1,0 +1,214 @@
+WebRTC Audio Streaming Pipeline - Visual Reference
+═══════════════════════════════════════════════════
+
+PROBLEM (Original Implementation)
+──────────────────────────────────
+
+Unity Audio Thread (10-20ms) ──┐
+                               │ RACE CONDITION!
+                               ├──> audioStreamTrack.SetData()
+                               │    ├─ Variable chunk sizes
+                               │    ├─ Thread timing issues
+                               │    └─ CPU-dependent behavior
+                               │
+Unity Update (16.6ms)  ────────┘
+
+Result: Crackling, noise, slowdown on fast CPUs
+
+
+SOLUTION (Current Implementation)
+──────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────┐
+│  STAGE 1: AUDIO THREAD (OnAudioFilterRead)                  │
+│  ─────────────────────────────────────────────────           │
+│  Frequency: ~10-20ms (hardware dependent)                    │
+│  Location: AudioSourceBridge.cs                              │
+│                                                               │
+│  OnAudioFilterRead(float[] data, int channels)               │
+│      ├─> _channels = channels                                │
+│      └─> WriteToRing(data)  [THREAD-SAFE]                    │
+│                                                               │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            │ Ring Buffer (200ms capacity)
+                            │ ├─ Thread-safe lock
+                            │ ├─ Write index
+                            │ ├─ Read index
+                            │ └─ Available samples counter
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STAGE 2: MAIN THREAD (Update)                               │
+│  ──────────────────────────────────                          │
+│  Frequency: ~16.6ms @ 60 FPS (consistent)                    │
+│  Location: NdiAudioInterceptor.cs                            │
+│                                                               │
+│  Update()                                                     │
+│      └─> SendFixedSizeAudioPackets()                         │
+│             ├─> GetAccumulatedAudio()  [FROM RING BUFFER]    │
+│             ├─> packetAssemblyBuffer.AddRange(data)          │
+│             └─> while (buffer >= packetSize)                 │
+│                    ├─> Extract 20ms packet                    │
+│                    ├─> Remove from buffer                     │
+│                    └─> audioStreamTrack.SetData(packet)      │
+│                                                               │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            │ Fixed 20ms packets
+                            │ ├─ Exactly 1920 samples @ 48kHz stereo
+                            │ ├─ Consistent timing
+                            │ └─ No thread race condition
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STAGE 3: WEBRTC PROCESSING                                  │
+│  ───────────────────────────                                 │
+│  Location: Unity WebRTC Package                              │
+│                                                               │
+│  audioStreamTrack                                            │
+│      ├─> Receives fixed 20ms packets                         │
+│      ├─> Processes in 10ms frames                            │
+│      ├─> NetEQ jitter buffer (consistent timing!)            │
+│      └─> Network transmission                                │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+
+
+TIMING COMPARISON
+─────────────────
+
+Before (Variable):
+Frame 1: 16.6ms → SetData(16.6ms)
+Frame 2: 33.2ms → SetData(16.6ms)
+Frame 3: 49.8ms → SetData(16.6ms)
+        ↑
+    PROBLEM: Inconsistent from WebRTC's perspective
+    NetEQ jitter buffer gets confused
+
+
+After (Fixed):
+Frame 1: Accumulate 16.6ms  → No send (need 20ms)
+Frame 2: Accumulate 16.6ms  → Send 20ms packet, keep 13.2ms
+Frame 3: Accumulate 16.6ms  → Send 20ms packet, keep 9.8ms
+Frame 4: Accumulate 16.6ms  → Send 20ms packet, keep 6.4ms
+        ↑
+    SOLUTION: Always 20ms packets
+    NetEQ jitter buffer happy!
+
+
+PACKET SIZE CALCULATION
+────────────────────────
+
+samplesPerPacket = (sampleRate × channels × durationMs) / 1000
+
+Examples:
+  48kHz Stereo, 20ms: (48000 × 2 × 20) / 1000 = 1920 samples
+  48kHz Mono,   20ms: (48000 × 1 × 20) / 1000 = 960 samples
+  44.1kHz Stereo, 20ms: (44100 × 2 × 20) / 1000 = 1764 samples
+
+
+CONFIGURATION OPTIONS
+─────────────────────
+
+Inspector Setting: webrtcPacketDurationMs
+
+┌────────┬──────────────┬────────────┬──────────────┐
+│ Value  │ Latency      │ Stability  │ Use Case     │
+├────────┼──────────────┼────────────┼──────────────┤
+│ 10ms   │ Ultra-low    │ Low        │ LAN only     │
+│ 20ms   │ Low (default)│ Good       │ Standard     │
+│ 40ms   │ Medium       │ High       │ Poor network │
+│ 60ms   │ High         │ Very high  │ Mobile/3G    │
+└────────┴──────────────┴────────────┴──────────────┘
+
+
+WHY DELL XPS WAS DIFFERENT
+───────────────────────────
+
+Slower Computer:
+  Audio Thread: 20ms intervals
+  Update:       16.6ms
+  WebRTC:       Expecting ~20ms
+
+  Result: Lucky timing match! ✓
+          (But still has race condition)
+
+
+Dell XPS (Fast CPU):
+  Audio Thread: 12ms intervals (faster!)
+  Update:       16.6ms
+  WebRTC:       Expecting ~20ms
+
+  Result: Audio arrives too fast ✗
+          SetData called more frequently
+          Buffer overruns → Crackling!
+
+
+BUFFER FLOW VISUALIZATION
+──────────────────────────
+
+Ring Buffer State (200ms capacity):
+
+Time 0ms:
+[________________________________________] Empty
+ W R
+
+Time 50ms (Audio writing):
+[████████████________________________________]
+            W R
+
+Time 100ms (Half full - Start reading):
+[████████████████████____________________]
+                    W   R (Started!)
+
+Time 150ms (Reading started):
+[████████████████████████████____________]
+                            W       R
+
+Update calls GetAccumulatedAudio():
+[████████████░░░░░░░░░░░░░░░░____________]
+             W                       R
+         Unread │ Read (returned)
+
+Next write:
+[████████████████░░░░░░░░░░░░____________]
+                 W                   R
+    New audio   │  Returned data
+
+
+THREAD SAFETY
+─────────────
+
+Audio Thread (OnAudioFilterRead):
+  lock (_bufferAccessLock) {
+    _ringBuffer[_writeIndex] = data[i];  // Write
+    _writeIndex++;
+  }
+
+Main Thread (Update):
+  lock (_bufferAccessLock) {
+    available = (_writeIndex - _readIndex);  // Read
+    return accumulated_data;
+  }
+
+Lock ensures:
+  ✓ No simultaneous read/write
+  ✓ Consistent pointer positions
+  ✓ Memory barrier for CPU cache
+
+
+KEY TAKEAWAYS
+─────────────
+
+1. Never call WebRTC SetData from audio thread → Use ring buffer
+
+2. Always send fixed-size packets → Use packet assembly buffer
+
+3. 20ms is standard WebRTC duration → Configurable for edge cases
+
+4. Ring buffer decouples threads → Prevents race conditions
+
+5. Hardware differences matter → Fast CPUs expose timing bugs
+
+6. Test on multiple systems → Don't trust lucky coincidences!
