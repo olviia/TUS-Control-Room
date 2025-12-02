@@ -33,7 +33,7 @@ public class WebRTCStreamer : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1280;
     [SerializeField] private int textureHeight = 720;
-    [SerializeField] private float connectionTimeout = 0.5f; // Fast retry for local gigabit network
+    [SerializeField] private float connectionTimeout = 5f;
     [SerializeField] private bool enableOptimisticStates = true;
     [SerializeField] private int maxRetryAttempts = 3;
     
@@ -243,12 +243,18 @@ public class WebRTCStreamer : MonoBehaviour
     {
         PrepareForNewSessionSync(sessionId);
         isOfferer = true;
-
+        
+        if (!ValidateNdiSource())
+        {
+            SetState(StreamerState.Failed);
+            yield break;
+        }
+        
         SetupStreamingConnection();
         StartConnectionTimeout();
-        yield return StartCoroutine(CreateOffer());
-
-        Debug.Log($"[📡{instanceId}] Streaming session initiated");
+        StartCoroutine(CreateOffer());
+        
+        Debug.Log($"[📡{instanceId}] Streaming session initiated immediately");
     }
     
     private IEnumerator EndCurrentSession()
@@ -294,7 +300,6 @@ public class WebRTCStreamer : MonoBehaviour
     private void SetupReceivingConnection()
     {
         CreatePeerConnection();
-        ProcessPendingOffer();
     }
     
     private void CreatePeerConnection()
@@ -355,44 +360,7 @@ public class WebRTCStreamer : MonoBehaviour
     #endregion
     
     #region NDI Management
-
-    /// <summary>
-    /// Wait for NDI source to become available with timeout
-    /// </summary>
-    private IEnumerator WaitForNdiSource()
-    {
-        if (ndiReceiverSource == null)
-        {
-            Debug.LogError($"[📡{instanceId}] No NDI receiver assigned");
-            yield break;
-        }
-
-        ActivateNdiReceiver(ndiReceiverSource);
-        if (ndiReceiverCaptions != null)
-            ActivateNdiReceiver(ndiReceiverCaptions);
-
-        // Wait for NDI texture to become valid (up to 2 seconds)
-        float waitStartTime = Time.time;
-        float maxWaitTime = 2f;
-        int checkCount = 0;
-
-        while (Time.time - waitStartTime < maxWaitTime)
-        {
-            checkCount++;
-
-            if (HasValidNdiTexture())
-            {
-                Debug.Log($"[📡{instanceId}] NDI source ready after {Time.time - waitStartTime:F2}s ({checkCount} checks)");
-                yield break;
-            }
-
-            // Check every 100ms
-            yield return new WaitForSeconds(0.1f);
-        }
-
-        Debug.LogWarning($"[📡{instanceId}] NDI source not ready after {maxWaitTime}s timeout");
-    }
-
+    
     private bool ValidateNdiSource()
     {
         if (ndiReceiverSource == null)
@@ -400,7 +368,7 @@ public class WebRTCStreamer : MonoBehaviour
             Debug.LogError($"[📡{instanceId}] No NDI receiver assigned");
             return false;
         }
-
+        
         ActivateNdiReceiver(ndiReceiverSource);
         if (ndiReceiverSource != null)
             ActivateNdiReceiver(ndiReceiverCaptions);
@@ -456,7 +424,6 @@ public class WebRTCStreamer : MonoBehaviour
     {
         Debug.Log($"[📡{instanceId}] UpdateTextureFromNdi coroutine STARTED");
         int frameCount = 0;
-        int successfulFrames = 0;
 
         while (IsStreamingOrConnecting())
         {
@@ -486,27 +453,24 @@ public class WebRTCStreamer : MonoBehaviour
                     Graphics.Blit(ndiTexture, webRtcTexture);
                 }
 
-                successfulFrames++;
-
-                if (successfulFrames % 60 == 0)  // Log every 60 successful frames
+                frameCount++;
+                if (frameCount % 60 == 0)  // Log every 60 frames
                 {
-                    Debug.Log($"[📡{instanceId}] Streaming frame {successfulFrames}, State: {currentState}");
+                    Debug.Log($"[📡{instanceId}] Streaming frame {frameCount}, State: {currentState}");
                 }
             }
             else
             {
-                // Just wait for NDI texture to become available - don't fail
-                if (frameCount % 300 == 0)  // Log every 5 seconds at 60fps
+                if (frameCount == 0 || frameCount % 60 == 0)
                 {
-                    Debug.Log($"[📡{instanceId}] Waiting for NDI texture... (frame {frameCount})");
+                    Debug.LogWarning($"[📡{instanceId}] Missing texture! NDI: {ndiTexture != null}, WebRTC: {webRtcTexture != null}");
                 }
             }
 
-            frameCount++;
             yield return new WaitForEndOfFrame();
         }
 
-        Debug.Log($"[📡{instanceId}] UpdateTextureFromNdi coroutine STOPPED - streamed {successfulFrames} frames. Final state: {currentState}");
+        Debug.LogWarning($"[📡{instanceId}] UpdateTextureFromNdi coroutine STOPPED after {frameCount} frames. Final state: {currentState}");
     }
 
     private bool IsStreamingOrConnecting()
@@ -644,40 +608,16 @@ public class WebRTCStreamer : MonoBehaviour
     private void HandleAnswerReceived(PipelineType pipeline, RTCSessionDescription answer, ulong fromClient, string sessionId)
     {
         if (!IsForThisInstance(pipeline, sessionId) || !isOfferer) return;
-
+        
         Debug.Log($"[📡{instanceId}] Processing answer from client {fromClient}");
-
-        if (peerConnection == null)
-        {
-            Debug.LogError($"[📡{instanceId}] Cannot process answer - no peer connection");
-            HandleConnectionFailure();
-            return;
-        }
-
-        StartCoroutine(ProcessAnswerImmediate(answer, fromClient));
-    }
-
-    private IEnumerator ProcessAnswerImmediate(RTCSessionDescription answer, ulong fromClient)
-    {
-        Debug.Log($"[📡{instanceId}] Setting remote description from answer...");
-        yield return StartCoroutine(SetRemoteDescription(answer));
-
-        if (!isRemoteDescriptionSet)
-        {
-            Debug.LogError($"[📡{instanceId}] Failed to set remote description from answer");
-            HandleConnectionFailure();
-            yield break;
-        }
-
-        connectedClientId = fromClient;
-
-        // Only set streaming state after successful remote description
+        
         if (enableOptimisticStates)
         {
             SetState(StreamerState.Streaming);
         }
-
-        Debug.Log($"[📡{instanceId}] Answer processed successfully for client {fromClient}");
+        
+        StartCoroutine(SetRemoteDescription(answer));
+        connectedClientId = fromClient;
     }
     
     private void HandleIceCandidateReceived(PipelineType pipeline, RTCIceCandidate candidate, ulong fromClient, string sessionId)
@@ -896,9 +836,9 @@ public class WebRTCStreamer : MonoBehaviour
         if (retryCount < maxRetries)
         {
             retryCount++;
-            // Keep timeout fast for local network - don't increase
-            Debug.Log($"[📡{instanceId}] Retrying connection (attempt {retryCount}/{maxRetries}) with {connectionTimeout}s timeout");
-
+            connectionTimeout = Mathf.Min(connectionTimeout * 1.5f, 10f);
+            Debug.Log($"[📡{instanceId}] Adapted timeout to {connectionTimeout}s for retry {retryCount}");
+            
             StartCoroutine(RetryConnection());
         }
         else

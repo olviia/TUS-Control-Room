@@ -52,6 +52,7 @@ public class NdiAudioInterceptor : MonoBehaviour
         audioStreamTrack = new AudioStreamTrack();
 
         StartAudioStreaming();
+        StopAudioStreaming();
     }
 
     void Update()
