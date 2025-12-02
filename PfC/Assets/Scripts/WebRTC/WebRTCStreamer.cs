@@ -300,6 +300,7 @@ public class WebRTCStreamer : MonoBehaviour
     private void SetupReceivingConnection()
     {
         CreatePeerConnection();
+        ProcessPendingOffer();
     }
     
     private void CreatePeerConnection()
@@ -608,16 +609,40 @@ public class WebRTCStreamer : MonoBehaviour
     private void HandleAnswerReceived(PipelineType pipeline, RTCSessionDescription answer, ulong fromClient, string sessionId)
     {
         if (!IsForThisInstance(pipeline, sessionId) || !isOfferer) return;
-        
+
         Debug.Log($"[📡{instanceId}] Processing answer from client {fromClient}");
-        
+
+        if (peerConnection == null)
+        {
+            Debug.LogError($"[📡{instanceId}] Cannot process answer - no peer connection");
+            HandleConnectionFailure();
+            return;
+        }
+
+        StartCoroutine(ProcessAnswerImmediate(answer, fromClient));
+    }
+
+    private IEnumerator ProcessAnswerImmediate(RTCSessionDescription answer, ulong fromClient)
+    {
+        Debug.Log($"[📡{instanceId}] Setting remote description from answer...");
+        yield return StartCoroutine(SetRemoteDescription(answer));
+
+        if (!isRemoteDescriptionSet)
+        {
+            Debug.LogError($"[📡{instanceId}] Failed to set remote description from answer");
+            HandleConnectionFailure();
+            yield break;
+        }
+
+        connectedClientId = fromClient;
+
+        // Only set streaming state after successful remote description
         if (enableOptimisticStates)
         {
             SetState(StreamerState.Streaming);
         }
-        
-        StartCoroutine(SetRemoteDescription(answer));
-        connectedClientId = fromClient;
+
+        Debug.Log($"[📡{instanceId}] Answer processed successfully for client {fromClient}");
     }
     
     private void HandleIceCandidateReceived(PipelineType pipeline, RTCIceCandidate candidate, ulong fromClient, string sessionId)
