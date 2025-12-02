@@ -33,7 +33,7 @@ public class WebRTCStreamer : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1280;
     [SerializeField] private int textureHeight = 720;
-    [SerializeField] private float connectionTimeout = 3f; // Reduced for local network
+    [SerializeField] private float connectionTimeout = 0.5f; // Fast retry for local gigabit network
     [SerializeField] private bool enableOptimisticStates = true;
     [SerializeField] private int maxRetryAttempts = 3;
     
@@ -896,9 +896,9 @@ public class WebRTCStreamer : MonoBehaviour
         if (retryCount < maxRetries)
         {
             retryCount++;
-            connectionTimeout = Mathf.Min(connectionTimeout * 1.5f, 10f);
-            Debug.Log($"[📡{instanceId}] Adapted timeout to {connectionTimeout}s for retry {retryCount}");
-            
+            // Keep timeout fast for local network - don't increase
+            Debug.Log($"[📡{instanceId}] Retrying connection (attempt {retryCount}/{maxRetries}) with {connectionTimeout}s timeout");
+
             StartCoroutine(RetryConnection());
         }
         else
