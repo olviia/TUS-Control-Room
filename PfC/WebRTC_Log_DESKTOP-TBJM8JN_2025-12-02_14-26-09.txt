@@ -1,0 +1,36 @@
+================================================================================
+WebRTC Debug Log - 2025-12-02 14:26:09
+Computer: DESKTOP-TBJM8JN
+OS: Windows 11  (10.0.26100) 64bit
+Unity Version: 6000.2.8f1
+================================================================================
+
+[14:26:09.419] [INFO] [WebRTCLogger] Logging enabled - file: C:/Users/TRANSMIXR/AppData/LocalLow/TUS/ControlRoom\WebRTC_Log_DESKTOP-TBJM8JN_2025-12-02_14-26-09.txt
+[14:26:10.034] [INFO] [🖥️Renderer] ShowLocalNDI called for TVLive - INSTANT switch
+[14:26:10.035] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for TVLive
+[14:26:10.074] [INFO] [🎵AudioInterceptor] Connected to NDI receiver: 
+[14:26:10.076] [INFO] [🎯StreamManager] Managing 2 pipelines 
+[14:26:10.076] [INFO] [🖥️Renderer] ShowLocalNDI called for StudioLive - INSTANT switch
+[14:26:10.076] [INFO] [🖥️Renderer] Local NDI restored INSTANTLY for StudioLive
+[14:26:11.513] [INFO] [⚙️WebRTCEngine] Started WebRTC engine
+[14:26:11.513] [INFO] [⚙️WebRTCEngine] Registered StudioLive, active: 1
+[14:26:11.516] [INFO] [📡StudioLive_aadb614d] WebRTC objects created 1280x720
+[14:26:11.518] [INFO] [⚙️WebRTCEngine] Registered TVLive, active: 2
+[14:26:11.518] [INFO] [📡TVLive_d63dc0bb] WebRTC objects created 1280x720
+[14:26:11.567] [INFO] [AudioSourceBridge] WebRTC buffering started. Delay=9600 samples
+[14:26:17.776] [INFO] [🔗Signaling] Network spawned - signaling active
+[14:26:40.850] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685600573_9962 from:0
+[14:26:41.847] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685601613_5782 from:0
+[14:26:44.880] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685601613_5782 from:0
+[14:26:46.614] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685606352_5634 from:0
+[14:26:49.580] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685606352_5634 from:0
+[14:26:52.613] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685606352_5634 from:0
+[14:26:54.047] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685613807_8020 from:0
+[14:26:57.047] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685613807_8020 from:0
+[14:27:00.114] [INFO] [🔗Signaling] Offer received StudioLive:StudioLive_1764685613807_8020 from:0
+[14:27:09.764] [INFO] [🔗Signaling] Network despawned - signaling inactive
+
+================================================================================
+Log session ended - 2025-12-02 14:27:11
+Total logs captured: 24
+================================================================================
