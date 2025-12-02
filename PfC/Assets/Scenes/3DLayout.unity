@@ -1176,19 +1176,19 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 1206095661}
     m_Modifications:
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.68
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -14.38
+      value: 23.92
       objectReference: {fileID: 0}
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.78
+      value: -52.12
       objectReference: {fileID: 0}
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1196,7 +1196,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalRotation.y
@@ -1204,7 +1204,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -3221,6 +3221,7 @@ MonoBehaviour:
   targetAudioSourceBridge: {fileID: 0}
   audioPollingRate: 1000
   bufferSizeMs: 100
+  webrtcPacketDurationMs: 20
 --- !u!1 &722402254 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1807748719147716571, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
@@ -3499,6 +3500,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 786381234}
   m_CullTransparentMesh: 1
+--- !u!4 &791125020 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2057706591142250815, guid: 142799a23f2df9e42ba4820356f6aee1, type: 3}
+  m_PrefabInstance: {fileID: 274271481}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &792617251
 GameObject:
   m_ObjectHideFlags: 0
@@ -10065,6 +10071,7 @@ MonoBehaviour:
   targetAudioSourceBridge: {fileID: 1792380334}
   audioPollingRate: 1000
   bufferSizeMs: 100
+  webrtcPacketDurationMs: 20
 --- !u!4 &1654046322 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5094616804940819085, guid: fdd4f68a2b840b04880ec73fb96c672e, type: 3}
@@ -12024,6 +12031,18 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: -48.74
       objectReference: {fileID: 0}
+    - target: {fileID: 231957697734935867, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.6719517
+      objectReference: {fileID: 0}
+    - target: {fileID: 231957697734935867, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.740595
+      objectReference: {fileID: 0}
+    - target: {fileID: 231957697734935867, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 95.564
+      objectReference: {fileID: 0}
     - target: {fileID: 524121239287515197, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: far clip plane
       value: 10
@@ -12307,6 +12326,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4319059982537193871, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1886760816}
+    - targetCorrespondingSourceObject: {fileID: 4319059982537193871, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 791125020}
     - targetCorrespondingSourceObject: {fileID: 3042641111339638034, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       insertIndex: -1
       addedObject: {fileID: 661363305}
@@ -13527,4 +13549,3 @@ SceneRoots:
   - {fileID: 1013373870}
   - {fileID: 1014853843}
   - {fileID: 1670769713}
-  - {fileID: 274271481}
