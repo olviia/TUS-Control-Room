@@ -19,11 +19,34 @@ namespace Klak.Ndi
 		
 		public System.Action<float[], int, int> OnWebRTCAudioReady;
 		private int cachedSampleRate;
+
+		// Ring buffer for WebRTC audio (accumulates incoming frames)
+		private const int BufferLengthMS = 200;
+		private float[] _ringBuffer;
+		private int _writeIndex;
+		private int _availableSamples;
+		private int _channels = 2;
+		private int _sampleRate = 48000;
+
+		// Separate read position for WebRTC
+		private int _webrtcReadIndex;
+		private bool _webrtcReadStarted;
+		private readonly object _bufferAccessLock = new object();
+
 		private void Awake()
 		{
 			hideFlags = HideFlags.NotEditable;
 			_audioSource = GetComponent<AudioSource>();
 			cachedSampleRate = AudioSettings.outputSampleRate;
+			_sampleRate = cachedSampleRate;
+
+			// Initialize ring buffer
+			int capacity = (_sampleRate * _channels * BufferLengthMS) / 1000;
+			_ringBuffer = new float[Math.Max(capacity, 1)];
+			_writeIndex = 0;
+			_availableSamples = 0;
+			_webrtcReadIndex = 0;
+			_webrtcReadStarted = false;
 		}
 
 		public void Init(bool isVirtualSpeaker, int maxSystemChannels, int virtualSpeakerChannel = -1, int maxVirtualSpeakerChannels = -1, bool usingSpatializerPlugin = false)
@@ -102,7 +125,81 @@ namespace Klak.Ndi
 				if (!_handler.FillPassthroughData(ref data, channels))
 					Array.Fill(data, 0f);
 			}
+
+			// Update channel count and write to ring buffer
+			_channels = channels;
+			WriteToRing(data);
+
+			// Keep legacy event for backwards compatibility
 			OnWebRTCAudioReady?.Invoke(data, channels, cachedSampleRate);
+		}
+
+		// Public method for WebRTC to get accumulated buffered audio
+		public bool GetAccumulatedAudio(out float[] audioData, out int channels)
+		{
+			audioData = null;
+			channels = _channels;
+
+			lock (_bufferAccessLock)
+			{
+				if (_ringBuffer == null)
+				{
+					return false;
+				}
+
+				int capacity = _ringBuffer.Length;
+
+				// Initialize WebRTC read position on first call (when buffer is half full)
+				if (!_webrtcReadStarted && _availableSamples >= capacity / 2)
+				{
+					int delay = capacity / 2;
+					_webrtcReadIndex = (_writeIndex - delay + capacity) % capacity;
+					_webrtcReadStarted = true;
+					Debug.Log($"[AudioSourceBridge] WebRTC buffering started. Delay={delay} samples");
+				}
+
+				if (!_webrtcReadStarted)
+				{
+					return false;
+				}
+
+				int available = (_writeIndex - _webrtcReadIndex + capacity) % capacity;
+
+				if (available <= 0)
+				{
+					return false;
+				}
+
+				// Create array with accumulated data
+				audioData = new float[available];
+
+				// Copy from ring buffer
+				for (int i = 0; i < available; i++)
+				{
+					audioData[i] = _ringBuffer[(_webrtcReadIndex + i) % capacity];
+				}
+
+				// Update WebRTC read index
+				_webrtcReadIndex = (_webrtcReadIndex + available) % capacity;
+
+				return true;
+			}
+		}
+
+		private void WriteToRing(float[] data)
+		{
+			if (_ringBuffer == null) return;
+
+			lock (_bufferAccessLock)
+			{
+				int capacity = _ringBuffer.Length;
+				for (int i = 0; i < data.Length; i++)
+				{
+					_ringBuffer[_writeIndex] = data[i];
+					_writeIndex = (_writeIndex + 1) % capacity;
+				}
+				_availableSamples = Math.Min(_availableSamples + data.Length, capacity);
+			}
 		}
 
 		private void OnDestroy()

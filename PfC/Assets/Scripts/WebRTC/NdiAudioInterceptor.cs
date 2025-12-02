@@ -46,46 +46,35 @@ public class NdiAudioInterceptor : MonoBehaviour
         StartAudioStreaming();
         StopAudioStreaming();
     }
-    
-    // void Update()
-    // {
-    //     //Dynamic AudioSourceBridge detection for runtime on/off capability
-    //     if (targetAudioSourceBridge == null)
-    //     {
-    //         targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
-    //     }
-    // }
+
+    void Update()
+    {
+        // Get accumulated audio from ring buffer and send to WebRTC (similar to NdiSender)
+        if (isStreamingActive && targetAudioSourceBridge != null)
+        {
+            if (targetAudioSourceBridge.GetAccumulatedAudio(out float[] audioData, out int channels))
+            {
+                // Send to WebRTC audioStreamTrack
+                try
+                {
+                    audioStreamTrack.SetData(audioData, channels, AudioSettings.outputSampleRate);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[🎵AudioInterceptor] ❌ SetData FAILED: {e.Message}");
+                }
+            }
+        }
+    }
     
     #endregion
     
 
     #region Audio Processing Utilities
-    
-    private void HandleChunk(float[] audioData, int channels, int sampleRate)
-    {
-        float rms = CalculateRMS(audioData);
-    
-        // 🔍 DETAILED DEBUG: Track what happens during SetData
-        try
-        {
-            audioStreamTrack.SetData(audioData, channels, sampleRate);
-        
-            // if (rms > 0.001f)
-            // {
-            //     Debug.Log($"aabb_[🔍AudioInterceptor] ✅ SetData SUCCESS: RMS={rms:F3}, Channels={channels}");
-            // }
-            // else
-            // {
-            //     Debug.Log($"aabb_[🔍AudioInterceptor] ⚠️ SetData called with SILENT data: RMS={rms:F3}");
-            // }
-        }
-        catch (System.Exception e)
-        {
-            // Debug.LogError($"aabb_[🔍AudioInterceptor] ❌ SetData FAILED: {e.Message}");
-            // Debug.LogError($"aabb_[🔍AudioInterceptor] Track state - Disposed: {audioStreamTrack == null}");
-        }
-    }
-    
+
+    // Note: HandleChunk is no longer used - audio is now accumulated in Update via ring buffer
+    // This provides better timing and prevents audio crackling issues
+
     private float CalculateRMS(float[] audioData)
     {
         float sum = 0f;
@@ -95,33 +84,28 @@ public class NdiAudioInterceptor : MonoBehaviour
         }
         return Mathf.Sqrt(sum / audioData.Length);
     }
-    
+
     #endregion
     
     #region Public Interface
     
     public void StartAudioStreaming()
-    {                    
-        
-
+    {
         targetAudioSourceBridge = gameObject.GetComponentInChildren<AudioSourceBridge>();
 
-        targetAudioSourceBridge.OnWebRTCAudioReady += HandleChunk;
+        if (targetAudioSourceBridge == null)
+        {
+            Debug.LogError("[🎵AudioInterceptor] No AudioSourceBridge found!");
+            return;
+        }
 
-        //
-
-        
         isStreamingActive = true;
-
+        Debug.Log("[🎵AudioInterceptor] Audio streaming started - using ring buffer accumulation");
     }
-    
+
     public void StopAudioStreaming()
     {
         isStreamingActive = false;
-        
-        targetAudioSourceBridge.OnWebRTCAudioReady -= HandleChunk;
-        
-        
         Debug.Log("[🎵AudioInterceptor] Audio streaming stopped");
     }
     
