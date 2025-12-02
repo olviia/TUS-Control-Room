@@ -33,7 +33,7 @@ public class WebRTCStreamer : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private int textureWidth = 1280;
     [SerializeField] private int textureHeight = 720;
-    [SerializeField] private float connectionTimeout = 5f;
+    [SerializeField] private float connectionTimeout = 3f; // Reduced for local network
     [SerializeField] private bool enableOptimisticStates = true;
     [SerializeField] private int maxRetryAttempts = 3;
     
@@ -244,17 +244,11 @@ public class WebRTCStreamer : MonoBehaviour
         PrepareForNewSessionSync(sessionId);
         isOfferer = true;
 
-        // Activate NDI receivers if needed
-        if (ndiReceiverSource != null)
-            ActivateNdiReceiver(ndiReceiverSource);
-        if (ndiReceiverCaptions != null)
-            ActivateNdiReceiver(ndiReceiverCaptions);
-
         SetupStreamingConnection();
         StartConnectionTimeout();
         yield return StartCoroutine(CreateOffer());
 
-        Debug.Log($"[📡{instanceId}] Streaming session initiated - will stream NDI when available");
+        Debug.Log($"[📡{instanceId}] Streaming session initiated");
     }
     
     private IEnumerator EndCurrentSession()
