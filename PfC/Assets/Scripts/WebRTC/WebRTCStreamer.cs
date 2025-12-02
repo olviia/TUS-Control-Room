@@ -243,18 +243,22 @@ public class WebRTCStreamer : MonoBehaviour
     {
         PrepareForNewSessionSync(sessionId);
         isOfferer = true;
-        
-        if (!ValidateNdiSource())
+
+        // Wait for NDI source to become ready (with timeout)
+        yield return StartCoroutine(WaitForNdiSource());
+
+        if (!HasValidNdiTexture())
         {
+            Debug.LogError($"[📡{instanceId}] NDI source validation failed after waiting");
             SetState(StreamerState.Failed);
             yield break;
         }
-        
+
         SetupStreamingConnection();
         StartConnectionTimeout();
         StartCoroutine(CreateOffer());
-        
-        Debug.Log($"[📡{instanceId}] Streaming session initiated immediately");
+
+        Debug.Log($"[📡{instanceId}] Streaming session initiated with valid NDI source");
     }
     
     private IEnumerator EndCurrentSession()
@@ -361,7 +365,44 @@ public class WebRTCStreamer : MonoBehaviour
     #endregion
     
     #region NDI Management
-    
+
+    /// <summary>
+    /// Wait for NDI source to become available with timeout
+    /// </summary>
+    private IEnumerator WaitForNdiSource()
+    {
+        if (ndiReceiverSource == null)
+        {
+            Debug.LogError($"[📡{instanceId}] No NDI receiver assigned");
+            yield break;
+        }
+
+        ActivateNdiReceiver(ndiReceiverSource);
+        if (ndiReceiverCaptions != null)
+            ActivateNdiReceiver(ndiReceiverCaptions);
+
+        // Wait for NDI texture to become valid (up to 2 seconds)
+        float waitStartTime = Time.time;
+        float maxWaitTime = 2f;
+        int checkCount = 0;
+
+        while (Time.time - waitStartTime < maxWaitTime)
+        {
+            checkCount++;
+
+            if (HasValidNdiTexture())
+            {
+                Debug.Log($"[📡{instanceId}] NDI source ready after {Time.time - waitStartTime:F2}s ({checkCount} checks)");
+                yield break;
+            }
+
+            // Check every 100ms
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        Debug.LogWarning($"[📡{instanceId}] NDI source not ready after {maxWaitTime}s timeout");
+    }
+
     private bool ValidateNdiSource()
     {
         if (ndiReceiverSource == null)
@@ -369,7 +410,7 @@ public class WebRTCStreamer : MonoBehaviour
             Debug.LogError($"[📡{instanceId}] No NDI receiver assigned");
             return false;
         }
-        
+
         ActivateNdiReceiver(ndiReceiverSource);
         if (ndiReceiverSource != null)
             ActivateNdiReceiver(ndiReceiverCaptions);
@@ -425,6 +466,8 @@ public class WebRTCStreamer : MonoBehaviour
     {
         Debug.Log($"[📡{instanceId}] UpdateTextureFromNdi coroutine STARTED");
         int frameCount = 0;
+        int missingTextureFrames = 0;
+        const int maxMissingFrames = 180; // 3 seconds at 60fps
 
         while (IsStreamingOrConnecting())
         {
@@ -455,6 +498,8 @@ public class WebRTCStreamer : MonoBehaviour
                 }
 
                 frameCount++;
+                missingTextureFrames = 0; // Reset counter on successful frame
+
                 if (frameCount % 60 == 0)  // Log every 60 frames
                 {
                     Debug.Log($"[📡{instanceId}] Streaming frame {frameCount}, State: {currentState}");
@@ -462,9 +507,19 @@ public class WebRTCStreamer : MonoBehaviour
             }
             else
             {
+                missingTextureFrames++;
+
                 if (frameCount == 0 || frameCount % 60 == 0)
                 {
-                    Debug.LogWarning($"[📡{instanceId}] Missing texture! NDI: {ndiTexture != null}, WebRTC: {webRtcTexture != null}");
+                    Debug.LogWarning($"[📡{instanceId}] Missing texture! NDI: {ndiTexture != null}, WebRTC: {webRtcTexture != null} (Missing frames: {missingTextureFrames})");
+                }
+
+                // If texture missing for too long, trigger failure
+                if (missingTextureFrames >= maxMissingFrames)
+                {
+                    Debug.LogError($"[📡{instanceId}] NDI texture missing for {missingTextureFrames} frames (3s) - triggering connection failure");
+                    HandleConnectionFailure();
+                    yield break;
                 }
             }
 
