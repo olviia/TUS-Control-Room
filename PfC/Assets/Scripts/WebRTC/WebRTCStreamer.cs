@@ -252,7 +252,7 @@ public class WebRTCStreamer : MonoBehaviour
 
         SetupStreamingConnection();
         StartConnectionTimeout();
-        StartCoroutine(CreateOffer());
+        yield return StartCoroutine(CreateOffer());
 
         Debug.Log($"[📡{instanceId}] Streaming session initiated - will stream NDI when available");
     }
