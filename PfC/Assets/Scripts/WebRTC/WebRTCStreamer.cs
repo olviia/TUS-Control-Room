@@ -727,16 +727,19 @@ public class WebRTCStreamer : MonoBehaviour
             Debug.LogError($"[📡{instanceId}] No peer connection for offer");
             yield break;
         }
-        
+
+        // Set connected client ID BEFORE processing offer so ICE candidates know where to go
+        connectedClientId = fromClient;
+
         Debug.Log($"[📡{instanceId}] Setting remote description...");
         yield return StartCoroutine(SetRemoteDescription(offer));
-        
+
         if (!isRemoteDescriptionSet)
         {
             Debug.LogError($"[📡{instanceId}] Failed to set remote description");
             yield break;
         }
-        
+
         Debug.Log($"[📡{instanceId}] Creating answer...");
         yield return StartCoroutine(CreateAnswerImmediate(fromClient));
     }
@@ -745,19 +748,18 @@ public class WebRTCStreamer : MonoBehaviour
     {
         var answerOp = peerConnection.CreateAnswer();
         yield return answerOp;
-        
+
         if (answerOp.IsError)
         {
             Debug.LogError($"[📡{instanceId}] Answer creation failed: {answerOp.Error}");
             HandleConnectionFailure();
             yield break;
         }
-        
+
         yield return StartCoroutine(SetLocalDescription(answerOp.Desc));
-        
+
         signaling.SendAnswer(pipelineType, answerOp.Desc, toClient, currentSessionId);
-        connectedClientId = toClient;
-        
+
         Debug.Log($"[📡{instanceId}] Answer completed for client {toClient}");
     }
     
