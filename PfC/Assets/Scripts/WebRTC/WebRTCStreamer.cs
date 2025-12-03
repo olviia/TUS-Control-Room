@@ -552,8 +552,8 @@ public class WebRTCStreamer : MonoBehaviour
         }
         
         yield return StartCoroutine(SetLocalDescription(offerOp.Desc));
-        signaling.SendOffer(pipelineType, offerOp.Desc, currentSessionId);
-        
+        signaling.SendOffer(pipelineType, offerOp.Desc, connectedClientId, currentSessionId);
+
         Debug.Log($"[📡{instanceId}] Offer sent");
     }
     
@@ -608,7 +608,7 @@ public class WebRTCStreamer : MonoBehaviour
         }
 
         yield return StartCoroutine(SetLocalDescriptionForClient(clientId, offerOp.Desc));
-        signaling.SendOffer(pipelineType, offerOp.Desc, currentSessionId);
+        signaling.SendOffer(pipelineType, offerOp.Desc, clientId, currentSessionId);
 
         Debug.Log($"[📡{instanceId}] Offer sent to client {clientId}");
     }

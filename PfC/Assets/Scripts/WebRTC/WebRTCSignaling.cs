@@ -19,15 +19,15 @@ public class WebRTCSignaling : NetworkBehaviour
     #region Public Interface
 
     /// <summary>
-    /// Send WebRTC offer for specific pipeline
+    /// Send WebRTC offer for specific pipeline to specific client
     /// </summary>
-    public void SendOffer(PipelineType pipeline, RTCSessionDescription offer, string sessionId)
+    public void SendOffer(PipelineType pipeline, RTCSessionDescription offer, ulong toClient, string sessionId)
     {
         if (!IsNetworkReady()) return;
-        
-        Debug.Log($"[🔗Signaling] SendOffer {pipeline}:{sessionId}");
-        SendOfferServerRpc(pipeline, offer.type.ToString(), offer.sdp, 
-                          NetworkManager.Singleton.LocalClientId, sessionId);
+
+        Debug.Log($"[🔗Signaling] SendOffer {pipeline}:{sessionId} to:{toClient}");
+        SendOfferServerRpc(pipeline, offer.type.ToString(), offer.sdp,
+                          NetworkManager.Singleton.LocalClientId, toClient, sessionId);
     }
 
     /// <summary>
@@ -69,10 +69,10 @@ public class WebRTCSignaling : NetworkBehaviour
     #region Server RPCs - Simple Message Relay
 
     [ServerRpc(RequireOwnership = false)]
-    private void SendOfferServerRpc(PipelineType pipeline, string sdpType, string sdp, 
-                                   ulong fromClient, string sessionId)
+    private void SendOfferServerRpc(PipelineType pipeline, string sdpType, string sdp,
+                                   ulong fromClient, ulong toClient, string sessionId)
     {
-        BroadcastOfferClientRpc(pipeline, sdpType, sdp, fromClient, sessionId);
+        BroadcastOfferClientRpc(pipeline, sdpType, sdp, fromClient, toClient, sessionId);
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -101,12 +101,12 @@ public class WebRTCSignaling : NetworkBehaviour
 
     [ClientRpc]
     private void BroadcastOfferClientRpc(PipelineType pipeline, string sdpType, string sdp,
-                                        ulong fromClient, string sessionId)
+                                        ulong fromClient, ulong toClient, string sessionId)
     {
-        if (ShouldIgnoreMessage(fromClient)) return;
-        
+        if (ShouldIgnoreMessage(fromClient) || !IsMessageForMe(toClient)) return;
+
         Debug.Log($"[🔗Signaling] Offer received {pipeline}:{sessionId} from:{fromClient}");
-        
+
         var sessionDesc = CreateSessionDescription(sdpType, sdp);
         if (sessionDesc.HasValue)
         {
