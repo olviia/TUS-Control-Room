@@ -422,12 +422,25 @@ public class WebRTCStreamer : MonoBehaviour
     
     private IEnumerator UpdateTextureFromNdi()
     {
+        
+        
         Debug.Log($"[📡{instanceId}] UpdateTextureFromNdi coroutine STARTED");
         int frameCount = 0;
 
         while (IsStreamingOrConnecting())
         {
-            var ndiTexture = ndiReceiverSource?.GetTexture();
+            var ndiTexture = ndiReceiverSource?.GetTexture();;
+            // if (ndiReceiverSource.enabled)
+            // {
+            //     ndiTexture = ndiReceiverSource?.GetTexture();
+            // }
+            // else
+            // {
+            //     //finish this
+            //    // ndiTexture = targetRenderer.sharedRenderer.get
+            //     
+            // }
+
 
             if (ndiTexture != null && webRtcTexture != null)
             {

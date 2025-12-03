@@ -1,43 +1,9 @@
 {
-    "DesktopAudioDevice1": {
-        "prev_ver": 536870914,
-        "name": "Desktop Audio",
-        "uuid": "564f8ab6-7238-4447-90ff-62fdec749a42",
-        "id": "wasapi_output_capture",
-        "versioned_id": "wasapi_output_capture",
-        "settings": {
-            "device_id": "default"
-        },
-        "mixers": 255,
-        "sync": 0,
-        "flags": 0,
-        "volume": 0.9100000262260437,
-        "balance": 0.5,
-        "enabled": true,
-        "muted": true,
-        "push-to-mute": false,
-        "push-to-mute-delay": 0,
-        "push-to-talk": false,
-        "push-to-talk-delay": 0,
-        "hotkeys": {
-            "libobs.mute": [],
-            "libobs.unmute": [],
-            "libobs.push-to-mute": [],
-            "libobs.push-to-talk": []
-        },
-        "deinterlace_mode": 0,
-        "deinterlace_field_order": 0,
-        "monitoring_type": 0,
-        "private_settings": {}
-    },
-    "current_scene": "StreamLive",
-    "current_program_scene": "StreamLive",
+    "current_scene": "Subscene_01_07",
+    "current_program_scene": "Subscene_01_07",
     "scene_order": [
         {
             "name": "MergedScene_01"
-        },
-        {
-            "name": "VirtualCamera"
         },
         {
             "name": "StudioSuper"
@@ -50,9 +16,6 @@
         },
         {
             "name": "StreamLive"
-        },
-        {
-            "name": "TvLiveOutputUnity"
         },
         {
             "name": "Presenter2"
@@ -128,10 +91,10 @@
     "current_transition": "Fade",
     "transition_duration": 300,
     "preview_locked": false,
-    "scaling_enabled": true,
-    "scaling_level": -4,
-    "scaling_off_x": 128.0,
-    "scaling_off_y": 135.0,
+    "scaling_enabled": false,
+    "scaling_level": -3,
+    "scaling_off_x": 0.0,
+    "scaling_off_y": 0.0,
     "virtual-camera": {
         "type2": 3
     },
@@ -162,20 +125,16 @@
             "provider": "mssapi"
         }
     },
-    "resolution": {
-        "x": 1024,
-        "y": 512
-    },
     "version": 2,
     "sources": [
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Image",
             "uuid": "2b54fb9c-6fda-4d3e-afbe-b27934514e10",
             "id": "image_source",
             "versioned_id": "image_source",
             "settings": {
-                "file": "C:/Users/Olviia Stroivans/Pictures/Screenshots/Screenshot 2025-08-12 172348.png"
+                "file": "C:/Users/Olviia Stroivans/AppData/Local/Microsoft/Office/SolutionPackages/cadc167033633b63a35437eec114561b/PackageResources/assets/-1155757370/freImage1.jpeg"
             },
             "mixers": 0,
             "sync": 0,
@@ -195,13 +154,13 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Image 2",
             "uuid": "90f466db-3a27-44c4-a14c-47f994d5f6f3",
             "id": "image_source",
             "versioned_id": "image_source",
             "settings": {
-                "file": "C:/Users/Olviia Stroivans/Pictures/Screenshots/Screenshot 2025-09-10 162420.png"
+                "file": "C:/Everything/Repos/TUS-Control-Room-Unity6/PfC/Library/PackageCache/com.unity.netcode.gameobjects@425229b32dea/Documentation~/images/add.png"
             },
             "mixers": 0,
             "sync": 0,
@@ -221,7 +180,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source",
             "uuid": "fdf07841-29de-4981-a07b-323a6027ac84",
             "id": "ffmpeg_source",
@@ -259,7 +218,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source 2",
             "uuid": "a22429c3-b855-4da2-9297-13a1bcb3bce2",
             "id": "ffmpeg_source",
@@ -297,7 +256,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source 3",
             "uuid": "3af0de5b-2d87-41db-a3bb-29ee77a4d175",
             "id": "ffmpeg_source",
@@ -332,10 +291,38 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
-            "private_settings": {}
+            "private_settings": {},
+            "filters": [
+                {
+                    "prev_ver": 520159234,
+                    "name": "Dedicated NDI® output",
+                    "uuid": "297165bf-4a8a-4a98-86e5-4743abc090a0",
+                    "id": "ndi_filter",
+                    "versioned_id": "ndi_filter",
+                    "settings": {
+                        "ndi_filter_ndiname": "Subscene_01_05"
+                    },
+                    "mixers": 0,
+                    "sync": 0,
+                    "flags": 0,
+                    "volume": 1.0,
+                    "balance": 0.5,
+                    "enabled": true,
+                    "muted": false,
+                    "push-to-mute": false,
+                    "push-to-mute-delay": 0,
+                    "push-to-talk": false,
+                    "push-to-talk-delay": 0,
+                    "hotkeys": {},
+                    "deinterlace_mode": 0,
+                    "deinterlace_field_order": 0,
+                    "monitoring_type": 0,
+                    "private_settings": {}
+                }
+            ]
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source 4",
             "uuid": "62b00bc0-ccd4-4131-aaee-91525ca8f406",
             "id": "ffmpeg_source",
@@ -373,7 +360,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source 5",
             "uuid": "27b6f98a-2a3d-445c-bae0-523be078d24f",
             "id": "ffmpeg_source",
@@ -408,44 +395,16 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
-            "private_settings": {},
-            "filters": [
-                {
-                    "prev_ver": 536870914,
-                    "name": "Dedicated NDI® output",
-                    "uuid": "49c957c9-f3ed-4500-8a73-0adf81b5372e",
-                    "id": "ndi_filter",
-                    "versioned_id": "ndi_filter",
-                    "settings": {
-                        "ndi_filter_ndiname": "Subscene_01_07"
-                    },
-                    "mixers": 0,
-                    "sync": 0,
-                    "flags": 0,
-                    "volume": 1.0,
-                    "balance": 0.5,
-                    "enabled": true,
-                    "muted": false,
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
-                    "hotkeys": {},
-                    "deinterlace_mode": 0,
-                    "deinterlace_field_order": 0,
-                    "monitoring_type": 0,
-                    "private_settings": {}
-                }
-            ]
+            "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source 6",
             "uuid": "b09ae2a2-37d2-43b7-b399-d288e92ceeaf",
             "id": "ffmpeg_source",
             "versioned_id": "ffmpeg_source",
             "settings": {
-                "local_file": "C:/Users/Olviia Stroivans/Downloads/Chill Lofi Mix [chill lo-fi hip hop beats].mp4",
+                "local_file": "C:/Everything/Repos/TUS-Control-Room-Unity6/PfC/Assets/Samples/Vivox/16.6.0/Chat Channel Sample/Assets/ChatChannelSample/Textures/UI/Shared/X.png",
                 "looping": true,
                 "clear_on_media_end": false,
                 "restart_on_activate": false
@@ -453,7 +412,7 @@
             "mixers": 255,
             "sync": 0,
             "flags": 0,
-            "volume": 0.019554229453206062,
+            "volume": 1.0,
             "balance": 0.5,
             "enabled": true,
             "muted": false,
@@ -477,7 +436,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source 7",
             "uuid": "c4d257f2-1c9b-4e59-8f9a-061c8d22ea45",
             "id": "ffmpeg_source",
@@ -515,7 +474,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Media Source 8",
             "uuid": "1fbfe0b5-538d-476f-9a0b-ad7b745643a6",
             "id": "ffmpeg_source",
@@ -553,7 +512,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "MergedScene_01",
             "uuid": "79ed956c-2cc4-4d7a-ab87-9eeb7b287812",
             "id": "scene",
@@ -1001,6 +960,226 @@
                             "duration": 0
                         },
                         "private_settings": {}
+                    },
+                    {
+                        "name": "VirtualCamera1",
+                        "source_uuid": "788456ad-8752-41af-9318-e2644bd67ae8",
+                        "visible": true,
+                        "locked": false,
+                        "rot": -90.0,
+                        "scale_ref": {
+                            "x": 1024.0,
+                            "y": 512.0
+                        },
+                        "align": 5,
+                        "bounds_type": 0,
+                        "bounds_align": 0,
+                        "bounds_crop": false,
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 10,
+                        "group_item_backup": false,
+                        "pos": {
+                            "x": 512.0,
+                            "y": 512.0
+                        },
+                        "pos_rel": {
+                            "x": 0.0,
+                            "y": 1.0
+                        },
+                        "scale": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "scale_rel": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "bounds": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds_rel": {
+                            "x": 0.00390625,
+                            "y": 0.00390625
+                        },
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "show_transition": {
+                            "duration": 0
+                        },
+                        "hide_transition": {
+                            "duration": 0
+                        },
+                        "private_settings": {}
+                    },
+                    {
+                        "name": "VirtualCamera2",
+                        "source_uuid": "8e83d7ae-3b27-47de-bc5e-ebc0e8b26016",
+                        "visible": true,
+                        "locked": false,
+                        "rot": -90.0,
+                        "scale_ref": {
+                            "x": 1024.0,
+                            "y": 512.0
+                        },
+                        "align": 5,
+                        "bounds_type": 0,
+                        "bounds_align": 0,
+                        "bounds_crop": false,
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 11,
+                        "group_item_backup": false,
+                        "pos": {
+                            "x": 512.0,
+                            "y": 256.0
+                        },
+                        "pos_rel": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "scale": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "scale_rel": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "bounds": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds_rel": {
+                            "x": 0.00390625,
+                            "y": 0.00390625
+                        },
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "show_transition": {
+                            "duration": 0
+                        },
+                        "hide_transition": {
+                            "duration": 0
+                        },
+                        "private_settings": {}
+                    },
+                    {
+                        "name": "VirtualCamera3",
+                        "source_uuid": "8210b406-116d-4041-a393-b1322f2c53d2",
+                        "visible": true,
+                        "locked": false,
+                        "rot": -90.0,
+                        "scale_ref": {
+                            "x": 1024.0,
+                            "y": 512.0
+                        },
+                        "align": 5,
+                        "bounds_type": 0,
+                        "bounds_align": 0,
+                        "bounds_crop": false,
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 12,
+                        "group_item_backup": false,
+                        "pos": {
+                            "x": 640.0,
+                            "y": 512.0
+                        },
+                        "pos_rel": {
+                            "x": 0.5,
+                            "y": 1.0
+                        },
+                        "scale": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "scale_rel": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "bounds": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds_rel": {
+                            "x": 0.00390625,
+                            "y": 0.00390625
+                        },
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "show_transition": {
+                            "duration": 0
+                        },
+                        "hide_transition": {
+                            "duration": 0
+                        },
+                        "private_settings": {}
+                    },
+                    {
+                        "name": "VirtualCameraTopView",
+                        "source_uuid": "4ea3cce0-f6ae-4d81-b8ed-08a927290d83",
+                        "visible": true,
+                        "locked": false,
+                        "rot": -90.0,
+                        "scale_ref": {
+                            "x": 1024.0,
+                            "y": 512.0
+                        },
+                        "align": 5,
+                        "bounds_type": 0,
+                        "bounds_align": 0,
+                        "bounds_crop": false,
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 13,
+                        "group_item_backup": false,
+                        "pos": {
+                            "x": 640.0,
+                            "y": 256.0
+                        },
+                        "pos_rel": {
+                            "x": 0.5,
+                            "y": 0.0
+                        },
+                        "scale": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "scale_rel": {
+                            "x": 0.25,
+                            "y": 0.25
+                        },
+                        "bounds": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds_rel": {
+                            "x": 0.00390625,
+                            "y": 0.00390625
+                        },
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "show_transition": {
+                            "duration": 0
+                        },
+                        "hide_transition": {
+                            "duration": 0
+                        },
+                        "private_settings": {}
                     }
                 ]
             },
@@ -1032,7 +1211,15 @@
                 "libobs.show_scene_item.9": [],
                 "libobs.hide_scene_item.9": [],
                 "libobs.show_scene_item.8": [],
-                "libobs.hide_scene_item.8": []
+                "libobs.hide_scene_item.8": [],
+                "libobs.show_scene_item.10": [],
+                "libobs.hide_scene_item.10": [],
+                "libobs.show_scene_item.11": [],
+                "libobs.hide_scene_item.11": [],
+                "libobs.show_scene_item.12": [],
+                "libobs.hide_scene_item.12": [],
+                "libobs.show_scene_item.13": [],
+                "libobs.hide_scene_item.13": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
@@ -1041,7 +1228,7 @@
             "private_settings": {},
             "filters": [
                 {
-                    "prev_ver": 536870914,
+                    "prev_ver": 520159234,
                     "name": "Dedicated NDI® output",
                     "uuid": "dac594b4-f5ce-43c9-92e3-8284ab76a93f",
                     "id": "ndi_filter",
@@ -1069,39 +1256,7 @@
             ]
         },
         {
-            "prev_ver": 536870914,
-            "name": "NDI® Source 2",
-            "uuid": "96ade89d-454e-4da5-96ea-dd7caaac144f",
-            "id": "ndi_source",
-            "versioned_id": "ndi_source",
-            "settings": {
-                "ndi_fix_alpha_blending": false,
-                "ndi_source_name": "TIIMEX10 (TvLiveOutputUnity)"
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Presenter1",
             "uuid": "e2fa9c25-fb49-47d4-a16a-0f3b00e00374",
             "id": "scene",
@@ -1190,7 +1345,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Presenter1Source",
             "uuid": "9cd09415-a0e0-4162-85e8-048bcff614cd",
             "id": "ndi_source",
@@ -1223,7 +1378,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Presenter2",
             "uuid": "e694c5bf-d304-4967-ab73-aa06ed0f0789",
             "id": "scene",
@@ -1312,7 +1467,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Presenter2Source",
             "uuid": "bc3a294d-0bf8-459f-b92e-fdd5bd34991a",
             "id": "ndi_source",
@@ -1345,7 +1500,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "PresenterAudio",
             "uuid": "cb0185f8-9b1b-47f1-be9f-8e4da9c81fb4",
             "id": "scene",
@@ -1434,7 +1589,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "PresenterAudioSource",
             "uuid": "a75f3ca9-7675-44a3-9f6f-8c6eb98aafa4",
             "id": "ndi_source",
@@ -1467,13 +1622,13 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "StreamLive",
             "uuid": "8048dd89-d169-4be5-8ba7-a0a6ec3238b0",
             "id": "scene",
             "versioned_id": "scene",
             "settings": {
-                "id_counter": 899,
+                "id_counter": 171,
                 "custom_size": false,
                 "items": [
                     {
@@ -1494,7 +1649,7 @@
                         "crop_top": 0,
                         "crop_right": 0,
                         "crop_bottom": 0,
-                        "id": 899,
+                        "id": 171,
                         "group_item_backup": false,
                         "pos": {
                             "x": 0.0,
@@ -1532,8 +1687,8 @@
                         "private_settings": {}
                     },
                     {
-                        "name": "TvLiveOutputUnity",
-                        "source_uuid": "13a775e2-ea8b-45df-b181-b2d94e31cabb",
+                        "name": "Subscene_01_05",
+                        "source_uuid": "efe3c558-eb16-4721-8417-9cacfe06b781",
                         "visible": true,
                         "locked": false,
                         "rot": 0.0,
@@ -1549,7 +1704,62 @@
                         "crop_top": 0,
                         "crop_right": 0,
                         "crop_bottom": 0,
-                        "id": 898,
+                        "id": 170,
+                        "group_item_backup": false,
+                        "pos": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "pos_rel": {
+                            "x": -2.0,
+                            "y": -1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "scale_rel": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_rel": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "show_transition": {
+                            "duration": 0
+                        },
+                        "hide_transition": {
+                            "duration": 0
+                        },
+                        "private_settings": {}
+                    },
+                    {
+                        "name": "TVSuper",
+                        "source_uuid": "1a3e929d-8c24-461a-bded-e1f92fdf6a68",
+                        "visible": true,
+                        "locked": false,
+                        "rot": 0.0,
+                        "scale_ref": {
+                            "x": 1024.0,
+                            "y": 512.0
+                        },
+                        "align": 5,
+                        "bounds_type": 0,
+                        "bounds_align": 0,
+                        "bounds_crop": false,
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 169,
                         "group_item_backup": false,
                         "pos": {
                             "x": 0.0,
@@ -1601,10 +1811,12 @@
             "push-to-talk-delay": 0,
             "hotkeys": {
                 "OBSBasic.SelectScene": [],
-                "libobs.show_scene_item.898": [],
-                "libobs.hide_scene_item.898": [],
-                "libobs.show_scene_item.899": [],
-                "libobs.hide_scene_item.899": []
+                "libobs.show_scene_item.171": [],
+                "libobs.hide_scene_item.171": [],
+                "libobs.show_scene_item.170": [],
+                "libobs.hide_scene_item.170": [],
+                "libobs.show_scene_item.169": [],
+                "libobs.hide_scene_item.169": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
@@ -1613,7 +1825,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "StudioSuper",
             "uuid": "357d0c20-c016-46c4-b31a-7eed86505a88",
             "id": "scene",
@@ -1633,7 +1845,7 @@
                             "y": 512.0
                         },
                         "align": 5,
-                        "bounds_type": 1,
+                        "bounds_type": 0,
                         "bounds_align": 0,
                         "bounds_crop": false,
                         "crop_left": 0,
@@ -1643,28 +1855,28 @@
                         "id": 1,
                         "group_item_backup": false,
                         "pos": {
-                            "x": 127.0,
-                            "y": 373.0
+                            "x": 67.0,
+                            "y": 382.0
                         },
                         "pos_rel": {
-                            "x": -1.50390625,
-                            "y": 0.45703125
+                            "x": -1.73828125,
+                            "y": 0.4921875
                         },
                         "scale": {
-                            "x": 1.0,
-                            "y": 1.0
+                            "x": 45.28571319580078,
+                            "y": 5.0714287757873535
                         },
                         "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
+                            "x": 45.28571319580078,
+                            "y": 5.0714287757873535
                         },
                         "bounds": {
-                            "x": 811.0,
-                            "y": 73.0
+                            "x": 0.0,
+                            "y": 0.0
                         },
                         "bounds_rel": {
-                            "x": 3.16796875,
-                            "y": 0.28515625
+                            "x": 0.0,
+                            "y": 0.0
                         },
                         "scale_filter": "disable",
                         "blend_method": "default",
@@ -1699,38 +1911,10 @@
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
-            "private_settings": {},
-            "filters": [
-                {
-                    "prev_ver": 536870914,
-                    "name": "Dedicated NDI® output",
-                    "uuid": "261019b5-ae34-4ea6-82d1-cf44848320f2",
-                    "id": "ndi_filter",
-                    "versioned_id": "ndi_filter",
-                    "settings": {
-                        "ndi_filter_ndiname": "StudioSuper"
-                    },
-                    "mixers": 0,
-                    "sync": 0,
-                    "flags": 0,
-                    "volume": 1.0,
-                    "balance": 0.5,
-                    "enabled": true,
-                    "muted": false,
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
-                    "hotkeys": {},
-                    "deinterlace_mode": 0,
-                    "deinterlace_field_order": 0,
-                    "monitoring_type": 0,
-                    "private_settings": {}
-                }
-            ]
+            "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_01",
             "uuid": "2afd86be-7430-42de-8a26-247ab725eee2",
             "id": "scene",
@@ -1819,7 +2003,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_02",
             "uuid": "16be1e92-d532-42d3-ac59-a309078d7e2f",
             "id": "scene",
@@ -1908,7 +2092,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_03",
             "uuid": "93b2612a-ca3c-41dc-bc67-446c820bee37",
             "id": "scene",
@@ -1997,7 +2181,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_04",
             "uuid": "a8c09d11-c948-466b-85fb-3b3cece1853c",
             "id": "scene",
@@ -2086,7 +2270,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_05",
             "uuid": "efe3c558-eb16-4721-8417-9cacfe06b781",
             "id": "scene",
@@ -2175,7 +2359,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_06",
             "uuid": "9106f84d-4cf5-4250-86ae-ab32108c0027",
             "id": "scene",
@@ -2264,7 +2448,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_07",
             "uuid": "8f2b02b4-a5bd-4bf2-b355-9067c7f84a0a",
             "id": "scene",
@@ -2353,7 +2537,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "Subscene_01_08",
             "uuid": "fb82cdc7-9035-4422-8411-75fea7a790ab",
             "id": "scene",
@@ -2373,7 +2557,7 @@
                             "y": 512.0
                         },
                         "align": 5,
-                        "bounds_type": 1,
+                        "bounds_type": 0,
                         "bounds_align": 0,
                         "bounds_crop": false,
                         "crop_left": 0,
@@ -2383,28 +2567,28 @@
                         "id": 4,
                         "group_item_backup": false,
                         "pos": {
+                            "x": 255.0,
+                            "y": 17.0
+                        },
+                        "pos_rel": {
+                            "x": -1.00390625,
+                            "y": -0.93359375
+                        },
+                        "scale": {
+                            "x": 1.691176414489746,
+                            "y": 1.6917293071746826
+                        },
+                        "scale_rel": {
+                            "x": 1.691176414489746,
+                            "y": 1.6917293071746826
+                        },
+                        "bounds": {
                             "x": 0.0,
                             "y": 0.0
                         },
-                        "pos_rel": {
-                            "x": -2.0,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 1024.0,
-                            "y": 512.0
-                        },
                         "bounds_rel": {
-                            "x": 4.0,
-                            "y": 2.0
+                            "x": 0.0,
+                            "y": 0.0
                         },
                         "scale_filter": "disable",
                         "blend_method": "default",
@@ -2442,96 +2626,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
-            "name": "TvLiveOutputUnity",
-            "uuid": "13a775e2-ea8b-45df-b181-b2d94e31cabb",
-            "id": "scene",
-            "versioned_id": "scene",
-            "settings": {
-                "id_counter": 1,
-                "custom_size": false,
-                "items": [
-                    {
-                        "name": "NDI® Source 2",
-                        "source_uuid": "96ade89d-454e-4da5-96ea-dd7caaac144f",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1024.0,
-                            "y": 512.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 1,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "pos_rel": {
-                            "x": -2.0,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    }
-                ]
-            },
-            "mixers": 0,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "OBSBasic.SelectScene": [],
-                "libobs.show_scene_item.1": [],
-                "libobs.hide_scene_item.1": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "TVSuper",
             "uuid": "1a3e929d-8c24-461a-bded-e1f92fdf6a68",
             "id": "scene",
@@ -2551,123 +2646,6 @@
                             "y": 512.0
                         },
                         "align": 5,
-                        "bounds_type": 1,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 1,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 56.0,
-                            "y": 334.0
-                        },
-                        "pos_rel": {
-                            "x": -1.78125,
-                            "y": 0.3046875
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 825.0,
-                            "y": 60.0
-                        },
-                        "bounds_rel": {
-                            "x": 3.22265625,
-                            "y": 0.234375
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    }
-                ]
-            },
-            "mixers": 0,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "OBSBasic.SelectScene": [],
-                "libobs.show_scene_item.1": [],
-                "libobs.hide_scene_item.1": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
-            "private_settings": {},
-            "filters": [
-                {
-                    "prev_ver": 536870914,
-                    "name": "Dedicated NDI® output",
-                    "uuid": "f28f3cf7-9470-484a-8e64-ccb555dbb388",
-                    "id": "ndi_filter",
-                    "versioned_id": "ndi_filter",
-                    "settings": {
-                        "ndi_filter_ndiname": "TVSuper"
-                    },
-                    "mixers": 0,
-                    "sync": 0,
-                    "flags": 0,
-                    "volume": 1.0,
-                    "balance": 0.5,
-                    "enabled": true,
-                    "muted": false,
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
-                    "hotkeys": {},
-                    "deinterlace_mode": 0,
-                    "deinterlace_field_order": 0,
-                    "monitoring_type": 0,
-                    "private_settings": {}
-                }
-            ]
-        },
-        {
-            "prev_ver": 536870914,
-            "name": "VirtualCamera",
-            "uuid": "6a1b0a31-8f37-4690-9485-05b74bf8d311",
-            "id": "scene",
-            "versioned_id": "scene",
-            "settings": {
-                "id_counter": 1,
-                "custom_size": false,
-                "items": [
-                    {
-                        "name": "VirtualCameraSource",
-                        "source_uuid": "d592ce0c-131e-4f14-8b7f-aa9d4550b794",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1024.0,
-                            "y": 512.0
-                        },
-                        "align": 5,
                         "bounds_type": 0,
                         "bounds_align": 0,
                         "bounds_crop": false,
@@ -2678,20 +2656,20 @@
                         "id": 1,
                         "group_item_backup": false,
                         "pos": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 71.0,
+                            "y": 373.0
                         },
                         "pos_rel": {
-                            "x": -2.0,
-                            "y": -1.0
+                            "x": -1.72265625,
+                            "y": 0.45703125
                         },
                         "scale": {
-                            "x": 1.0,
-                            "y": 1.0
+                            "x": 0.6616666913032532,
+                            "y": 0.08559782803058624
                         },
                         "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
+                            "x": 0.6616666913032532,
+                            "y": 0.08559782803058624
                         },
                         "bounds": {
                             "x": 0.0,
@@ -2737,7 +2715,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCamera1",
             "uuid": "788456ad-8752-41af-9318-e2644bd67ae8",
             "id": "scene",
@@ -2826,7 +2804,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCamera2",
             "uuid": "8e83d7ae-3b27-47de-bc5e-ebc0e8b26016",
             "id": "scene",
@@ -2915,7 +2893,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCamera3",
             "uuid": "8210b406-116d-4041-a393-b1322f2c53d2",
             "id": "scene",
@@ -3004,68 +2982,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
-            "name": "VirtualCameraSource",
-            "uuid": "d592ce0c-131e-4f14-8b7f-aa9d4550b794",
-            "id": "ndi_source",
-            "versioned_id": "ndi_source",
-            "settings": {
-                "ndi_fix_alpha_blending": false,
-                "ndi_source_name": "TIIMEX10 (speakerA)",
-                "ndi_behavior": 0
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {},
-            "filters": [
-                {
-                    "prev_ver": 536870914,
-                    "name": "Dedicated NDI® output",
-                    "uuid": "c8782ae6-000b-4fc5-b1e2-34eb0f3a4a88",
-                    "id": "ndi_filter",
-                    "versioned_id": "ndi_filter",
-                    "settings": {
-                        "ndi_filter_ndiname": "VirtualCamera"
-                    },
-                    "mixers": 0,
-                    "sync": 0,
-                    "flags": 0,
-                    "volume": 1.0,
-                    "balance": 0.5,
-                    "enabled": true,
-                    "muted": false,
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
-                    "hotkeys": {},
-                    "deinterlace_mode": 0,
-                    "deinterlace_field_order": 0,
-                    "monitoring_type": 0,
-                    "private_settings": {}
-                }
-            ]
-        },
-        {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCameraSource1",
             "uuid": "2f46e517-a8e1-4966-954e-c19c4f40be17",
             "id": "ndi_source",
@@ -3098,7 +3015,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCameraSource2",
             "uuid": "018cd184-dfaf-436c-a358-0d9ad83dc102",
             "id": "ndi_source",
@@ -3131,7 +3048,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCameraSource3",
             "uuid": "905f490f-d419-411b-bfc2-d62de9e28e92",
             "id": "ndi_source",
@@ -3164,7 +3081,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCameraSourceTopView",
             "uuid": "8328d5a7-8444-45e6-b372-e063fd24af9e",
             "id": "ndi_source",
@@ -3197,7 +3114,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 536870914,
+            "prev_ver": 520159234,
             "name": "VirtualCameraTopView",
             "uuid": "4ea3cce0-f6ae-4d81-b8ed-08a927290d83",
             "id": "scene",
