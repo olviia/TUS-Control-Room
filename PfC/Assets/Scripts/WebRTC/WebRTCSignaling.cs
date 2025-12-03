@@ -43,14 +43,14 @@ public class WebRTCSignaling : NetworkBehaviour
     }
 
     /// <summary>
-    /// Send ICE candidate for specific pipeline
+    /// Send ICE candidate for specific pipeline to specific client
     /// </summary>
-    public void SendIceCandidate(PipelineType pipeline, RTCIceCandidate candidate, string sessionId)
+    public void SendIceCandidate(PipelineType pipeline, RTCIceCandidate candidate, ulong toClient, string sessionId)
     {
         if (!IsNetworkReady()) return;
 
         SendIceCandidateServerRpc(pipeline, candidate.Candidate, candidate.SdpMid,
-                                 candidate.SdpMLineIndex ?? 0, NetworkManager.Singleton.LocalClientId, sessionId);
+                                 candidate.SdpMLineIndex ?? 0, NetworkManager.Singleton.LocalClientId, toClient, sessionId);
     }
 
     /// <summary>
@@ -84,9 +84,9 @@ public class WebRTCSignaling : NetworkBehaviour
 
     [ServerRpc(RequireOwnership = false)]
     private void SendIceCandidateServerRpc(PipelineType pipeline, string candidate, string sdpMid,
-                                          int sdpMLineIndex, ulong fromClient, string sessionId)
+                                          int sdpMLineIndex, ulong fromClient, ulong toClient, string sessionId)
     {
-        BroadcastIceCandidateClientRpc(pipeline, candidate, sdpMid, sdpMLineIndex, fromClient, sessionId);
+        BroadcastIceCandidateClientRpc(pipeline, candidate, sdpMid, sdpMLineIndex, fromClient, toClient, sessionId);
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -131,9 +131,9 @@ public class WebRTCSignaling : NetworkBehaviour
 
     [ClientRpc]
     private void BroadcastIceCandidateClientRpc(PipelineType pipeline, string candidate, string sdpMid,
-                                               int sdpMLineIndex, ulong fromClient, string sessionId)
+                                               int sdpMLineIndex, ulong fromClient, ulong toClient, string sessionId)
     {
-        if (ShouldIgnoreMessage(fromClient)) return;
+        if (ShouldIgnoreMessage(fromClient) || !IsMessageForMe(toClient)) return;
 
         try
         {

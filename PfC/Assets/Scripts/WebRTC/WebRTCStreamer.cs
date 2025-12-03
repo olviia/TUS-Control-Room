@@ -885,7 +885,7 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void OnIceCandidate(RTCIceCandidate candidate)
     {
-        signaling?.SendIceCandidate(pipelineType, candidate, currentSessionId);
+        signaling?.SendIceCandidate(pipelineType, candidate, connectedClientId, currentSessionId);
     }
     
     private void OnTrackReceived(RTCTrackEvent e)
@@ -1023,7 +1023,7 @@ public class WebRTCStreamer : MonoBehaviour
     private void OnIceCandidateForClient(RTCIceCandidate candidate, ulong clientId)
     {
         Debug.Log($"[📡{instanceId}] ICE candidate for client {clientId}");
-        signaling?.SendIceCandidate(pipelineType, candidate, currentSessionId);
+        signaling?.SendIceCandidate(pipelineType, candidate, clientId, currentSessionId);
     }
 
     private void OnConnectionStateChangeForClient(RTCPeerConnectionState state, ulong clientId)
