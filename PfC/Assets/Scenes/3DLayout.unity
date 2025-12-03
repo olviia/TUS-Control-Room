@@ -2513,6 +2513,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 555408906}
   m_CullTransparentMesh: 1
+--- !u!1 &582228696
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 582228697}
+  m_Layer: 0
+  m_Name: PresenterSpawn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &582228697
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 582228696}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
+  m_LocalPosition: {x: 0.63, y: 23.43, z: -49.71}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1206095661}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &595461677
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4554,11 +4585,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1057355440}
   m_CullTransparentMesh: 1
---- !u!4 &1080717045 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 585528581796481183, guid: db1d9cd3c2194814e99221c0895dc498, type: 3}
-  m_PrefabInstance: {fileID: 3771849590721343256}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1109471116 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2893905264473886207, guid: 2b0f6e2c6846e4b4eb1ba30d639f6220, type: 3}
@@ -12028,15 +12054,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 231957697734935867, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.6399774
+      value: -0.42198557
       objectReference: {fileID: 0}
     - target: {fileID: 231957697734935867, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.76839375
+      value: 0.90660256
       objectReference: {fileID: 0}
     - target: {fileID: 231957697734935867, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 100.42
+      value: 229.92
       objectReference: {fileID: 0}
     - target: {fileID: 524121239287515197, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: far clip plane
@@ -12321,6 +12347,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4319059982537193871, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1886760816}
+    - targetCorrespondingSourceObject: {fileID: 4319059982537193871, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 582228697}
     - targetCorrespondingSourceObject: {fileID: 3042641111339638034, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       insertIndex: -1
       addedObject: {fileID: 661363305}
@@ -13400,7 +13429,7 @@ PrefabInstance:
     - target: {fileID: 3689669414424504593, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
       propertyPath: spawnLocations.Array.data[1].spawnPoint
       value: 
-      objectReference: {fileID: 1080717045}
+      objectReference: {fileID: 582228697}
     - target: {fileID: 3689669414424504593, guid: 3fa0b156440302046b60a55e6ce8781a, type: 3}
       propertyPath: spawnLocations.Array.data[2].spawnPoint
       value: 
