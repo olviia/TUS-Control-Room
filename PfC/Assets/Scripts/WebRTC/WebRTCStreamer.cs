@@ -332,30 +332,69 @@ public class WebRTCStreamer : MonoBehaviour
     }
     
     
+    /// <summary>
+    /// Create a peer connection for a specific client (multi-client support for streamers)
+    /// </summary>
+    private RTCPeerConnection CreatePeerConnectionForClient(ulong clientId)
+    {
+        Debug.Log($"[📡{instanceId}] Creating peer connection for client {clientId}");
+
+        var config = new RTCConfiguration
+        {
+            iceServers = new RTCIceServer[]
+            {
+                new RTCIceServer { urls = new string[] { "stun:stun.l.google.com:19302" } },
+                new RTCIceServer { urls = new string[] { "stun:stun1.l.google.com:19302" } }
+            }
+        };
+
+        var pc = new RTCPeerConnection(ref config);
+
+        // Set up callbacks with client ID context
+        pc.OnIceCandidate = candidate => OnIceCandidateForClient(candidate, clientId);
+        pc.OnConnectionStateChange = state => OnConnectionStateChangeForClient(state, clientId);
+        pc.OnIceConnectionChange = state => OnIceConnectionChangeForClient(state, clientId);
+
+        // Add tracks
+        pc.AddTrack(videoTrack);
+        if (enableAudioStreaming && audioInterceptor != null && audioInterceptor.audioStreamTrack != null)
+        {
+            pc.AddTrack(audioInterceptor.audioStreamTrack);
+            Debug.Log($"[📡{instanceId}] Audio track added for client {clientId}");
+        }
+
+        // Initialize per-client state
+        clientRemoteDescriptionSet[clientId] = false;
+        clientPendingIceCandidates[clientId] = new List<RTCIceCandidate>();
+
+        Debug.Log($"[📡{instanceId}] Peer connection created for client {clientId}");
+        return pc;
+    }
+
     private void AddTracksToConnection()
     {
-        if (peerConnection == null || videoTrack == null) 
+        if (peerConnection == null || videoTrack == null)
         {
             Debug.LogError($"[📡{instanceId}] Cannot add tracks - missing components");
             SetState(StreamerState.Failed);
             return;
         }
-        
+
         // Add video track
         peerConnection.AddTrack(videoTrack);
-        
+
         //add audio track
         if (enableAudioStreaming && audioInterceptor != null)
         {
             // Start audio streaming
             audioInterceptor.StartAudioStreaming();
-            
-                // Add to peer connection 
+
+                // Add to peer connection
                 audioSender = peerConnection.AddTrack(audioInterceptor.audioStreamTrack);
                 isAudioStreamingActive = true;
                 Debug.Log($"[📡{instanceId}] Audio track added to peer connection");
         }
-        
+
         Debug.Log($"[📡{instanceId}] Tracks added to connection");
     }
     
@@ -534,7 +573,7 @@ public class WebRTCStreamer : MonoBehaviour
     {
         var setOp = peerConnection.SetRemoteDescription(ref desc);
         yield return setOp;
-        
+
         if (setOp.IsError)
         {
             Debug.LogError($"[📡{instanceId}] Set remote description failed: {setOp.Error}");
@@ -546,7 +585,108 @@ public class WebRTCStreamer : MonoBehaviour
             ProcessBufferedIceCandidates();
         }
     }
-    
+
+    // Per-client signaling methods for multi-client support
+    private IEnumerator CreateOfferForClient(ulong clientId)
+    {
+        if (!peerConnections.ContainsKey(clientId))
+        {
+            Debug.LogError($"[📡{instanceId}] No peer connection for client {clientId}");
+            yield break;
+        }
+
+        var pc = peerConnections[clientId];
+        yield return null;
+
+        var offerOp = pc.CreateOffer();
+        yield return offerOp;
+
+        if (offerOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Offer creation failed for client {clientId}: {offerOp.Error}");
+            yield break;
+        }
+
+        yield return StartCoroutine(SetLocalDescriptionForClient(clientId, offerOp.Desc));
+        signaling.SendOffer(pipelineType, offerOp.Desc, currentSessionId);
+
+        Debug.Log($"[📡{instanceId}] Offer sent to client {clientId}");
+    }
+
+    private IEnumerator SetLocalDescriptionForClient(ulong clientId, RTCSessionDescription desc)
+    {
+        if (!peerConnections.ContainsKey(clientId))
+        {
+            Debug.LogError($"[📡{instanceId}] No peer connection for client {clientId}");
+            yield break;
+        }
+
+        var pc = peerConnections[clientId];
+        var setOp = pc.SetLocalDescription(ref desc);
+        yield return setOp;
+
+        if (setOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Set local description failed for client {clientId}: {setOp.Error}");
+        }
+    }
+
+    private IEnumerator SetRemoteDescriptionForClient(ulong clientId, RTCSessionDescription desc)
+    {
+        if (!peerConnections.ContainsKey(clientId))
+        {
+            Debug.LogError($"[📡{instanceId}] No peer connection for client {clientId}");
+            yield break;
+        }
+
+        var pc = peerConnections[clientId];
+        var setOp = pc.SetRemoteDescription(ref desc);
+        yield return setOp;
+
+        if (setOp.IsError)
+        {
+            Debug.LogError($"[📡{instanceId}] Set remote description failed for client {clientId}: {setOp.Error}");
+        }
+        else
+        {
+            clientRemoteDescriptionSet[clientId] = true;
+            ProcessBufferedIceCandidatesForClient(clientId);
+        }
+    }
+
+    private void ProcessBufferedIceCandidatesForClient(ulong clientId)
+    {
+        if (!clientPendingIceCandidates.ContainsKey(clientId)) return;
+
+        var candidates = clientPendingIceCandidates[clientId];
+        Debug.Log($"[📡{instanceId}] Processing {candidates.Count} buffered ICE candidates for client {clientId}");
+
+        foreach (var candidate in candidates)
+        {
+            AddIceCandidateForClient(clientId, candidate);
+        }
+
+        candidates.Clear();
+    }
+
+    private void AddIceCandidateForClient(ulong clientId, RTCIceCandidate candidate)
+    {
+        if (!peerConnections.ContainsKey(clientId))
+        {
+            Debug.LogWarning($"[📡{instanceId}] Cannot add ICE candidate - no peer connection for client {clientId}");
+            return;
+        }
+
+        try
+        {
+            peerConnections[clientId].AddIceCandidate(candidate);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[📡{instanceId}] Failed to add ICE candidate for client {clientId}: {e.Message}");
+        }
+    }
+
     #endregion
     
     #region Event Handlers - Signaling
@@ -624,32 +764,62 @@ public class WebRTCStreamer : MonoBehaviour
     private void HandleAnswerReceived(PipelineType pipeline, RTCSessionDescription answer, ulong fromClient, string sessionId)
     {
         if (!IsForThisInstance(pipeline, sessionId) || !isOfferer) return;
-        
+
         Debug.Log($"[📡{instanceId}] Processing answer from client {fromClient}");
-        
+
         if (enableOptimisticStates)
         {
             SetState(StreamerState.Streaming);
         }
-        
-        StartCoroutine(SetRemoteDescription(answer));
-        connectedClientId = fromClient;
+
+        // Route to per-client peer connection for multi-client support
+        if (peerConnections.ContainsKey(fromClient))
+        {
+            StartCoroutine(SetRemoteDescriptionForClient(fromClient, answer));
+            Debug.Log($"[📡{instanceId}] Answer routed to per-client connection for client {fromClient}");
+        }
+        else
+        {
+            // Fallback to single peer connection (backwards compatibility)
+            StartCoroutine(SetRemoteDescription(answer));
+            connectedClientId = fromClient;
+        }
     }
-    
+
     private void HandleIceCandidateReceived(PipelineType pipeline, RTCIceCandidate candidate, ulong fromClient, string sessionId)
     {
         if (!IsForThisInstance(pipeline, sessionId)) return;
-        
-        if (peerConnection == null) return;
-        
-        if (!isRemoteDescriptionSet)
+
+        // For streamers with multi-client support, route to per-client connection
+        if (isOfferer && peerConnections.ContainsKey(fromClient))
         {
-            pendingIceCandidates.Add(candidate);
-            Debug.Log($"[📡{instanceId}] ICE candidate buffered (total: {pendingIceCandidates.Count})");
-            return;
+            if (!clientRemoteDescriptionSet.ContainsKey(fromClient) || !clientRemoteDescriptionSet[fromClient])
+            {
+                // Buffer candidate until remote description is set
+                if (!clientPendingIceCandidates.ContainsKey(fromClient))
+                {
+                    clientPendingIceCandidates[fromClient] = new List<RTCIceCandidate>();
+                }
+                clientPendingIceCandidates[fromClient].Add(candidate);
+                Debug.Log($"[📡{instanceId}] ICE candidate buffered for client {fromClient} (total: {clientPendingIceCandidates[fromClient].Count})");
+            }
+            else
+            {
+                AddIceCandidateForClient(fromClient, candidate);
+            }
         }
-        
-        AddIceCandidate(candidate);
+        // For receivers, use single peer connection
+        else if (!isOfferer && peerConnection != null)
+        {
+            if (!isRemoteDescriptionSet)
+            {
+                pendingIceCandidates.Add(candidate);
+                Debug.Log($"[📡{instanceId}] ICE candidate buffered (total: {pendingIceCandidates.Count})");
+                return;
+            }
+
+            AddIceCandidate(candidate);
+        }
     }
     
     private void AddIceCandidate(RTCIceCandidate candidate)
@@ -688,10 +858,25 @@ public class WebRTCStreamer : MonoBehaviour
     {
         if (!IsForThisInstance(pipeline, sessionId) || !isOfferer) return;
 
-        Debug.Log($"[📡{instanceId}] Offer requested by late-joining client {requestingClient} - sending new offer");
+        Debug.Log($"[📡{instanceId}] Offer requested by client {requestingClient} - creating per-client connection");
 
-        // Send a fresh offer to the late-joining client
-        StartCoroutine(CreateOffer());
+        // Create a dedicated peer connection for this client
+        if (!peerConnections.ContainsKey(requestingClient))
+        {
+            var pc = CreatePeerConnectionForClient(requestingClient);
+            peerConnections[requestingClient] = pc;
+
+            // Start audio streaming when first client connects
+            if (peerConnections.Count == 1 && enableAudioStreaming && audioInterceptor != null && !isAudioStreamingActive)
+            {
+                audioInterceptor.StartAudioStreaming();
+                isAudioStreamingActive = true;
+                Debug.Log($"[📡{instanceId}] Audio streaming started for first client");
+            }
+        }
+
+        // Create and send offer for this specific client
+        StartCoroutine(CreateOfferForClient(requestingClient));
     }
 
     #endregion
@@ -827,13 +1012,58 @@ public class WebRTCStreamer : MonoBehaviour
     private void OnIceConnectionChange(RTCIceConnectionState state)
     {
         Debug.Log($"[📡{instanceId}] ICE state: {state}");
-        
+
         if (state == RTCIceConnectionState.Failed && currentState != StreamerState.Disconnecting)
         {
             HandleConnectionFailure();
         }
     }
-    
+
+    // Per-client callbacks for multi-client support
+    private void OnIceCandidateForClient(RTCIceCandidate candidate, ulong clientId)
+    {
+        Debug.Log($"[📡{instanceId}] ICE candidate for client {clientId}");
+        signaling?.SendIceCandidate(pipelineType, candidate, currentSessionId);
+    }
+
+    private void OnConnectionStateChangeForClient(RTCPeerConnectionState state, ulong clientId)
+    {
+        Debug.Log($"[📡{instanceId}] Client {clientId} connection state: {state}");
+
+        switch (state)
+        {
+            case RTCPeerConnectionState.Connected:
+                Debug.Log($"[📡{instanceId}] Client {clientId} connected successfully");
+                SetState(StreamerState.Streaming);
+                break;
+
+            case RTCPeerConnectionState.Failed:
+            case RTCPeerConnectionState.Disconnected:
+                Debug.LogWarning($"[📡{instanceId}] Client {clientId} disconnected/failed");
+                // Remove the peer connection for this client
+                if (peerConnections.ContainsKey(clientId))
+                {
+                    peerConnections[clientId].Close();
+                    peerConnections[clientId].Dispose();
+                    peerConnections.Remove(clientId);
+                    clientRemoteDescriptionSet.Remove(clientId);
+                    clientPendingIceCandidates.Remove(clientId);
+                    Debug.Log($"[📡{instanceId}] Client {clientId} peer connection cleaned up");
+                }
+                break;
+        }
+    }
+
+    private void OnIceConnectionChangeForClient(RTCIceConnectionState state, ulong clientId)
+    {
+        Debug.Log($"[📡{instanceId}] Client {clientId} ICE state: {state}");
+
+        if (state == RTCIceConnectionState.Failed)
+        {
+            Debug.LogError($"[📡{instanceId}] Client {clientId} ICE connection failed");
+        }
+    }
+
     #endregion
     
     #region Error Handling
@@ -1001,6 +1231,7 @@ public class WebRTCStreamer : MonoBehaviour
     
     private void ClosePeerConnection()
     {
+        // Close single peer connection (for receivers)
         if (peerConnection != null)
         {
             UnsubscribeFromVideoEvents();
@@ -1008,13 +1239,31 @@ public class WebRTCStreamer : MonoBehaviour
             peerConnection.Dispose();
             peerConnection = null;
         }
-        
+
+        // Close all per-client peer connections (for streamers)
+        foreach (var kvp in peerConnections)
+        {
+            try
+            {
+                kvp.Value.Close();
+                kvp.Value.Dispose();
+                Debug.Log($"[📡{instanceId}] Closed peer connection for client {kvp.Key}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[📡{instanceId}] Error closing peer connection for client {kvp.Key}: {e.Message}");
+            }
+        }
+        peerConnections.Clear();
+        clientRemoteDescriptionSet.Clear();
+        clientPendingIceCandidates.Clear();
+
         if (receiveMediaStream != null)
         {
             receiveMediaStream.Dispose();
             receiveMediaStream = null;
         }
-        
+
         isRemoteDescriptionSet = false;
         pendingIceCandidates.Clear();
         pendingOffer = null;
