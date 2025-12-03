@@ -243,18 +243,20 @@ public class WebRTCStreamer : MonoBehaviour
     {
         PrepareForNewSessionSync(sessionId);
         isOfferer = true;
-        
+
         if (!ValidateNdiSource())
         {
             SetState(StreamerState.Failed);
             yield break;
         }
-        
+
         SetupStreamingConnection();
         StartConnectionTimeout();
-        StartCoroutine(CreateOffer());
-        
-        Debug.Log($"[📡{instanceId}] Streaming session initiated immediately");
+        // Don't create offer immediately - wait for receiver to request it via HandleOfferRequested()
+        // This prevents duplicate offers when both streamer and receiver start simultaneously
+        // StartCoroutine(CreateOffer());
+
+        Debug.Log($"[📡{instanceId}] Streaming session ready, waiting for offer request");
     }
     
     private IEnumerator EndCurrentSession()
@@ -300,6 +302,7 @@ public class WebRTCStreamer : MonoBehaviour
     private void SetupReceivingConnection()
     {
         CreatePeerConnection();
+        ProcessPendingOffer();  // Process any offer that arrived before peer connection was ready
     }
     
     private void CreatePeerConnection()
