@@ -37,14 +37,21 @@ public class TwoDPlaceholderController : MonoBehaviour
         // If current source is not in the list of available NDI sources
         if (string.IsNullOrEmpty(cachedNdiName) || !availableSources.Any(source => source.Contains(cachedNdiName)))
         {
+            Debug.Log($"[TwoDPlaceholder] Searching for NDI source containing 'subscene'. Available sources: {string.Join(", ", availableSources)}");
+
             // Get the source name that contains "subscene"
-            string foundSource = availableSources.FirstOrDefault(source => source.ToLower().Contains("Subscene"));
+            string foundSource = availableSources.FirstOrDefault(source => source.ToLower().Contains("subscene"));
 
             if (!string.IsNullOrEmpty(foundSource))
             {
                 // Assign it as NDI name
                 receiversound.ndiName = foundSource;
                 cachedNdiName = foundSource;
+                Debug.Log($"[TwoDPlaceholder] Assigned NDI source: {foundSource}");
+            }
+            else
+            {
+                Debug.LogWarning($"[TwoDPlaceholder] No NDI source containing 'subscene' found");
             }
         }
     }
