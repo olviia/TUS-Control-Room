@@ -1,0 +1,106 @@
+using Klak.Ndi;
+using UnityEngine;
+using Unity.Services.Core;
+using Unity.Services.Vivox;
+using Unity.Services.Authentication;
+
+public class TwoDPlaceholderController : MonoBehaviour
+{
+    public NdiReceiver receiver;
+
+    [Header("Vivox Settings")]
+    [Tooltip("Auto-join Vivox as audience on start")]
+    public bool autoJoinVivoxOnStart = true;
+
+    [Tooltip("Name of the audience channel to join")]
+    public string audienceChannelName = "audience-tus-channel";
+
+    async void Start()
+    {
+        if (autoJoinVivoxOnStart)
+        {
+            await JoinVivoxAsAudienceStandalone();
+        }
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
+    }
+
+    public void SetCamera1()
+    {
+        receiver.ndiName = "TIIMEX10 (VirtualCameraFromUnity1)";
+    }
+
+    public void SetCamera2()
+    {
+        receiver.ndiName = "TIIMEX10 (VirtualCameraFromUnity2)";
+    }
+
+    public void SetCamera3()
+    {
+        receiver.ndiName = "TIIMEX10 (VirtualCameraFromUnity3)";
+    }
+
+    public void SetTopViewCamera()
+    {
+        receiver.ndiName = "TIIMEX10 (VirtualCameraFromUnityTopView)";
+    }
+
+    /// <summary>
+    /// Joins Vivox chat as an audience member without network registration (standalone mode)
+    /// </summary>
+    public async System.Threading.Tasks.Task JoinVivoxAsAudienceStandalone()
+    {
+        try
+        {
+            // Initialize Unity Services if not already initialized
+            if (UnityServices.State != ServicesInitializationState.Initialized)
+            {
+                var options = new InitializationOptions();
+                await UnityServices.InitializeAsync(options);
+                Debug.Log("[TwoDPlaceholder] Unity Services initialized");
+            }
+
+            // Sign in anonymously if not already signed in
+            if (!AuthenticationService.Instance.IsSignedIn)
+            {
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                Debug.Log("[TwoDPlaceholder] Signed in anonymously");
+            }
+
+            // Initialize Vivox if not already initialized
+            if (!VivoxService.Instance.IsLoggedIn)
+            {
+                var vivoxConfig = new VivoxConfigurationOptions
+                {
+                    DisableAudioDucking = true,
+                    DynamicVoiceProcessingSwitching = true
+                };
+
+                await VivoxService.Instance.InitializeAsync(vivoxConfig);
+                await VivoxService.Instance.LoginAsync();
+                Debug.Log("[TwoDPlaceholder] Vivox login successful");
+            }
+
+            // Join the audience channel
+            var channelOptions = new ChannelOptions
+            {
+                MakeActiveChannelUponJoining = true
+            };
+
+            await VivoxService.Instance.JoinGroupChannelAsync(audienceChannelName, ChatCapability.AudioOnly, channelOptions);
+            Debug.Log($"[TwoDPlaceholder] Joined audience channel: {audienceChannelName}");
+
+            // Mute the input device for listen-only mode
+            VivoxService.Instance.MuteInputDevice();
+            Debug.Log("[TwoDPlaceholder] Input muted - listen-only mode enabled");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[TwoDPlaceholder] Failed to join Vivox: {e.Message}");
+        }
+    }
+}

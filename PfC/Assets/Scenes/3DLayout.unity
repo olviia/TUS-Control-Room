@@ -173,7 +173,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6598815579406187037, guid: 18ddb545287c546e19cc77dc9fbb2189, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -11706,7 +11706,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4888859075995511936, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4945359111955572032, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: receiver
@@ -11762,7 +11762,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5835642447176085780, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5906573380141972552, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: _ndiReceiver
@@ -11778,7 +11778,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7230004454482949388, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7459237668363263098, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: ndiReceiver
@@ -11858,7 +11858,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9213036049879017854, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4945359111955572032, guid: dc2df759c4bf9cf4f99ca2222e8cc863, type: 3}
