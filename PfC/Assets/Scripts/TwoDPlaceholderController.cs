@@ -1,12 +1,17 @@
 using Klak.Ndi;
+using OBSWebsocketDotNet;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Vivox;
 using Unity.Services.Authentication;
+using System.Linq;
 
 public class TwoDPlaceholderController : MonoBehaviour
 {
     public NdiReceiver receiver;
+    public NdiReceiver receiversound;
+
+    private string cachedNdiName = null;
 
     [Header("Vivox Settings")]
     [Tooltip("Auto-join Vivox as audience on start")]
@@ -26,7 +31,22 @@ public class TwoDPlaceholderController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Get list of available NDI sources
+        var availableSources = NdiFinder.sourceNames;
 
+        // If current source is not in the list of available NDI sources
+        if (string.IsNullOrEmpty(cachedNdiName) || !availableSources.Any(source => source.Contains(cachedNdiName)))
+        {
+            // Get the source name that contains "subscene"
+            string foundSource = availableSources.FirstOrDefault(source => source.ToLower().Contains("Subscene"));
+
+            if (!string.IsNullOrEmpty(foundSource))
+            {
+                // Assign it as NDI name
+                receiversound.ndiName = foundSource;
+                cachedNdiName = foundSource;
+            }
+        }
     }
 
     public void SetCamera1()
