@@ -1,3 +1,5 @@
+## _See the demo instructions in HowToUse.md_
+
 # TUS Control Room
 
 A Unity environment integrating control over a Media Stream using NDI and websockets. It is multiplayer, allowing different roles in a studio to collaborate.

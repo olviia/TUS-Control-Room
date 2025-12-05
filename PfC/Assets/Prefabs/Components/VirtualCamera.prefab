@@ -61,7 +61,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000011175871, y: -0.00000008940697, z: -0.000000007450581, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.5000007, y: 2.4999995, z: 2.5000002}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2579591337359410971}
@@ -153,7 +153,6 @@ MonoBehaviour:
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
-  m_Version: 2
   m_TaaSettings:
     m_Quality: 3
     m_FrameInfluence: 0.1
@@ -161,6 +160,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1 &7695430644515364458
 GameObject:
   m_ObjectHideFlags: 0
@@ -207,6 +207,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2d98e5bfcdff4847ad69efa861a8e7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  audioDebugVerbose: 0
+  initialBufferFillFraction: 0.5
   audioOrigin: {fileID: 0}
   addMissingAudioSourceListenersAtRuntime: 0
   _ndiName: VirtualCameraFromUnity
@@ -215,6 +217,7 @@ MonoBehaviour:
   virtualListenerDistance: 4
   useAudioOriginPositionForVirtualAttenuation: 0
   maxObjectBasedChannels: 32
+  objectBasedBridgeId: 0
   customSpeakerConfig: {fileID: 0}
   frameRate: 6
   setRenderTargetFrameRate: 1
@@ -237,6 +240,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   GlobalObjectIdHash: 3175011264
   InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
@@ -244,6 +249,8 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &808969629485762406
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -256,6 +263,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7772832b7b379e64e8a2558673b6cf72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   sceneName: VirtualCamera
   sourceName: VirtualCameraSource
   addFilterToSource: 1
