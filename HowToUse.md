@@ -1,6 +1,7 @@
 # How to Use
 
 ## Hardware Required
+- Router with the Internet access
 - 3 laptops
 - 1 VR headset
 - 1 long cable for headset
