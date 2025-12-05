@@ -43,35 +43,24 @@ This can be automatically done using Unity services. Follow the steps on the lin
 
 [Unity Vivox SDK](https://docs.unity.com/ugs/en-us/manual/vivox-unity/manual/Unity/vivox-unity-first-steps)
 
+### Step 5 - Install cwipc python server for head point cloud
+
+No instruction yet
+
 
 ### Step 5 - Scenes to run
 
-Scene name is **3DLayout**, this scene is in Test folder
+Scene name is **3DLayout**
 
 ## How to test locally
 
-1. Run OBS on host device (or on both, it's ok)
-2. Add scenes ObsScenes.json
-3. in OBS websocket settings set port number the same as in WebsocketManager in Unity
-4. Run several instances on machines that are connected to the same network.
-5. It is possible to use ParrelSync for that, just make sure that the first director (host) is launched from the original editor
-6. To launch the host, enter your IP or click button 'AutoDetect', then click 'Director'
-7. To launch the client, click button 'SearchForHost', then click 'Director'
-8. 'Audience' isn't implemented yet
-9. Both devices must be connected to the internet (for voice communication).
-11. Select screens, set up OBS outputs, add screens, and turn volume on/off as desired.
-12. OBS can be controlled from a WebSocket using the controls UI. Options are transition, record, stream, audio.
-15. Add the screen, select the source from the NDI Source Selector dropdown.
-16. Right click on source is for the studio screen pipeline
-17. Left click on soure is for the TV screen pipeline
+see in HowToUse document
 
 ## Troubleshooting
 
 #### Known issues: 
-- NDI stream bufferization issue visible in log
-- Websockets don't have full functionality, tested only on host machine
-- WebRtc streaming is not fully implemented yet
-- Tested on two users
+- Audio crackles when captured from ndi or vivox
+- WebRTC multi user doesn't work properly
 
 If you don't see the NDI streams in the source selector:
 - Check if you have OBS on/or you are on the same network as the Bridge, if you are a journalist
