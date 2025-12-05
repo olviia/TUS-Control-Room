@@ -10,8 +10,8 @@
 
 1. Connect 3 computers to the same network
 2. Connect headset to the director's computer
-3. Put your videos in OBS subscenes. Don't put more than one source into one subscene. Subtitles are in StudioSuper.
-4. Run Unity Hub, open PfC project on all 3 computers
+3. Run Unity Hub, open PfC project on all 3 computers
+4. Computers have labels near keyboard
 
 **Important Notes:**
 - I temporarily disabled the screens for Twitch streaming, so people don't get confused what the other two screens are for
@@ -21,6 +21,11 @@
 
 ### 1. Director Computer
 - Open OBS. You can change videos in subscenes and see result in merged scene
+   - In Scenes view scroll down to subscenes
+   - Select subscene and double click on it's media source in Sources window
+   - Change local path to the video you want by clicking 'Browse' button
+   - Click 'OK'
+   - Don't put more than one source into one subscene. You can use other types of sources, you are not limited to video. Subtitles are displayed as a placeholder in StudioSuper.
 - Open Unity. Open scene 3DLayout. Put IP of presenter computer into PointCloudReceiver
 
 ### 2. Presenter Computer
