@@ -1,5 +1,15 @@
 {
   "dependencies": {
+    "com.certh.volumetric_capture_player": {
+      "version": "https://github.com/DefkalionPap/Volumetric-Capture-Video-Player-Unity.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.cloud.gltfast": "6.10.3",
+        "com.unity.cloud.draco": "5.1.8"
+      },
+      "hash": "e6b3745962d92f6d928d858c038b00192306a857"
+    },
     "com.pfc.jp.keijiro.klak.ndi": {
       "version": "file:com.pfc.jp.keijiro.klak.ndi@2.1.4-pfc.6",
       "depth": 0,
@@ -171,6 +181,29 @@
       "dependencies": {
         "com.unity.mathematics": "1.2.1",
         "com.unity.modules.jsonserialize": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.cloud.draco": {
+      "version": "5.1.8",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.burst": "1.8.11",
+        "com.unity.mathematics": "1.3.1"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.cloud.gltfast": {
+      "version": "6.10.3",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.burst": "1.8.4",
+        "com.unity.collections": "1.2.4",
+        "com.unity.mathematics": "1.2.6",
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.unitywebrequest": "1.0.0"
       },
       "url": "https://packages.unity.com"
     },

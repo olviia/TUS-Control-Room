@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.certh.volumetric_capture_player": "https://github.com/DefkalionPap/Volumetric-Capture-Video-Player-Unity.git",
     "com.pfc.jp.keijiro.klak.ndi": "2.1.4-pfc.6",
     "com.unity.2d.enhancers": "1.0.0",
     "com.unity.ai.assistant": "1.0.0-pre.12",
