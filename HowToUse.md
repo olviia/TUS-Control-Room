@@ -13,6 +13,7 @@
 2. Computers have labels near keyboard 
 3. Connect headset to the director's computer 
 4. Run Unity Hub, open PfC project on all 3 computers
+5. Prepare volumetric capture prerecorded file following [doc](https://github.com/olviia/TUS-Control-Room/blob/main/PfC/Assets/docs/volumetric_capture_readme.md)
 
 
 > [!NOTE]
